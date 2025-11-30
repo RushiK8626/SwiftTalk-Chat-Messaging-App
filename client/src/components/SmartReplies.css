@@ -1,0 +1,194 @@
+/* Smart Replies Component Styles */
+
+.smart-replies-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--accent-color);
+  color: var(--message-sent-text);
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 8px 0;
+}
+
+.smart-replies-trigger:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.smart-replies-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.smart-replies-container {
+  background: var(--card-background) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 15px var(--shadow);
+  animation: slideUp 0.2s ease;
+}
+
+/* Wrapper for Smart Replies - positions it above the input form */
+.smart-replies-wrapper {
+  position: absolute;
+  bottom: 100%;
+  left: 5px;
+  right: 5px;
+  margin-bottom: 8px;
+  z-index: 50;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smart-replies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.smart-replies-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.smart-replies-title svg {
+  color: var(--accent-color);
+}
+
+.smart-replies-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.smart-replies-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: all 0.2s ease;
+}
+
+.smart-replies-action-btn:hover:not(:disabled) {
+  background: var(--hover-background);
+  color: var(--text-color);
+}
+
+.smart-replies-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.smart-replies-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+}
+
+.smart-replies-error {
+  padding: 12px;
+  color: var(--error-color, #dc3545);
+  font-size: 13px;
+  text-align: center;
+}
+
+.smart-replies-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.smart-reply-chip {
+  padding: 10px 16px;
+  background: var(--input-background) !important;
+  color: var(--text-color) !important;
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 100%;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+.smart-reply-chip:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: var(--message-sent-text);
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.smart-reply-chip:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.smart-reply-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.smart-replies-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .smart-replies-container {
+    margin: 8px 5px;
+    padding: 10px;
+  }
+
+  .smart-reply-chip {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+}

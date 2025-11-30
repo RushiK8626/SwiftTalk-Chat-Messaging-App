@@ -1,169 +1,129 @@
-# Chat-Messaging-App-Server
+# ConvoHub 💬
 
-Lightweight Node.js server for a chat/messaging application. This repository contains the server, Prisma schema and migrations, routes, controllers, and socket handling used by the ConvoHub mobile/web client.
+A modern real-time chat messaging application with AI-powered features.
 
-## Quick overview
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![React](https://img.shields.io/badge/React-18+-blue)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4+-yellow)
+![License](https://img.shields.io/badge/License-MIT-purple)
 
-- Language: JavaScript (Node.js)
-- ORM: Prisma (schema in `prisma/schema.prisma`, migrations in `prisma/migrations`)
-- Entry point: `src/server.js`
+## ✨ Features
 
-## Important folders/files
+- **Real-time Messaging** - Instant message delivery using Socket.IO
+- **Private & Group Chats** - One-on-one conversations and group discussions
+- **AI Smart Replies** - Get intelligent reply suggestions powered by Gemini AI
+- **Message Translation** - Translate messages to 12+ languages
+- **File Sharing** - Share files up to 50MB with chunked uploads
+- **Push Notifications** - Stay updated with web push notifications
+- **Typing Indicators** - See when others are typing
+- **Read Receipts** - Know when your messages are read
+- **Message Replies** - Reply to specific messages in a conversation
+- **User Presence** - See online/offline status of users
 
-- `src/` — application source: controllers, middleware, routes, services, socket handler
-- `prisma/` — Prisma schema and generated migrations
-- `uploads/` — uploaded files (sample/test files present)
-- `package.json` — NPM scripts and dependencies
-- `nginx.conf`, `ecosystem.config.js` — example deployment / process manager configs
+## 🛠️ Tech Stack
 
-## Prerequisites
+| Frontend | Backend | Database | Real-time |
+|----------|---------|----------|-----------|
+| React.js | Node.js | MySQL | Socket.IO |
+| CSS3 | Express | Prisma ORM | WebSocket |
+| Electron | JWT Auth | Redis | - |
 
-- Node.js (14+ recommended)
-- npm (or yarn)
-- A running MySQL/Postgres database matching `src/config/database.js` and `prisma/schema.prisma`
-- (Optional) Redis or other services if the project uses them for sockets/notifications (check `src/socket` and `src/services`)
+## 📦 Installation
 
-## Setup (Windows PowerShell)
+### Prerequisites
 
-1. Install dependencies:
+- Node.js 18+
+- MySQL 8+
+- Redis
 
-```powershell
-cd C:\Users\RUSHIKESH\Projects\ConvoHub\server
-npm install
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/RushiK8626/Chat-Messaging-App.git
+   cd ConvoHub
+   ```
+
+2. **Install server dependencies**
+   ```bash
+   cd server
+   npm install
+   ```
+
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database and API credentials
+   ```
+
+4. **Setup database**
+   ```bash
+   npx prisma migrate dev
+   ```
+
+5. **Install client dependencies**
+   ```bash
+   cd ../client
+   npm install
+   ```
+
+6. **Start the application**
+   ```bash
+   # Terminal 1 - Start server
+   cd server
+   npm start
+
+   # Terminal 2 - Start client
+   cd client
+   npm start
+   ```
+
+7. **Open in browser**
+   ```
+   http://localhost:3000
+   ```
+8. **To start Electron app**
+    ```
+    yarn electron:serve
+    ```
+
+## 🔧 Environment Variables
+
+### Server (.env)
+```env
+DATABASE_URL="mysql://user:password@localhost:3306/convohub"
+JWT_SECRET="your-secret-key"
+JWT_REFRESH_SECRET="your-refresh-secret"
+REDIS_URL="redis://localhost:6379"
+GEMINI_API_KEY="your-gemini-api-key"
+VAPID_PUBLIC_KEY="your-vapid-public-key"
+VAPID_PRIVATE_KEY="your-vapid-private-key"
 ```
 
-2. Create environment variables
-
-- Add a `.env` file at the project root (or set system env vars) with your DB connection and any jwt/otp secrets. Example keys you may need:
-
-```
-DATABASE_URL="mysql://user:pass@host:3306/dbname"
-JWT_SECRET=your_jwt_secret
-PORT=3000
-
-# AI Features (Optional - powered by Google Gemini)
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-1.5-flash
-GEMINI_MAX_TOKENS=150
-GEMINI_TEMPERATURE=0.7
+### Client (.env)
+```env
+REACT_APP_API_URL="http://localhost:3001"
 ```
 
-**AI Features Configuration:**
-- `GEMINI_API_KEY` - Your Google Gemini API key (required for AI features). Get it from https://aistudio.google.com/apikey
-- `GEMINI_MODEL` - Model to use (default: `gemini-1.5-flash`, or use `gemini-1.5-pro` for better quality)
-- `GEMINI_MAX_TOKENS` - Maximum tokens per response (default: 150)
-- `GEMINI_TEMPERATURE` - Creativity level 0-1 (default: 0.7)
+## 📱 Screenshot
 
-3. Run Prisma migrations (apply existing migrations to your DB):
+Chat Window 
 
-```powershell
-npx prisma migrate deploy
-# or for development:
-npx prisma migrate dev
-```
+![Chat Window](docs/screenshots/home.png)
 
-4. Start the server
+## 🤝 Contributing
 
-```powershell
-npm run start       # production start (if defined)
-npm run dev         # development (if defined)
-node src/server.js  # direct start
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Check `package.json` for exact script names available in this repo.
+## 📄 License
 
-## Testing / Uploads
+This project is licensed under the MIT License.
 
-- Uploaded sample files live in `uploads/` in this workspace for reference. Use the upload routes in `src/routes/upload.routes.js` and controller `src/controller/upload.controller.js`.
+## 👤 Author
 
-## AI Features
-
-This server includes AI-powered features using Google's Gemini AI models:
-
-### Available AI Endpoints
-
-All AI endpoints require authentication and are available at `/api/ai/`:
-
-1. **Smart Reply Suggestions** - `POST /api/ai/smart-replies`
-   - Generates contextual reply suggestions based on recent chat messages
-   - Body: `{ chat_id: number, limit?: number }`
-   - Returns: Array of suggested replies
-
-2. **Message Translation** - `POST /api/ai/translate`
-   - Translates messages to any language
-   - Body: `{ message_id?: number, text?: string, target_language: string, source_language?: string }`
-   - Supports: English (en), Spanish (es), French (fr), German (de), Hindi (hi), Chinese (zh), Japanese (ja), Korean (ko), Arabic (ar), Portuguese (pt), Russian (ru), Italian (it)
-
-3. **Conversation Summarization** - `POST /api/ai/summarize`
-   - Summarizes chat conversations
-   - Body: `{ chat_id: number, message_count?: number, summary_type?: 'brief'|'detailed'|'bullet' }`
-   - Types: brief (1-2 sentences), detailed (paragraph), bullet (bullet points)
-
-4. **Language Detection** - `POST /api/ai/detect-language`
-   - Detects the language of given text
-   - Body: `{ text: string }`
-
-5. **Conversation Starters** - `POST /api/ai/conversation-starters`
-   - Generates friendly conversation openers
-   - Body: `{ chat_id: number }`
-
-6. **AI Status Check** - `GET /api/ai/status`
-   - Checks if AI service is configured and lists available features
-
-### Example Usage
-
-```javascript
-// Smart Reply Suggestions
-fetch('/api/ai/smart-replies', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_JWT_TOKEN'
-  },
-  body: JSON.stringify({
-    chat_id: 123,
-    limit: 3
-  })
-});
-
-// Translate Message
-fetch('/api/ai/translate', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_JWT_TOKEN'
-  },
-  body: JSON.stringify({
-    text: "Hello, how are you?",
-    target_language: "es"
-  })
-});
-
-// Summarize Conversation
-fetch('/api/ai/summarize', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_JWT_TOKEN'
-  },
-  body: JSON.stringify({
-    chat_id: 123,
-    message_count: 50,
-    summary_type: "brief"
-  })
-});
-```
-
-## Notes & troubleshooting
-
-- If Prisma CLI complains about the `DATABASE_URL`, verify `.env` is loaded and the connection string is correct.
-- If ports are in use, change `PORT` env var.
-- For socket issues, check `src/socket/socketHandler.js` and ensure the client matches expected events.
-
-## Contributing
-
-1. Create a branch.
-2. Add tests and keep changes small.
-3. Open a PR with a clear description.
+**Rushikesh**
+- GitHub: [@RushiK8626](https://github.com/RushiK8626)
 
 ---
+
+⭐ Star this repo if you find it helpful!

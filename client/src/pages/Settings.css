@@ -1,0 +1,467 @@
+.settings-page {
+  min-height: 100vh;
+  background: var(--background-color);
+  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.settings-page::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* When embedded as right panel in split layout, remove padding and use full height */
+.settings-page[data-embedded="true"] {
+  min-height: 100%;
+  height: 100%;
+  padding-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .settings-page {
+    max-width: 100%;
+    margin: auto;
+  }
+}
+
+@media (min-width: 600px) {
+  .settings-page {
+    max-width: 95%;
+    margin: 0 auto;
+  }
+}
+
+.settings-content {
+  animation: fadeIn 0.4s ease-out;
+  /* Hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.settings-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 20px 20px 12px;
+}
+
+.settings-items {
+  background: var(--background-color);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.setting-item {
+  display: flex;
+  align-items: stretch;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  gap: 12px;
+  color: inherit;
+  font: inherit;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.setting-item:active {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.setting-icon {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.setting-info {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.setting-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  display: block;
+  word-break: break-word;
+  background: transparent;
+}
+
+.setting-info p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 0;
+  line-height: 1.3;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  display: block;
+  word-break: break-word;
+  background: transparent;
+}
+
+.chevron-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 20px;
+  width: calc(100% - 40px);
+}
+
+.logout-btn:hover {
+  background: #ff3838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+.app-version {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .setting-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .setting-info h3 {
+    font-size: 15px;
+  }
+
+  .setting-info p {
+    font-size: 12px;
+  }
+}
+
+/* Split layout for wide screens */
+.settings-container {
+  display: block;
+  height: 100vh;
+  /* Hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-x: hidden;
+}
+
+.settings-container::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-left-panel {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  /* Hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-x: hidden;
+}
+
+.settings-left-panel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-menu-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.settings-menu {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.settings-right-panel {
+  display: none;
+  /* Hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-x: hidden;
+}
+
+.settings-right-panel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+.settings-placeholder button {
+  padding: 12px 24px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.settings-placeholder button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive split layout for wide screens */
+@media (min-width: 900px) {
+  .settings-page {
+    max-width: 100%;
+    margin: 0;
+    padding-bottom: 0;
+  }
+
+  /* When embedded in split layout, hide left panel and show full right panel */
+  .settings-page[data-embedded="true"] {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .settings-page[data-embedded="true"] .settings-container {
+    display: block !important;
+    height: 100% !important;
+  }
+
+  .settings-page[data-embedded="true"] .settings-left-panel {
+    display: none !important;
+  }
+
+  .settings-page[data-embedded="true"] .settings-right-panel {
+    display: block !important;
+    height: 100% !important;
+    width: 100% !important;
+    min-width: unset !important;
+    overflow: auto;
+    /* Hide scrollbars */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow-x: hidden;
+  }
+
+  .settings-page[data-embedded="true"]
+    .settings-right-panel::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .settings-container {
+    display: grid;
+    height: 100vh;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .settings-left-panel {
+    border-right: 1px solid var(--border-color);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 320px;
+    max-width: 650px;
+    padding-bottom: 0;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .settings-left-panel::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .settings-left-panel:hover::after {
+    opacity: 1;
+  }
+
+  .settings-left-panel::after {
+    content: "";
+    position: absolute;
+    right: -2px;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .settings-left-panel::after:hover {
+    background: var(--accent-color);
+    opacity: 1 !important;
+  }
+
+  .settings-menu {
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 20px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow-x: hidden;
+  }
+
+  .settings-menu::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .settings-right-panel {
+    display: block;
+    height: 100vh;
+    overflow: auto;
+    background: var(--background-color);
+    flex: 1;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow-x: hidden;
+  }
+
+  .settings-right-panel::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Selected setting item styling */
+  .setting-item.selected {
+    background: var(--card-background);
+    border-left: 4px solid var(--accent-color);
+    padding-left: 16px;
+  }
+
+  .setting-item.selected h3 {
+    color: var(--accent-color);
+  }
+
+  /* Hide BottomTabBar on wide screens in left panel */
+  .settings-left-panel .bottom-tab-bar {
+    display: flex !important;
+    position: static;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color);
+    flex-direction: row;
+    background: var(--card-background);
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 15px;
+    border-radius: 40px;
+  }
+
+  .bottom-tab-bar {
+    max-width: 80%;
+    margin: auto !important;
+    margin-bottom: 15px !important;
+  }
+
+  .settings-left-panel .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+  }
+}
+
+/* Global scrollbar hiding for all child elements */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
