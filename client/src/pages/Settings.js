@@ -20,6 +20,7 @@ import Profile from "./Profile";
 import Appearance from "./Appearance";
 import BlockedUsers from "./BlockedUsers";
 import NotificationSettings from "./NotificationSettings";
+import Language from "./Language";
 import { unsubscribeFromPushNotifications } from "../utils/notification.utils";
 import {
   getSidebarWidth,
@@ -123,8 +124,9 @@ const Settings = ({ isEmbedded = false }) => {
           id: "language",
           icon: Languages,
           label: "Language",
-          action: () => alert("Language settings - Connect to backend"),
-          description: "Change app language",
+          path: "/language",
+          description: "Translation language settings",
+          component: Language,
         },
       ],
     },

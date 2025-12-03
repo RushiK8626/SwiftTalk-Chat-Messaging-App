@@ -352,7 +352,7 @@ const ChatHome = () => {
           let unreadCount = prevChats[chatIndex].unread_count || 0;
           if (
             message.sender_id !== userId &&
-            selectedChatId !== message.chat_id
+            parseInt(selectedChatId) !== parseInt(message.chat_id)
           ) {
             unreadCount += 1;
           }
@@ -558,7 +558,7 @@ const ChatHome = () => {
       setChats((prevChats) => prevChats.filter((c) => c.chat_id !== chat_id));
 
       // If the removed chat was selected, deselect it
-      if (selectedChatId === chat_id) {
+      if (parseInt(selectedChatId) === parseInt(chat_id)) {
         setSelectedChatId(null);
       }
 
@@ -874,7 +874,7 @@ const ChatHome = () => {
         );
 
         // If the deleted chat was selected, deselect it
-        if (selectedChatId === chatId) {
+        if (parseInt(selectedChatId) === parseInt(chatId)) {
           setSelectedChatId(null);
         }
       }
@@ -917,7 +917,7 @@ const ChatHome = () => {
         );
 
         // If the exited chat was selected, deselect it
-        if (selectedChatId === selectedChatForMenu.chat_id) {
+        if (parseInt(selectedChatId) === parseInt(selectedChatForMenu.chat_id)) {
           setSelectedChatId(null);
         }
       }
@@ -1516,7 +1516,7 @@ const ChatHome = () => {
                       <div
                         key={chat.chat_id}
                         className={`chat-item ${
-                          selectedChatId === chat.chat_id ? "selected" : ""
+                          parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
                         } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
                         onClick={() => {
                           if (chatSelection) {

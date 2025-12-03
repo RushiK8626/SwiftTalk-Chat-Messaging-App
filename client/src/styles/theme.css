@@ -22,6 +22,7 @@
   --shadow: rgba(0, 0, 0, 0.1);
   --modal-overlay: rgba(0, 0, 0, 0.5);
   --avatar-bg: #e5e7eb;
+  --sender-name-color: #1976d2;
 }
 
 /* Dark Mode (Pitch Black) */
@@ -48,6 +49,7 @@
   --shadow: rgba(255, 255, 255, 0.05);
   --modal-overlay: rgba(0, 0, 0, 0.8);
   --avatar-bg: #353945;
+  --sender-name-color: #64b5f6;
 }
 
 /* Ensure theme applies correctly to body and html */

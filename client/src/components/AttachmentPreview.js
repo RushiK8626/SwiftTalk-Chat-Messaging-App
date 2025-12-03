@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getFileLogo, isImageFile, formatFileSize } from "../utils/fileLogos";
 import "./AttachmentPreview.css";
 
-const AttachmentPreview = ({ attachment }) => {
+const AttachmentPreview = ({ attachment, isUploading = false, uploadProgress = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [blobUrl, setBlobUrl] = useState(null);
   const [blobSize, setBlobSize] = useState(null);
@@ -195,6 +195,43 @@ const AttachmentPreview = ({ attachment }) => {
       <div className="attachment-preview loading">Loading attachment…</div>
     );
 
+  // Show uploading state with progress bar
+  if (isUploading) {
+    const fileSize = attachment.file_size || attachment.fileSize || 0;
+    return (
+      <div className="attachment-preview uploading">
+        <div className="attachment-logo-wrapper">
+          <img
+            src={getFileLogo(displayFilename, attachment.file_type || attachment.fileType)}
+            alt={displayFilename}
+            className="attachment-logo"
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
+          />
+        </div>
+        <div className="attachment-info">
+          <div className="attachment-name">{displayFilename}</div>
+          <div className="attachment-size">{formatFileSize(fileSize)}</div>
+          <div className="attachment-upload-progress">
+            <div className="upload-progress-bar-container">
+              <div 
+                className="upload-progress-bar-fill" 
+                style={{ width: `${Math.min(100, uploadProgress)}%` }}
+              />
+            </div>
+            <span className="upload-progress-text">
+              {uploadProgress < 100 
+                ? `Uploading... ${Math.round(uploadProgress)}%`
+                : 'Processing...'
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!blobUrl)
     return (
       <div className="attachment-preview error">
@@ -210,7 +247,12 @@ const AttachmentPreview = ({ attachment }) => {
         </div>
         <div className="attachment-info">
           <div className="attachment-name">{displayFilename}</div>
-          <div className="attachment-size">Unknown size</div>
+          <div className="attachment-size">
+            {attachment.file_size || attachment.fileSize 
+              ? formatFileSize(attachment.file_size || attachment.fileSize)
+              : "Unknown size"
+            }
+          </div>
           <div className="attachment-actions">
             <button
               onClick={handleOpen}

@@ -53,10 +53,12 @@ import socketService from "../utils/socket";
 import { getFileLogo, isImageFile, formatFileSize } from "../utils/fileLogos";
 import {
   blockUser,
+  unblockUser,
   isUserBlocked,
   checkBlockStatus,
 } from "../utils/blockingService";
 import EmojiPicker from "../components/EmojiPicker";
+import { translateText } from "../utils/aiClient";
 import "./ChatWindow.css";
 
 const ChatWindow = ({
@@ -84,6 +86,7 @@ const ChatWindow = ({
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingMessages, setUploadingMessages] = useState({}); // Track upload progress per message tempId
   const { toasts, showError, showSuccess, removeToast } = useToast();
 
   // Message context menu hook
@@ -134,6 +137,7 @@ const ChatWindow = ({
   const [showSummary, setShowSummary] = useState(false);
   const [showConversationStarters, setShowConversationStarters] =
     useState(false);
+  const [messageTranslations, setMessageTranslations] = useState({}); // {message_id: {text: string, lang: string, loading: boolean}}
   const [addMemberResults, setAddMemberResults] = useState([]);
   const [addMemberLoading, setAddMemberLoading] = useState(false);
   const [selectedUserToAdd, setSelectedUserToAdd] = useState(null);
@@ -777,12 +781,45 @@ const ChatWindow = ({
     const handleFileUploadProgress = (progressData) => {
       const { progress, tempId } = progressData;
       setUploadProgress(progress);
+      if (tempId) {
+        setUploadingMessages(prev => ({
+          ...prev,
+          [tempId]: { ...prev[tempId], progress }
+        }));
+      }
     };
 
     // Listen for file upload success from server
     const handleFileUploadSuccess = (messageData) => {
-      // The new_message listener will handle adding the persisted message
-      // This event confirms the file was saved to database
+      const { tempId } = messageData;
+      
+      // Clear uploading state for this message
+      if (tempId) {
+        setUploadingMessages(prev => {
+          const newState = { ...prev };
+          delete newState[tempId];
+          
+          // Reset global upload state if no more uploads pending
+          if (Object.keys(newState).length === 0) {
+            setUploading(false);
+            setUploadProgress(0);
+          }
+          
+          return newState;
+        });
+        
+        // Update the optimistic message to mark it as no longer uploading
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg.tempId === tempId 
+              ? { ...msg, isUploading: false }
+              : msg
+          )
+        );
+      }
+      
+      // Show success toast
+      showSuccess("File uploaded successfully!");
     };
 
     // Listen for message status updates (delivered/read)
@@ -1117,9 +1154,58 @@ const ChatWindow = ({
     }
   };
 
+  // Handle inline translation of a message
+  const handleTranslateMessage = async (message, targetLanguage) => {
+    if (!message?.message_text) return;
+    
+    const messageId = message.message_id;
+    
+    // Set loading state
+    setMessageTranslations(prev => ({
+      ...prev,
+      [messageId]: { text: '', lang: targetLanguage, loading: true }
+    }));
+    
+    try {
+      const result = await translateText(message.message_text, targetLanguage);
+      const translatedText = result.translatedText || result.translated_text || '';
+      
+      setMessageTranslations(prev => ({
+        ...prev,
+        [messageId]: { text: translatedText, lang: targetLanguage, loading: false }
+      }));
+    } catch (error) {
+      console.error('Translation error:', error);
+      showError('Translation failed. Please try again.');
+      // Remove the translation entry on error
+      setMessageTranslations(prev => {
+        const newTranslations = { ...prev };
+        delete newTranslations[messageId];
+        return newTranslations;
+      });
+    }
+  };
+
+  // Clear translation for a message (show original)
+  const handleShowOriginal = (messageId) => {
+    setMessageTranslations(prev => {
+      const newTranslations = { ...prev };
+      delete newTranslations[messageId];
+      return newTranslations;
+    });
+  };
+
+  // Get default translation language from settings
+  const getDefaultTranslationLanguage = () => {
+    return localStorage.getItem("defaultTranslationLanguage") || "en";
+  };
+
   // Get context menu items based on message ownership
   const getMessageContextMenuItems = (message) => {
     const isOwn = message?.sender_id === userId;
+    const hasTranslation = messageTranslations[message?.message_id];
+    const defaultLang = getDefaultTranslationLanguage();
+    
     const items = [
       {
         id: "select",
@@ -1134,16 +1220,44 @@ const ChatWindow = ({
         onClick: handleCopyMessage,
         disabled: !message?.message_text,
       },
-      {
-        id: "translate",
-        label: "Translate",
+    ];
+
+    // Add translation options based on whether message already has translation
+    if (hasTranslation) {
+      items.push({
+        id: "show-original",
+        label: "Show Original",
+        icon: <Languages size={16} />,
+        onClick: () => {
+          handleShowOriginal(message.message_id);
+          messageContextMenu.closeMenu();
+        },
+      });
+    } else {
+      items.push({
+        id: "translate-default",
+        label: `Translate (${defaultLang.toUpperCase()})`,
+        icon: <Languages size={16} />,
+        onClick: () => {
+          handleTranslateMessage(message, defaultLang);
+          messageContextMenu.closeMenu();
+        },
+        disabled: !message?.message_text,
+      });
+      items.push({
+        id: "translate-to",
+        label: "Translate to...",
         icon: <Languages size={16} />,
         onClick: () => {
           setTranslateMessage(message);
           setShowTranslator(true);
+          messageContextMenu.closeMenu();
         },
         disabled: !message?.message_text,
-      },
+      });
+    }
+
+    items.push(
       {
         id: "reply",
         label: "Reply",
@@ -1162,8 +1276,8 @@ const ChatWindow = ({
         icon: <Trash2 size={16} />,
         color: "danger",
         onClick: handleDeleteMessage,
-      },
-    ];
+      }
+    );
 
     // Only show delete for all option for own messages or admins
     if (isOwn || chatInfo.is_admin) {
@@ -1270,6 +1384,28 @@ const ChatWindow = ({
       } catch (err) {
         console.error("Error blocking user:", err);
         showError("Failed to block user");
+      }
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (chatInfo.chat_type !== "private") return;
+
+    const otherUserId = chatInfo.otherUserId;
+    if (!otherUserId) return;
+
+    if (
+      window.confirm(
+        "Are you sure you want to unblock this user? They will be able to send you messages again."
+      )
+    ) {
+      try {
+        await unblockUser(otherUserId);
+        showSuccess("User unblocked successfully");
+        setIsBlocked(false);
+      } catch (err) {
+        console.error("Error unblocking user:", err);
+        showError("Failed to unblock user");
       }
     }
   };
@@ -1533,21 +1669,33 @@ const ChatWindow = ({
     ];
 
     if (chatInfo.chat_type === "private") {
-      items.push(
-        {
-          id: "view-contact",
-          label: "View Contact",
-          icon: <UserCheck size={16} />,
-          onClick: handleViewContactOrGroupInfo,
-        },
-        {
+      items.push({
+        id: "view-contact",
+        label: "View Contact",
+        icon: <UserCheck size={16} />,
+        onClick: handleViewContactOrGroupInfo,
+      });
+      
+      // Show Block or Unblock based on current status
+      if (isBlocked && !isBlockedByOther) {
+        // User has blocked the other person - show unblock option
+        items.push({
+          id: "unblock",
+          label: "Unblock User",
+          icon: <Ban size={16} />,
+          color: "success",
+          onClick: handleUnblockUser,
+        });
+      } else if (!isBlocked) {
+        // Not blocked - show block option
+        items.push({
           id: "block",
           label: "Block User",
           icon: <Ban size={16} />,
           color: "danger",
           onClick: handleBlockUser,
-        }
-      );
+        });
+      }
     } else if (chatInfo.chat_type === "group") {
       items.push({
         id: "view-info",
@@ -1642,25 +1790,23 @@ const ChatWindow = ({
         .toString(36)
         .substr(2, 9)}`;
 
+      // Initialize upload progress tracking for this message
+      setUploadingMessages(prev => ({
+        ...prev,
+        [tempId]: { progress: 0, fileName: selectedFile.name, fileSize: selectedFile.size }
+      }));
+
       // Convert file to base64
       const reader = new FileReader();
       reader.onload = () => {
         const base64File = reader.result.split(",")[1]; // Get only the base64 part
 
-        // Simulate progress updates with chunks
-        const chunkSize = 1024 * 50; // 50KB chunks for progress updates
-        let uploaded = 0;
-
-        // Simulate progress updates
-        const progressInterval = setInterval(() => {
-          const progress = Math.min(100, (uploaded / selectedFile.size) * 100);
-          setUploadProgress(progress);
-          uploaded += chunkSize;
-
-          if (progress >= 100) {
-            clearInterval(progressInterval);
-          }
-        }, 150);
+        // Update progress to show file read is complete (10%)
+        setUploadingMessages(prev => ({
+          ...prev,
+          [tempId]: { ...prev[tempId], progress: 10 }
+        }));
+        setUploadProgress(10);
 
         // Prepare file message data
         const fileMessageData = {
@@ -1673,11 +1819,12 @@ const ChatWindow = ({
           tempId: tempId,
         };
 
-        // Add optimistic message to UI immediately
+        // Add optimistic message to UI immediately with uploading flag
         const optimisticMessage = {
           message_id: tempId,
           tempId: tempId,
           isOptimistic: true,
+          isUploading: true,
           sender_id: userId,
           message_text: fileMessageData.message_text,
           chat_id: parseInt(chatId),
@@ -1701,23 +1848,34 @@ const ChatWindow = ({
 
         setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
 
-        // Send via WebSocket
-        socketService.sendFileMessage(fileMessageData);
+        // Progress callback for upload tracking
+        const onProgress = (progress) => {
+          // Scale progress: 10% is file read, 10-100% is upload
+          const scaledProgress = 10 + (progress * 0.9);
+          setUploadingMessages(prev => ({
+            ...prev,
+            [tempId]: { ...prev[tempId], progress: scaledProgress }
+          }));
+          setUploadProgress(scaledProgress);
+        };
 
-        // Clear states after sending
+        // Send via WebSocket with progress callback
+        socketService.sendFileMessage(fileMessageData, onProgress);
+
+        // Clear input states after sending (but keep uploading state until complete)
         setSelectedFile(null);
         setShowFilePreview(false);
         setMessageText("");
-        setUploading(false);
-        setUploadProgress(0);
-
-        // Show success toast
-        showSuccess("File sent successfully!");
       };
 
       reader.onerror = () => {
         setUploading(false);
         setUploadProgress(0);
+        setUploadingMessages(prev => {
+          const newState = { ...prev };
+          delete newState[tempId];
+          return newState;
+        });
         throw new Error("Failed to read file");
       };
 
@@ -2065,7 +2223,7 @@ const ChatWindow = ({
       )}
 
       <SimpleBar
-        style={{ height: messagesHeight, width: "100%" }}
+        style={{ flex: 1, minHeight: 0, width: "100%" }}
         autoHide={false}
       >
         <div className="messages-container">
@@ -2171,6 +2329,8 @@ const ChatWindow = ({
                                       idx) + idx
                                   }
                                   attachment={att}
+                                  isUploading={message.isUploading && !att.file_url}
+                                  uploadProgress={uploadingMessages[message.tempId]?.progress || 0}
                                 />
                               ))}
                             </div>
@@ -2222,6 +2382,36 @@ const ChatWindow = ({
                                   )
                                 : message.message_text}
                             </p>
+                            {/* Inline Translation */}
+                            {messageTranslations[message.message_id] && (
+                              <div className="message-translation">
+                                {messageTranslations[message.message_id].loading ? (
+                                  <div className="translation-loading">
+                                    <Loader size={14} className="spinning" />
+                                    <span>Translating...</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="translation-header">
+                                      <Languages size={12} />
+                                      <span>Translated to {messageTranslations[message.message_id].lang.toUpperCase()}</span>
+                                      <button 
+                                        className="show-original-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleShowOriginal(message.message_id);
+                                        }}
+                                      >
+                                        Hide
+                                      </button>
+                                    </div>
+                                    <p className="translation-text">
+                                      {messageTranslations[message.message_id].text}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            )}
                             <div className="message-meta">
                               <span className="message-time">
                                 {formatMessageTime(message.created_at)}
@@ -2355,7 +2545,7 @@ const ChatWindow = ({
                               style={{
                                 fontSize: 13,
                                 fontWeight: 500,
-                                color: "#555",
+                                color: "var(--sender-name-color, #1976d2)",
                                 marginBottom: 2,
                                 cursor: "pointer",
                               }}
@@ -2413,6 +2603,36 @@ const ChatWindow = ({
                               ? highlightText(message.message_text, searchQuery)
                               : message.message_text}
                           </p>
+                          {/* Inline Translation */}
+                          {messageTranslations[message.message_id] && (
+                            <div className="message-translation">
+                              {messageTranslations[message.message_id].loading ? (
+                                <div className="translation-loading">
+                                  <Loader size={14} className="spinning" />
+                                  <span>Translating...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="translation-header">
+                                    <Languages size={12} />
+                                    <span>Translated to {messageTranslations[message.message_id].lang.toUpperCase()}</span>
+                                    <button 
+                                      className="show-original-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShowOriginal(message.message_id);
+                                      }}
+                                    >
+                                      Hide
+                                    </button>
+                                  </div>
+                                  <p className="translation-text">
+                                    {messageTranslations[message.message_id].text}
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )}
                           <div className="message-meta">
                             <span className="message-time">
                               {formatMessageTime(message.created_at)}
@@ -2887,9 +3107,16 @@ const ChatWindow = ({
       {showTranslator && translateMessage && (
         <MessageTranslator
           messageText={translateMessage.message_text}
+          messageId={translateMessage.message_id}
           onClose={() => {
             setShowTranslator(false);
             setTranslateMessage(null);
+          }}
+          onTranslate={(msgId, translatedText, lang) => {
+            setMessageTranslations(prev => ({
+              ...prev,
+              [msgId]: { text: translatedText, lang: lang, loading: false }
+            }));
           }}
         />
       )}

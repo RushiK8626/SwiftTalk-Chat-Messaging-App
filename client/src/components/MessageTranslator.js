@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Languages, Loader, X } from "lucide-react";
-import { translateText, detectLanguage } from "../utils/aiClient";
+import { translateText } from "../utils/aiClient";
 import "./MessageTranslator.css";
 
 const LANGUAGES = [
@@ -15,35 +15,32 @@ const LANGUAGES = [
   { code: "zh", name: "Chinese", flag: "🇨🇳" },
   { code: "ar", name: "Arabic", flag: "🇸🇦" },
   { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "mr", name: "Marathi", flag: "🇮🇳" },
   { code: "en", name: "English", flag: "🇺🇸" },
 ];
 
-const MessageTranslator = ({ messageText, onClose }) => {
-  const [translatedText, setTranslatedText] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("es");
+const MessageTranslator = ({ messageText, messageId, onClose, onTranslate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [detectedLanguage, setDetectedLanguage] = useState(null);
-  const [showLanguageList, setShowLanguageList] = useState(false);
 
   const handleTranslate = async (targetLang) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Detect source language first
-      const detection = await detectLanguage(messageText);
-      setDetectedLanguage(detection.languageCode);
-
-      // Then translate
+      // Translate
       const result = await translateText(messageText, targetLang);
-      setTranslatedText(result.translatedText || result.translated_text || "");
-      setSelectedLanguage(targetLang);
-      setShowLanguageList(false);
+      const translated = result.translatedText || result.translated_text || "";
+      
+      // Call callback to apply inline translation
+      if (onTranslate && messageId) {
+        onTranslate(messageId, translated, targetLang);
+      }
+      
+      onClose();
     } catch (err) {
       console.error("Translation error:", err);
       setError("Translation failed. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -62,7 +59,7 @@ const MessageTranslator = ({ messageText, onClose }) => {
         <div className="translator-header">
           <div className="translator-title">
             <Languages size={20} />
-            <span>Translate Message</span>
+            <span>Translate to...</span>
           </div>
           <button className="translator-close-btn" onClick={onClose}>
             <X size={20} />
@@ -70,49 +67,31 @@ const MessageTranslator = ({ messageText, onClose }) => {
         </div>
 
         <div className="translator-content">
-          {/* Original Text */}
+          {/* Original Text Preview */}
           <div className="translator-section">
-            <div className="translator-section-label">
-              Original{" "}
-              {detectedLanguage && `(${getLanguageName(detectedLanguage)})`}
-            </div>
+            <div className="translator-section-label">Original Message</div>
             <div className="translator-text-box original">{messageText}</div>
           </div>
 
-          {/* Language Selector */}
-          <div className="translator-language-selector">
-            <button
-              className="language-selector-btn"
-              onClick={() => setShowLanguageList(!showLanguageList)}
-              disabled={loading}
-            >
-              <span>Translate to: {getLanguageName(selectedLanguage)}</span>
-              <span
-                className={`dropdown-arrow ${showLanguageList ? "open" : ""}`}
-              >
-                ▼
-              </span>
-            </button>
-
-            {showLanguageList && (
-              <div className="language-list">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    className={`language-option ${
-                      selectedLanguage === lang.code ? "selected" : ""
-                    }`}
-                    onClick={() => handleTranslate(lang.code)}
-                  >
-                    <span className="language-flag">{lang.flag}</span>
-                    <span className="language-name">{lang.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Language Selection */}
+          <div className="translator-section">
+            <div className="translator-section-label">Select Language</div>
+            <div className="language-grid">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  className="language-grid-option"
+                  onClick={() => handleTranslate(lang.code)}
+                  disabled={loading}
+                >
+                  <span className="language-flag">{lang.flag}</span>
+                  <span className="language-name">{lang.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Translated Text */}
+          {/* Loading State */}
           {loading && (
             <div className="translator-loading">
               <Loader size={24} className="spinning" />
@@ -120,18 +99,8 @@ const MessageTranslator = ({ messageText, onClose }) => {
             </div>
           )}
 
+          {/* Error State */}
           {error && <div className="translator-error">{error}</div>}
-
-          {!loading && !error && translatedText && (
-            <div className="translator-section">
-              <div className="translator-section-label">
-                Translation ({getLanguageName(selectedLanguage)})
-              </div>
-              <div className="translator-text-box translated">
-                {translatedText}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

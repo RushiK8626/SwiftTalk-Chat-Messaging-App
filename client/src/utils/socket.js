@@ -20,6 +20,7 @@ class SocketService {
     this.socket = null;
     this.isConnected = false;
     this.userId = null;
+    this.uploadProgressCallbacks = new Map(); // Track upload progress callbacks per tempId
   }
 
   connect(userId) {
@@ -130,7 +131,7 @@ class SocketService {
   }
 
   // Send a message with file attachment via WebSocket using chunking for large files
-  sendFileMessage(fileMessageData) {
+  sendFileMessage(fileMessageData, onProgress) {
     if (this.socket && this.isConnected) {
       const {
         fileBuffer,
@@ -142,20 +143,36 @@ class SocketService {
         tempId,
       } = fileMessageData;
 
-      // Check if file is too large for single message (>20MB), use chunking
-      const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB chunks
+      // Store progress callback for this upload
+      if (onProgress && tempId) {
+        this.uploadProgressCallbacks.set(tempId, onProgress);
+      }
 
-      if (fileBuffer && fileBuffer.length > CHUNK_SIZE) {
-        this._sendFileMessageInChunks(fileMessageData);
+      // Check if file is too large for single message (>3MB after base64 encoding ~4MB)
+      // Use chunking for files larger than 3MB to avoid WebSocket buffer limits
+      const CHUNK_THRESHOLD = 3 * 1024 * 1024; // 3MB threshold (base64 string length)
+
+      if (fileBuffer && fileBuffer.length > CHUNK_THRESHOLD) {
+        this._sendFileMessageInChunks(fileMessageData, onProgress);
       } else {
+        // For small files, report progress immediately
+        if (onProgress) {
+          onProgress(50); // Start at 50% (reading done, sending)
+        }
+        
         // Use acknowledgment to ensure server received and saved the message
         this.socket.emit("send_file_message", fileMessageData, (response) => {
           if (response && response.success) {
+            if (onProgress) {
+              onProgress(100); // Complete
+            }
+            this.uploadProgressCallbacks.delete(tempId);
           } else {
             console.error(
               "❌ Server failed to save file message:",
               response?.error || "Unknown error"
             );
+            this.uploadProgressCallbacks.delete(tempId);
           }
         });
       }
@@ -165,7 +182,7 @@ class SocketService {
   }
 
   // Helper method to send large files in chunks
-  _sendFileMessageInChunks(fileMessageData) {
+  _sendFileMessageInChunks(fileMessageData, onProgress) {
     const {
       fileBuffer,
       chat_id,
@@ -175,60 +192,66 @@ class SocketService {
       message_text,
       tempId,
     } = fileMessageData;
-    const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB chunks
+    
+    // Use 1MB chunks for reliable transmission
+    const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
     const totalChunks = Math.ceil(fileBuffer.length / CHUNK_SIZE);
+    
+    console.log(`📦 Sending file in ${totalChunks} chunks (${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB total)`);
 
-    // Send first chunk with metadata
-    const firstChunk = fileBuffer.substring(0, CHUNK_SIZE);
+    // Send chunks sequentially to avoid overwhelming the socket
+    const sendChunk = (chunkIndex) => {
+      const startIdx = chunkIndex * CHUNK_SIZE;
+      const endIdx = Math.min(startIdx + CHUNK_SIZE, fileBuffer.length);
+      const chunk = fileBuffer.substring(startIdx, endIdx);
+      const isFirstChunk = chunkIndex === 0;
+      const isLastChunk = chunkIndex === totalChunks - 1;
 
-    this.socket.emit(
-      "send_file_message_chunk",
-      {
-        chat_id,
-        fileName,
-        fileSize,
-        fileType,
-        message_text,
+      const chunkPayload = {
         tempId,
-        chunkData: firstChunk,
-        chunkIndex: 0,
+        chunk, // Server expects 'chunk' property
+        chunkIndex,
         totalChunks,
-        isFirstChunk: true,
-        isLastChunk: totalChunks === 1,
-      },
-      (response) => {
-        if (response && response.success) {
-          // Send remaining chunks
-          if (totalChunks > 1) {
-            for (let i = 1; i < totalChunks; i++) {
-              const startIdx = i * CHUNK_SIZE;
-              const endIdx = Math.min(startIdx + CHUNK_SIZE, fileBuffer.length);
-              const chunk = fileBuffer.substring(startIdx, endIdx);
+        isFirstChunk,
+        isLastChunk,
+      };
 
-              this.socket.emit(
-                "send_file_message_chunk",
-                {
-                  tempId,
-                  chunkData: chunk,
-                  chunkIndex: i,
-                  totalChunks,
-                  isFirstChunk: false,
-                  isLastChunk: i === totalChunks - 1,
-                },
-                (chunkResponse) => {
-                  if (chunkResponse && chunkResponse.success) {
-                  } else {
-                    console.error(`Chunk ${i} failed:`, chunkResponse?.error);
-                  }
-                }
-              );
-            }
+      // Include metadata only on first chunk
+      if (isFirstChunk) {
+        chunkPayload.chat_id = chat_id;
+        chunkPayload.fileName = fileName;
+        chunkPayload.fileSize = fileSize;
+        chunkPayload.fileType = fileType;
+        chunkPayload.message_text = message_text;
+      }
+
+      this.socket.emit("send_file_message_chunk", chunkPayload, (response) => {
+        if (response && response.success) {
+          // Calculate and report progress (reserve last 5% for server processing)
+          const progress = Math.min(95, Math.round(((chunkIndex + 1) / totalChunks) * 95));
+          if (onProgress) {
+            onProgress(progress);
+          }
+          
+          console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} sent (${progress}%)`);
+          
+          // Send next chunk if not last
+          if (!isLastChunk) {
+            // Small delay between chunks to prevent overwhelming
+            setTimeout(() => sendChunk(chunkIndex + 1), 50);
+          } else {
+            // Last chunk sent, wait for server confirmation
+            // Progress will be set to 100 when file_upload_success is received
           }
         } else {
-          console.error("First chunk failed:", response?.error);
+          console.error(`❌ Chunk ${chunkIndex + 1} failed:`, response?.error);
+          this.uploadProgressCallbacks.delete(tempId);
         }
-      }
-    );
+      });
+    };
+
+    // Start sending from first chunk
+    sendChunk(0);
   }
 
   // Listen for new messages
@@ -325,8 +348,26 @@ class SocketService {
   // Listen for file upload success
   onFileUploadSuccess(callback) {
     if (this.socket) {
-      this.socket.on("file_upload_success", callback);
+      this.socket.on("file_upload_success", (data) => {
+        // Mark progress as 100% for the completed upload
+        const progressCallback = this.uploadProgressCallbacks.get(data.tempId);
+        if (progressCallback) {
+          progressCallback(100);
+          this.uploadProgressCallbacks.delete(data.tempId);
+        }
+        callback(data);
+      });
     }
+  }
+
+  // Get upload progress callback for a specific tempId
+  getUploadProgressCallback(tempId) {
+    return this.uploadProgressCallbacks.get(tempId);
+  }
+
+  // Clear upload progress callback
+  clearUploadProgressCallback(tempId) {
+    this.uploadProgressCallbacks.delete(tempId);
   }
 
   // Mark message as read

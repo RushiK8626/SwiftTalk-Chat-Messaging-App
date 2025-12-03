@@ -93,8 +93,8 @@ app.use(cors({
 }));
 
 // basic express middleware
-app.use(express.json()); // parse JSON request bodies
-app.use(express.urlencoded({ extended: true })); // parse URL-encoded bodies
+app.use(express.json({ limit: '50mb' })); // parse JSON request bodies with 50MB limit
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // parse URL-encoded bodies with 50MB limit
 
 // simple test route to check if server is running (MUST BE BEFORE STATIC FILES)
 app.get('/', (req, res) => {
