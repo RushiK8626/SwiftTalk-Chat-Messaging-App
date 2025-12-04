@@ -2,18 +2,21 @@
 const isDevelopment = process.env.NODE_ENV === "development";
 const isProduction = process.env.NODE_ENV === "production";
 
+// Production API URL - used as fallback when env var is not set
+const PRODUCTION_API_URL = "https://convohub-api.me";
+
 // You can set these via environment variables
 const config = {
   // API Base URL - prioritize environment variables (remove trailing slashes)
   API_BASE_URL: (
     process.env.REACT_APP_API_URL ||
-    (isDevelopment ? "http://localhost:3001" : "")
+    (isDevelopment ? "http://localhost:3001" : PRODUCTION_API_URL)
   ).replace(/\/+$/, ""),
 
   // Socket URL - prioritize environment variables (remove trailing slashes)
   SOCKET_URL: (
     process.env.REACT_APP_SOCKET_URL ||
-    (isDevelopment ? "http://localhost:3001" : "")
+    (isDevelopment ? "http://localhost:3001" : PRODUCTION_API_URL)
   ).replace(/\/+$/, ""),
 
   // Upload URLs
