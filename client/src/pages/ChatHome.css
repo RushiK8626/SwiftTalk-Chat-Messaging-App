@@ -2,6 +2,7 @@
   max-width: 95%;
   margin: 0 auto;
   height: 100vh;
+  height: 100dvh;
   background: var(--background-color);
   display: flex;
   flex-direction: column;
@@ -461,6 +462,16 @@
   }
 }
 
+/* Wide screens: position the button within left panel */
+@media (min-width: 900px) {
+  .new-chat-btn {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    left: auto;
+  }
+}
+
 .new-chat-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 24px rgba(102, 126, 234, 0.6);
@@ -479,13 +490,15 @@
   .chat-home-container {
     display: grid;
     grid-template-columns: 360px 1fr;
-    height: calc(100vh - 0px);
+    height: 100vh;
+    height: 100dvh;
     position: relative;
   }
 
   .left-panel {
     border-right: 1px solid var(--border-color);
     height: 100vh;
+    height: 100dvh;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -559,6 +572,7 @@
   .right-panel {
     display: block;
     height: 100vh;
+    height: 100dvh;
     overflow: auto;
     background: var(--background-color);
     min-width: 400px;

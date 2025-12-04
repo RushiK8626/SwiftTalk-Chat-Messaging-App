@@ -74,6 +74,7 @@ const ChatWindow = ({
   const isWideScreen = useResponsive();
   const [shouldSendGreeting, setShouldSendGreeting] = useState(false);
   const messagesEndRef = useRef(null);
+  const simpleBarRef = useRef(null);
   const fileInputRef = useRef(null);
   const headerRef = useRef(null);
   const inputContainerRef = useRef(null);
@@ -181,7 +182,8 @@ const ChatWindow = ({
           searchBoxHeight +
           10;
 
-        setMessagesHeight(`calc(100vh - ${totalOffset}px)`);
+        // Use dvh (dynamic viewport height) for mobile browsers, fallback to vh
+        setMessagesHeight(`calc(100dvh - ${totalOffset}px)`);
       });
     };
 
@@ -992,9 +994,30 @@ const ChatWindow = ({
     scrollToBottom();
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // Scroll to bottom with improved reliability using SimpleBar's scroll element
+  const scrollToBottom = useCallback(() => {
+    // Use requestAnimationFrame to ensure DOM has fully rendered
+    requestAnimationFrame(() => {
+      // Try to get SimpleBar's scrollable element
+      const scrollableElement = simpleBarRef.current?.getScrollElement?.();
+      
+      if (scrollableElement) {
+        // Scroll to the absolute bottom of the container
+        scrollableElement.scrollTop = scrollableElement.scrollHeight;
+      } else if (messagesEndRef.current) {
+        // Fallback to scrollIntoView
+        messagesEndRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+      }
+      
+      // Double-check after a short delay for any lazy-loaded content
+      setTimeout(() => {
+        const el = simpleBarRef.current?.getScrollElement?.();
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+      }, 150);
+    });
+  }, []);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -2224,6 +2247,7 @@ const ChatWindow = ({
       )}
 
       <SimpleBar
+        ref={simpleBarRef}
         style={{ flex: 1, minHeight: 0, width: "100%" }}
         autoHide={false}
       >
@@ -2692,7 +2716,7 @@ const ChatWindow = ({
               );
             })
           )}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} style={{ height: '20px', marginTop: '15px' }} />
         </div>
       </SimpleBar>
 

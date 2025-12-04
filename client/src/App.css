@@ -6,6 +6,8 @@
 
 html {
   color-scheme: light;
+  height: 100vh;
+  height: 100dvh;
 }
 
 html[data-theme="dark"] {
@@ -21,14 +23,21 @@ body {
   background-color: var(--background-color);
   color: var(--text-color);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .App {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background-color: var(--background-color);
   color: var(--text-color);
 }

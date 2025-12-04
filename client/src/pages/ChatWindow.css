@@ -2,6 +2,7 @@
   max-width: 95%;
   margin: 0 auto;
   height: 100vh;
+  height: 100dvh;
   background: var(--background-color);
   display: flex;
   flex-direction: column;
@@ -207,6 +208,7 @@
 
 .messages-container {
   padding: 20px;
+  padding-bottom: 30px;
   background: var(--background-color);
   min-height: 100%;
 }

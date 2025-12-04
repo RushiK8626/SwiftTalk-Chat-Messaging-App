@@ -1,5 +1,6 @@
 .settings-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--background-color);
   padding-bottom: 80px;
   display: flex;
@@ -207,6 +208,7 @@
 .settings-container {
   display: block;
   height: 100vh;
+  height: 100dvh;
   /* Hide scrollbars */
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -335,6 +337,7 @@
   .settings-container {
     display: grid;
     height: 100vh;
+    height: 100dvh;
     position: relative;
     width: 100%;
     overflow: hidden;
@@ -343,6 +346,7 @@
   .settings-left-panel {
     border-right: 1px solid var(--border-color);
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -401,6 +405,7 @@
   .settings-right-panel {
     display: block;
     height: 100vh;
+    height: 100dvh;
     overflow: auto;
     background: var(--background-color);
     flex: 1;
