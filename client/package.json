@@ -1,7 +1,6 @@
 {
   "description": "Messaging App",
   "main": "public/main.js",
-  "homepage": "https://rushik8626.github.io/ConvoHub-Chat-Messaging-App",
   "name": "convohub-client",
   "version": "0.1.0",
   "private": true,
@@ -30,8 +29,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "vercel --prod",
     "electron-dev": "electron .",
     "electron:serve": "concurrently -k \"cross-env BROWSER=none npm start\" \"npm run electron:start\"",
     "electron:start": "wait-on http://localhost:3000 && electron .",
@@ -61,10 +59,11 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^39.2.1",
-    "electron-builder": "^26.0.12",
-    "gh-pages": "^6.3.0",
     "wait-on": "^9.0.3"
+  },
+  "optionalDependencies": {
+    "electron": "^39.2.1",
+    "electron-builder": "^26.0.12"
   },
   "build": {
     "extends": null,
