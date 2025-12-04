@@ -1,7 +1,7 @@
 {
   "description": "Messaging App",
   "main": "public/main.js",
-  "homepage": "https://rushik8626.github.io/Chat-Messaging-App-Server",
+  "homepage": "https://rushik8626.github.io/ConvoHub-Chat-Messaging-App",
   "name": "convohub-client",
   "version": "0.1.0",
   "private": true,
