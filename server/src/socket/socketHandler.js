@@ -182,6 +182,17 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       tempId // Include temp ID for client matching
     });
 
+    // Also emit to each member's personal room to ensure delivery
+    // This is critical for new chats where users may not have joined the chat room yet
+    chatMembers.forEach(member => {
+      if (member.user_id !== sender_id) {
+        io.to(`user_${member.user_id}`).emit('new_message', {
+          ...completeMessage,
+          tempId
+        });
+      }
+    });
+
     // Cache the file message
     cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(err => {
       console.error('Failed to cache file message:', err.message);
@@ -675,6 +686,17 @@ const initializeSocket = (io) => {
         io.to(`chat_${chat_id}`).emit('new_message', {
           ...completeMessage,
           tempId: messageData.tempId // Send back temp ID for client matching
+        });
+
+        // Also emit to each member's personal room to ensure delivery
+        // This is critical for new chats where users may not have joined the chat room yet
+        chatMembers.forEach(member => {
+          if (member.user_id !== parseInt(sender_id)) {
+            io.to(`user_${member.user_id}`).emit('new_message', {
+              ...completeMessage,
+              tempId: messageData.tempId
+            });
+          }
         });
 
         // Cache the message for faster retrieval
