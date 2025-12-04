@@ -447,13 +447,18 @@
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
   transition: all 0.3s ease;
-  /* z-index: 100; */
-
-  position: absolute;
+  position: fixed;
   bottom: 100px;
   right: 20px;
   left: auto;
   z-index: 101;
+}
+
+/* Mobile: adjust new chat button position to account for shifted bottom tab bar */
+@media (max-width: 899px) {
+  .new-chat-btn {
+    bottom: 110px;
+  }
 }
 
 .new-chat-btn:hover {
