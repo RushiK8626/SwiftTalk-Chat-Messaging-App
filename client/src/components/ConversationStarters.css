@@ -41,7 +41,14 @@
   color: var(--accent-color);
 }
 
-.starters-refresh-btn {
+.starters-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.starters-refresh-btn,
+.starters-close-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +62,8 @@
   transition: all 0.2s ease;
 }
 
-.starters-refresh-btn:hover:not(:disabled) {
+.starters-refresh-btn:hover:not(:disabled),
+.starters-close-btn:hover {
   background: var(--primary-light);
   transform: scale(1.1);
 }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Loader, RefreshCw } from "lucide-react";
+import { MessageSquare, Loader, RefreshCw, X } from "lucide-react";
 import { getConversationStarters } from "../utils/aiClient";
 import "./ConversationStarters.css";
 
 const ConversationStarters = ({
   chatId,
   onSelectStarter,
+  onClose,
   disabled = false,
 }) => {
   const [starters, setStarters] = useState([]);
@@ -76,14 +77,25 @@ const ConversationStarters = ({
           <MessageSquare size={16} />
           <span>Start a conversation</span>
         </div>
-        <button
-          className="starters-refresh-btn"
-          onClick={fetchStarters}
-          disabled={loading}
-          title="Refresh suggestions"
-        >
-          <RefreshCw size={16} className={loading ? "spinning" : ""} />
-        </button>
+        <div className="starters-actions">
+          <button
+            className="starters-refresh-btn"
+            onClick={fetchStarters}
+            disabled={loading}
+            title="Refresh suggestions"
+          >
+            <RefreshCw size={16} className={loading ? "spinning" : ""} />
+          </button>
+          {onClose && (
+            <button
+              className="starters-close-btn"
+              onClick={onClose}
+              title="Close"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="starters-grid">

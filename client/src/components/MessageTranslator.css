@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--modal-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +25,7 @@
 }
 
 .message-translator-container {
-  background: white;
+  background: var(--card-background);
   border-radius: 16px;
   width: 100%;
   max-width: 600px;
@@ -33,7 +33,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px var(--shadow);
   animation: slideUp 0.3s ease;
 }
 
@@ -53,7 +53,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .translator-title {
@@ -62,11 +62,11 @@
   gap: 10px;
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--text-color);
 }
 
 .translator-title svg {
-  color: var(--primary-color, #007bff);
+  color: var(--accent-color);
 }
 
 .translator-close-btn {
@@ -79,13 +79,13 @@
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   transition: all 0.2s ease;
 }
 
 .translator-close-btn:hover {
-  background: var(--hover-bg, #f0f0f0);
-  color: var(--text-primary, #333);
+  background: var(--hover-background);
+  color: var(--text-color);
 }
 
 .translator-content {
@@ -101,7 +101,7 @@
 .translator-section-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -117,15 +117,15 @@
 }
 
 .translator-text-box.original {
-  background: var(--message-bg, #f8f9fa);
-  color: var(--text-primary, #333);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--message-received-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
 
 .translator-text-box.translated {
-  background: var(--primary-light, #e7f3ff);
-  color: var(--text-primary, #333);
-  border: 1px solid var(--primary-color, #007bff);
+  background: var(--primary-light);
+  color: var(--text-color);
+  border: 1px solid var(--accent-color);
 }
 
 .translator-language-selector {
@@ -136,12 +136,12 @@
 .language-selector-btn {
   width: 100%;
   padding: 14px 16px;
-  background: white;
-  border: 2px solid var(--primary-color, #007bff);
+  background: var(--card-background);
+  border: 2px solid var(--accent-color);
   border-radius: 10px;
   font-size: 15px;
   font-weight: 500;
-  color: var(--primary-color, #007bff);
+  color: var(--accent-color);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -150,7 +150,7 @@
 }
 
 .language-selector-btn:hover:not(:disabled) {
-  background: var(--primary-light, #e7f3ff);
+  background: var(--primary-light);
 }
 
 .language-selector-btn:disabled {
@@ -172,10 +172,10 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px var(--shadow);
   max-height: 300px;
   overflow-y: auto;
   z-index: 10;
@@ -204,15 +204,16 @@
   cursor: pointer;
   transition: background 0.2s ease;
   text-align: left;
+  color: var(--text-color);
 }
 
 .language-option:hover {
-  background: var(--hover-bg, #f8f9fa);
+  background: var(--hover-background);
 }
 
 .language-option.selected {
-  background: var(--primary-light, #e7f3ff);
-  color: var(--primary-color, #007bff);
+  background: var(--primary-light);
+  color: var(--accent-color);
   font-weight: 600;
 }
 
@@ -237,7 +238,7 @@
   align-items: center;
   gap: 6px;
   padding: 14px 10px;
-  background: var(--message-bg, #f8f9fa);
+  background: var(--message-received-bg);
   border: 2px solid transparent;
   border-radius: 12px;
   cursor: pointer;
@@ -245,8 +246,8 @@
 }
 
 .language-grid-option:hover:not(:disabled) {
-  background: var(--primary-light, #e7f3ff);
-  border-color: var(--primary-color, #007bff);
+  background: var(--primary-light);
+  border-color: var(--accent-color);
 }
 
 .language-grid-option:disabled {
@@ -261,7 +262,7 @@
 .language-grid-option .language-name {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-primary, #333);
+  color: var(--text-color);
   text-align: center;
 }
 
@@ -272,13 +273,13 @@
   justify-content: center;
   padding: 40px;
   gap: 12px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .translator-error {
   padding: 16px;
-  background: var(--error-light, #ffe0e0);
-  color: var(--error-color, #dc3545);
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
   border-radius: 10px;
   text-align: center;
   font-size: 14px;
@@ -294,45 +295,6 @@
   }
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .message-translator-container {
-    background: var(--bg-dark, #1a1a1a);
-  }
-
-  .translator-header {
-    border-bottom-color: var(--border-color-dark, #333);
-  }
-
-  .translator-title {
-    color: var(--text-primary-dark, #e0e0e0);
-  }
-
-  .translator-text-box.original {
-    background: var(--message-bg-dark, #2a2a2a);
-    color: var(--text-primary-dark, #e0e0e0);
-    border-color: var(--border-color-dark, #444);
-  }
-
-  .translator-text-box.translated {
-    background: rgba(0, 123, 255, 0.1);
-    color: var(--text-primary-dark, #e0e0e0);
-  }
-
-  .language-selector-btn {
-    background: var(--bg-dark, #1a1a1a);
-  }
-
-  .language-list {
-    background: var(--bg-dark, #1a1a1a);
-    border-color: var(--border-color-dark, #444);
-  }
-
-  .language-option:hover {
-    background: var(--hover-bg-dark, #2a2a2a);
   }
 }
 

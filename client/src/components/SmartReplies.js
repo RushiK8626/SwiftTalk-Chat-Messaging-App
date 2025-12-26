@@ -3,11 +3,10 @@ import { Sparkles, Loader, X, RefreshCw } from "lucide-react";
 import { getSmartReplies } from "../utils/aiClient";
 import "./SmartReplies.css";
 
-const SmartReplies = ({ chatId, onSelectReply, disabled = false }) => {
+const SmartReplies = ({ chatId, onSelectReply, onClose, disabled = false }) => {
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [visible, setVisible] = useState(false);
 
   const fetchReplies = async () => {
     if (!chatId) return;
@@ -18,18 +17,16 @@ const SmartReplies = ({ chatId, onSelectReply, disabled = false }) => {
     try {
       const suggestions = await getSmartReplies(chatId, 3);
       setReplies(suggestions);
-      setVisible(true);
     } catch (err) {
       console.error("Failed to fetch smart replies:", err);
       setError("Failed to load suggestions");
-      setVisible(false);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Auto-fetch replies when chat changes
+    // Auto-fetch replies when component mounts or chat changes
     fetchReplies();
     // eslint-disable-next-line
   }, [chatId]);
@@ -37,7 +34,6 @@ const SmartReplies = ({ chatId, onSelectReply, disabled = false }) => {
   const handleSelectReply = (reply) => {
     if (onSelectReply && !disabled) {
       onSelectReply(reply);
-      setVisible(false);
     }
   };
 
@@ -45,26 +41,6 @@ const SmartReplies = ({ chatId, onSelectReply, disabled = false }) => {
     e.stopPropagation();
     fetchReplies();
   };
-
-  const handleClose = () => {
-    setVisible(false);
-  };
-
-  if (!visible && !loading && !error) {
-    return (
-      <button
-        className="smart-replies-trigger"
-        onClick={fetchReplies}
-        disabled={disabled}
-        title="Get smart reply suggestions"
-      >
-        <Sparkles size={18} />
-        <span>Smart Replies</span>
-      </button>
-    );
-  }
-
-  if (!visible) return null;
 
   return (
     <div
@@ -90,7 +66,7 @@ const SmartReplies = ({ chatId, onSelectReply, disabled = false }) => {
           </button>
           <button
             className="smart-replies-action-btn"
-            onClick={handleClose}
+            onClick={onClose}
             title="Close"
           >
             <X size={16} />
