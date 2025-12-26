@@ -9,6 +9,7 @@ export const useContextMenu = () => {
     isOpen: false,
     x: 0,
     y: 0,
+    anchorEl: null,
   });
 
   /**
@@ -84,7 +85,7 @@ export const useContextMenu = () => {
    * Close the context menu
    */
   const closeMenu = useCallback(() => {
-    setMenu({ isOpen: false, x: 0, y: 0 });
+    setMenu({ isOpen: false, x: 0, y: 0, anchorEl: null });
   }, []);
 
   /**
@@ -118,6 +119,7 @@ export const useContextMenu = () => {
     isOpen: menu.isOpen,
     x: menu.x,
     y: menu.y,
+    anchorEl: menu.anchorEl,
 
     // Handlers
     handleContextMenu,

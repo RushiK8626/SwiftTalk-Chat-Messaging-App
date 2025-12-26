@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./ContextMenu.css";
 
 /**
@@ -6,13 +6,48 @@ import "./ContextMenu.css";
  * @param {boolean} isOpen - Whether the menu is visible
  * @param {number} x - X position for the menu
  * @param {number} y - Y position for the menu
+ * @param {HTMLElement} anchorEl - Optional anchor element to position relative to
  * @param {array} items - Array of menu items with structure:
  *        { id, label, icon, onClick, color, divider }
  * @param {function} onClose - Callback when menu should close
  * @param {string} theme - Optional theme class (light/dark)
  */
-const ContextMenu = ({ isOpen, x, y, items, onClose, theme = "light" }) => {
+const ContextMenu = ({ isOpen, x, y, anchorEl, items, onClose, theme = "light" }) => {
   const menuRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  // Calculate position based on anchor element or x/y coordinates
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (anchorEl) {
+      const rect = anchorEl.getBoundingClientRect();
+      const menuWidth = 200;
+      const menuHeight = 300;
+
+      let left = rect.right - menuWidth; // Align right edge of menu with right edge of button
+      let top = rect.bottom + 4; // 4px below the button
+
+      // Adjust if menu would go off left edge
+      if (left < 8) {
+        left = 8;
+      }
+
+      // Adjust if menu would go off right edge
+      if (left + menuWidth > window.innerWidth - 8) {
+        left = window.innerWidth - menuWidth - 8;
+      }
+
+      // Adjust if menu would go off bottom
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - 4; // Position above button instead
+      }
+
+      setMenuPosition({ top, left });
+    } else {
+      setMenuPosition({ top: y, left: x });
+    }
+  }, [isOpen, anchorEl, x, y]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -59,8 +94,8 @@ const ContextMenu = ({ isOpen, x, y, items, onClose, theme = "light" }) => {
         ref={menuRef}
         className={`context-menu ${theme}`}
         style={{
-          top: `${y}px`,
-          left: `${x}px`,
+          top: `${menuPosition.top}px`,
+          left: `${menuPosition.left}px`,
         }}
       >
         {items.map((item, index) => (
