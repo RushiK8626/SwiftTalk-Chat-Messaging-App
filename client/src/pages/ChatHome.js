@@ -14,8 +14,8 @@ import {
   BellOff,
   Archive,
   BookMarkedIcon,
+  Sparkles,
 } from "lucide-react";
-import { Scrollbar } from "react-scrollbars-custom";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
 import BottomTabBar from "../components/BottomTabBar";
@@ -37,6 +37,8 @@ import {
   SIDEBAR_CONFIG,
 } from "../utils/sidebarWidth";
 import { handleSessionExpiry } from "../utils/auth";
+import { AI_ASSISTANT } from '../utils/aiChatService';
+import AIChatWindow from './AIChatWindow';
 import "./ChatHome.css";
 
 const ChatHome = () => {
@@ -75,10 +77,12 @@ const ChatHome = () => {
   const [selectedChatId, setSelectedChatId] = useState(
     () => location.state?.selectedChatId || null
   );
+  
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
     // Get saved width from shared storage or use default
     return getSidebarWidth();
   });
+
   // const [Members, setMembers] = useState(null);
   const containerRef = useRef(null);
   const isResizingRef = useRef(false);
@@ -89,6 +93,7 @@ const ChatHome = () => {
   // Context menu for chats
   const chatContextMenu = useContextMenu();
   const [selectedChatForMenu, setSelectedChatForMenu] = useState(null);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   // Calculate chat list height dynamically
   useEffect(() => {
@@ -185,6 +190,19 @@ const ChatHome = () => {
     } catch (err) {
       console.error("Error fetching chat image:", err);
     }
+  };
+
+  const renderChatList = () => {
+    const aiChat = {
+      chat_id: 'ai-assistant',
+      chat_type: 'ai',
+      chat_name: AI_ASSISTANT.name,
+      isAI: true,
+      last_message: 'Ask me anything!',
+      unread_count: 0,
+    };
+    
+    return [aiChat, ...chats]; // Prepend AI chat
   };
 
   useEffect(() => {
@@ -294,8 +312,24 @@ const ChatHome = () => {
     // eslint-disable-next-line
   }, [chats]);
 
-  const filteredChats = chats.filter((chat) =>
-    (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  // Create AI chat item to prepend to chat list
+  const aiChatItem = {
+    chat_id: 'ai-assistant',
+    chat_type: 'ai',
+    chat_name: AI_ASSISTANT.name,
+    isAI: true,
+    last_message: { preview_text: 'Ask me anything!' },
+    unread_count: 0,
+  };
+
+  // Filter chats including AI chat
+  const filteredChats = [
+    aiChatItem,
+    ...chats.filter((chat) =>
+      (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ].filter((chat) => 
+    chat.isAI || (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Close options menu when clicking outside
@@ -656,12 +690,28 @@ const ChatHome = () => {
     }
   }, [leftPanelWidth]);
 
-  const handleChatClick = (chatId) => {
-    // On small screens, navigate to chat page. On wide screens, open inline.
+  const handleChatClick = (chatOrId) => {
+    // Support both chat object and chat_id
+    const chat = typeof chatOrId === 'object' ? chatOrId : filteredChats.find(c => c.chat_id === chatOrId);
+    const isAI = chat?.isAI || chatOrId === 'ai-assistant';
+    
+    // On small screens, navigate to chat page or show AI modal. On wide screens, open inline.
     if (typeof window !== "undefined" && window.innerWidth < 900) {
-      navigate(`/chat/${chatId}`);
+      if (isAI) {
+        navigate('/ai-chat');
+      } else {
+        navigate(`/chat/${chat?.chat_id || chatOrId}`);
+        setShowAIChat(false);
+      }
     } else {
-      setSelectedChatId(chatId);
+      // Wide screen - show in right panel
+      if (isAI) {
+        setShowAIChat(true);
+        setSelectedChatId(null);
+      } else {
+        setShowAIChat(false);
+        setSelectedChatId(chat?.chat_id || chatOrId);
+      }
     }
   };
 
@@ -1216,7 +1266,16 @@ const ChatHome = () => {
     // ChatWindow will receive the message via socket and display it
   };
 
-  const clearAllSelection = async () => {
+  const clearAllSelection = (e) => {
+    // Don't clear if clicking on interactive elements
+    if (e && e.target && (
+      e.target.closest('.context-menu') ||
+      e.target.closest('.chat-item') ||
+      e.target.closest('.header-actions') ||
+      e.target.closest('.modal-overlay')
+    )) {
+      return;
+    }
     setSelectedChats((prev) =>
       Object.fromEntries(Object.keys(prev).map((key) => [key, false]))
     );
@@ -1473,6 +1532,32 @@ const ChatHome = () => {
                     let otherUserId = null;
                     let chatImage = null;
 
+                    // Handle AI chat item
+                    if (chat.isAI) {
+                      return (
+                        <div
+                          key={chat.chat_id}
+                          className={`chat-item ${showAIChat ? "selected" : ""}`}
+                          onClick={() => handleChatClick(chat)}
+                        >
+                          <div className="chat-avatar ai-chat-avatar">
+                            <Sparkles size={24} color="white" />
+                          </div>
+                          <div className="chat-info">
+                            <div className="chat-header-info">
+                              <h3 className="chat-name">{displayName}</h3>
+                              <span className="ai-badge">AI</span>
+                            </div>
+                            <div className="chat-last-message">
+                              <p className="last-message">
+                                {chat.last_message?.preview_text || "Ask me anything!"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     if (
                       chat.chat_type === "private" &&
                       Array.isArray(chat.members)
@@ -1522,8 +1607,9 @@ const ChatHome = () => {
                         className={`chat-item ${
                           parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
                         } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
-                        onClick={() => {
+                        onClick={(e) => {
                           if (chatSelection) {
+                            e.stopPropagation();
                             handleChatsSelection(chat.chat_id);
                           } else handleChatClick(chat.chat_id);
                         }}
@@ -1630,7 +1716,12 @@ const ChatHome = () => {
         </div>
 
         <div className="right-panel">
-          {selectedChatId ? (
+          {showAIChat ? (
+            <AIChatWindow
+              isEmbedded={true}
+              onClose={() => setShowAIChat(false)}
+            />
+          ) : selectedChatId ? (
             <ChatWindow
               chatId={selectedChatId}
               isEmbedded={true}
