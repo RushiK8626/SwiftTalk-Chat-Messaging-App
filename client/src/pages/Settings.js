@@ -20,6 +20,7 @@ import Profile from "./Profile";
 import Appearance from "./Appearance";
 import BlockedUsers from "./BlockedUsers";
 import NotificationSettings from "./NotificationSettings";
+import PrivacySettings from "./PrivacySettings";
 import Language from "./Language";
 import { unsubscribeFromPushNotifications } from "../utils/notification.utils";
 import {
@@ -81,8 +82,9 @@ const Settings = ({ isEmbedded = false }) => {
           id: "privacy",
           icon: LockKeyhole,
           label: "Privacy",
-          action: () => alert("Privacy settings - Connect to backend"),
+          path: "/privacy-settings",
           description: "Control your privacy settings",
+          component: PrivacySettings
         },
         {
           id: "security",

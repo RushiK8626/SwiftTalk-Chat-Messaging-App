@@ -95,6 +95,29 @@ const ChatHome = () => {
   const [selectedChatForMenu, setSelectedChatForMenu] = useState(null);
   const [showAIChat, setShowAIChat] = useState(false);
 
+  const [convohubAssistantEnabled, setConvohubAssistantEnabled] = useState(() => {
+    const stored = localStorage.getItem('convhub_assistant');
+    return stored === null ? true : stored === 'true';
+  });
+
+  // Listen for changes to the assistant setting from other components/tabs
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('convhub_assistant');
+      setConvohubAssistantEnabled(stored === null ? true : stored === 'true');
+    };
+
+    // Listen for storage events (from other tabs) and custom events (same tab)
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('convhub_assistant_changed', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('convhub_assistant_changed', handleStorageChange);
+    };
+  }, []);
+
+
   // Calculate chat list height dynamically
   useEffect(() => {
     const calculateHeight = () => {
@@ -322,15 +345,13 @@ const ChatHome = () => {
     unread_count: 0,
   };
 
-  // Filter chats including AI chat
+  // Filter chats including AI chat (only if enabled)
   const filteredChats = [
-    aiChatItem,
+    ...(convohubAssistantEnabled ? [aiChatItem] : []),
     ...chats.filter((chat) =>
       (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
     )
-  ].filter((chat) => 
-    chat.isAI || (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ];
 
   // Close options menu when clicking outside
   useEffect(() => {
@@ -1496,9 +1517,6 @@ const ChatHome = () => {
                       token={localStorage.getItem("accessToken")}
                       userId={userId}
                     />
-                    {/* <button className="more-btn">
-                      <MoreVertical size={24} />
-                    </button> */}
                   </>
                 )}
               </div>
@@ -1532,8 +1550,8 @@ const ChatHome = () => {
                     let otherUserId = null;
                     let chatImage = null;
 
-                    // Handle AI chat item
-                    if (chat.isAI) {
+                    // Handle AI Assistant item
+                    if (chat.isAI && convohubAssistantEnabled) {
                       return (
                         <div
                           key={chat.chat_id}
