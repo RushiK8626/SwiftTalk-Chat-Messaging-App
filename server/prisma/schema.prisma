@@ -98,6 +98,8 @@ model Message {
   is_reply     Boolean @default(false)
   is_forward   Boolean @default(false)
   referenced_message_id  Int?
+  updated      Boolean @default(false)
+  updated_at DateTime @default(now())
 
   chat           Chat                @relation(fields: [chat_id], references: [chat_id])
   sender         User                @relation("userMessages", fields: [sender_id], references: [user_id])
