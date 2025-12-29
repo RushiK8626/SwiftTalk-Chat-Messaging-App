@@ -13,8 +13,7 @@ exports.uploadProfilePic = [
         return res.status(400).json({ error: 'No file uploaded' });
       }
       const userId = req.user.user_id;
-      const filename = req.file.filename;
-      const fileUrl = `/uploads/${filename}`;
+      const fileUrl = `/uploads/${req.file.filename}`;
 
       // Update user profile_pic in DB
       await prisma.user.update({
@@ -72,8 +71,7 @@ exports.uploadGroupImage = [
         return res.status(403).json({ error: 'Only group admins can upload the group image' });
       }
 
-      const filename = file.filename;
-      const fileUrl = `/uploads/${filename}`;
+      const fileUrl = `/uploads/${file.filename}`;
 
       // Update chat image in DB
       await prisma.chat.update({
@@ -98,10 +96,10 @@ exports.uploadAttachment = [
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const filename = req.file.filename;
-      const fileUrl = `/uploads/${filename}`;
+      const fileUrl = `/uploads/${req.file.filename}`;
       const fileType = req.file.mimetype;
       const fileSize = req.file.size;
+      const filename = req.file.filename;
 
       res.status(200).json({
         message: 'Attachment uploaded successfully',

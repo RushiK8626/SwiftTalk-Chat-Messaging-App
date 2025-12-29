@@ -49,12 +49,13 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    // Write file to disk (convert base64 to buffer if needed)
+    // Convert base64 to buffer if needed
     let buffer = fileBuffer;
     if (typeof fileBuffer === 'string') {
       buffer = Buffer.from(fileBuffer, 'base64');
     }
-    
+
+    // Write file to disk
     try {
       fs.writeFileSync(filePath, buffer);
     } catch (writeErr) {
@@ -66,6 +67,8 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       });
       return;
     }
+
+    const fileUrl = `/uploads/${serverFilename}`;
 
     // Determine message type based on file type
     let messageType = 'file';
@@ -104,8 +107,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       }
     });
 
-    // Create attachment record
-    const fileUrl = `/uploads/${serverFilename}`;
+    // Create attachment record (fileUrl is set above - either cloud URL or local path)
     const attachment = await prisma.attachment.create({
       data: {
         message_id: message.message_id,
