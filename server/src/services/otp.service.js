@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client');
-const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const prisma = new PrismaClient();
 
@@ -8,20 +7,38 @@ const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_T
   ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
   : null;
 
-// Initialize email transporter
-const emailTransporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_PORT === '465', 
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  },
-  // Timeout settings
-  connectionTimeout: 10000, 
-  greetingTimeout: 10000,
-  socketTimeout: 15000
-});
+/**
+ * Send email using Resend API
+ * Works on servers where SMTP ports are blocked (like DigitalOcean)
+ */
+const sendEmailWithResend = async (to, subject, html) => {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY not configured');
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM || 'ConvoHub <onboarding@resend.dev>',
+      to: [to],
+      subject: subject,
+      html: html,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Resend API error: ${error.message || response.statusText}`);
+  }
+
+  return await response.json();
+};
 
 // Generate random OTP
 const generateOTP = (length = 6) => {
@@ -71,7 +88,7 @@ exports.createOTP = async (userId, otpType = 'login', txClient = null) => {
   }
 };
 
-// Send OTP via Email
+// Send OTP via Email (using Resend API)
 exports.sendOTPEmail = async (email, otpCode, otpType) => {
   try {
     let subject, message;
@@ -90,23 +107,20 @@ exports.sendOTPEmail = async (email, otpCode, otpType) => {
       message = `Your ConvoHub verification code is:`;
     }
 
-    // Use the global email transporter
-    await emailTransporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>${subject}</h2>
-          <p>${message}</p>
-          <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h1 style="color: #4CAF50; margin: 0; letter-spacing: 5px;">${otpCode}</h1>
-          </div>
-          <p>This code will expire in 5 minutes.</p>
-          <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>${subject}</h2>
+        <p>${message}</p>
+        <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h1 style="color: #4CAF50; margin: 0; letter-spacing: 5px;">${otpCode}</h1>
         </div>
-      `
-    });
+        <p>This code will expire in 5 minutes.</p>
+        <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+      </div>
+    `;
+
+    // Use Resend API
+    await sendEmailWithResend(email, subject, html);
 
   } catch (error) {
     console.error('Error sending email:', error);
