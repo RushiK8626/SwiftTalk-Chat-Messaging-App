@@ -112,7 +112,7 @@ exports.sendOTPEmail = async (email, otpCode, otpType) => {
     `;
 
     // Use Resend API
-    // await sendEmailWithResend(email, subject, html);
+    await sendEmailWithResend(email, subject, html);
 
   } catch (error) {
     throw error;
