@@ -507,7 +507,7 @@
 }
 
 .message-input-container {
-  padding: 5px 5px;
+  padding: 2px 6px;
   background: var(--card-background);
   border-top: 1px solid var(--border-color);
   position: relative;
@@ -613,7 +613,7 @@
 
 .message-input {
   flex: 1;
-  padding: 5px 20px;
+  padding: 6px 12px;
   height: 45px;
   border: 2px solid var(--border-color);
   border-radius: 24px;
@@ -1282,4 +1282,57 @@ mark {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* SimpleBar Auto-Hide Scrollbar Styles */
+.simplebar-track.simplebar-vertical {
+  width: 10px;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.3s ease 0.8s;
+  right: 2px;
+}
+
+/* Show scrollbar on hover */
+.simplebar-wrapper:hover .simplebar-track.simplebar-vertical {
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* Show scrollbar while scrolling */
+.simplebar-scrolling .simplebar-track.simplebar-vertical,
+.simplebar-track.simplebar-vertical.simplebar-visible {
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* Scrollbar thumb styling */
+.simplebar-scrollbar::before {
+  background: var(--avatar-bg, #888) !important;
+  opacity: 0.5;
+  border-radius: 7px;
+  transition: opacity 0.3s ease;
+}
+
+/* Scrollbar thumb on hover */
+.simplebar-wrapper:hover .simplebar-scrollbar::before,
+.simplebar-scrollbar.simplebar-visible::before {
+  opacity: 0.8;
+  background: var(--accent-color, #555) !important;
+}
+
+/* Wider hover area for easier scrollbar access */
+.simplebar-track.simplebar-vertical::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  right: -10px;
+  z-index: -1;
+}
+
+/* Keep scrollbar visible longer after scroll ends */
+.simplebar-track.simplebar-vertical.simplebar-visible {
+  transition-delay: 1.5s;
 }

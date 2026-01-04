@@ -50,7 +50,7 @@ const ChatHome = () => {
 
   const [greeting, setGreeting] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const userId =
     location.state?.userId ||
     JSON.parse(localStorage.getItem("user") || "{}").user_id;
@@ -77,7 +77,7 @@ const ChatHome = () => {
   const [selectedChatId, setSelectedChatId] = useState(
     () => location.state?.selectedChatId || null
   );
-  
+
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
     return getSidebarWidth();
   });
@@ -220,7 +220,7 @@ const ChatHome = () => {
       last_message: 'Ask me anything!',
       unread_count: 0,
     };
-    
+
     return [aiChat, ...chats]; // Prepend AI chat
   };
 
@@ -341,13 +341,34 @@ const ChatHome = () => {
     unread_count: 0,
   };
 
-  // Filter chats including AI chat (only if enabled)
+  const showAIAssistant = convohubAssistantEnabled && searchQuery.trim() === "";
+
   const filteredChats = [
-    ...(convohubAssistantEnabled ? [aiChatItem] : []),
-    ...chats.filter((chat) =>
-      (chat.chat_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    ...(showAIAssistant ? [aiChatItem] : []),
+    ...chats.filter((chat) => {
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return true;
+
+      // GROUP CHAT → match chat_name
+      if (chat.chat_type === "group") {
+        return (chat.chat_name || "").toLowerCase().includes(q);
+      }
+
+      // PRIVATE CHAT → match other member's name / username
+      if (chat.chat_type === "private") {
+        const otherMember = chat.members?.find(
+          (m) => m.user_id !== userId
+        );
+        if (!otherMember) return false;
+        return (
+          (otherMember.user.full_name || "").toLowerCase().includes(q) ||
+          (otherMember.user.user_name || "").toLowerCase().includes(q)
+        );
+      }
+      return false;
+    }),
   ];
+
 
   // Close options menu when clicking outside
   useEffect(() => {
@@ -463,7 +484,7 @@ const ChatHome = () => {
           process.env.REACT_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
         const token = localStorage.getItem("accessToken");
-        
+
         const res = await fetch(`${API_URL}/api/chats/${chatId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -711,7 +732,7 @@ const ChatHome = () => {
     // Support both chat object and chat_id
     const chat = typeof chatOrId === 'object' ? chatOrId : filteredChats.find(c => c.chat_id === chatOrId);
     const isAI = chat?.isAI || chatOrId === 'ai-assistant';
-    
+
     // On small screens, navigate to chat page or show AI modal. On wide screens, open inline.
     if (typeof window !== "undefined" && window.innerWidth < 900) {
       if (isAI) {
@@ -1462,8 +1483,8 @@ const ChatHome = () => {
         style={
           typeof window !== "undefined" && window.innerWidth >= 900
             ? {
-                gridTemplateColumns: `${leftPanelWidth}px 1fr`,
-              }
+              gridTemplateColumns: `${leftPanelWidth}px 1fr`,
+            }
             : {}
         }
       >
@@ -1595,7 +1616,7 @@ const ChatHome = () => {
                       const other = chat.members.find(
                         (m) => Number(m.user_id) !== currentUserId
                       );
-                      
+
                       if (other) {
                         otherUserId = other.user_id;
                         if (other.user && other.user.full_name) {
@@ -1632,9 +1653,8 @@ const ChatHome = () => {
                     return (
                       <div
                         key={chat.chat_id}
-                        className={`chat-item ${
-                          parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
-                        } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
+                        className={`chat-item ${parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
+                          } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
                         onClick={(e) => {
                           if (chatSelection) {
                             e.stopPropagation();
@@ -1821,11 +1841,11 @@ const ChatHome = () => {
                           {user.full_name
                             ? user.full_name.split(" ").length >= 2
                               ? (
-                                  user.full_name.split(" ")[0][0] +
-                                  user.full_name.split(" ")[
-                                    user.full_name.split(" ").length - 1
-                                  ][0]
-                                ).toUpperCase()
+                                user.full_name.split(" ")[0][0] +
+                                user.full_name.split(" ")[
+                                user.full_name.split(" ").length - 1
+                                ][0]
+                              ).toUpperCase()
                               : user.full_name.substring(0, 2).toUpperCase()
                             : user.username.substring(0, 2).toUpperCase()}
                         </span>
@@ -1900,9 +1920,8 @@ const ChatHome = () => {
       <ConfirmationBox
         isOpen={showNewChatConfirmation}
         title="Start New Chat"
-        message={`Start a new conversation with ${
-          selectedUserForNewChat?.full_name || selectedUserForNewChat?.username
-        }?`}
+        message={`Start a new conversation with ${selectedUserForNewChat?.full_name || selectedUserForNewChat?.username
+          }?`}
         confirmText='Send "Hello!👋"'
         cancelText="Cancel"
         isLoading={isCreatingChat}

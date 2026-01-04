@@ -27,7 +27,7 @@
       "purpose": "badge"
     }
   ],
-  "start_url": "/#/chats",
+  "start_url": "/chats",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#0099ff",
@@ -39,7 +39,7 @@
       "name": "New Chat",
       "short_name": "New Chat",
       "description": "Start a new chat",
-      "url": "/#/chats?new=true",
+      "url": "/chats?new=true",
       "icons": [
         {
           "src": "logo192.png",

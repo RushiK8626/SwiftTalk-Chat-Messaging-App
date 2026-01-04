@@ -135,18 +135,6 @@ const Settings = ({ isEmbedded = false }) => {
         },
       ],
     },
-    {
-      title: "Support",
-      items: [
-        {
-          id: "help",
-          icon: LifeBuoy,
-          label: "Help & Support",
-          path: "/settings/help",
-          description: "Get help with ConvoHub",
-        },
-      ],
-    },
   ];
 
   // Restore selectedSetting from navigation state (when returning from sub-page on wide screen)

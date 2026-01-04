@@ -118,8 +118,8 @@ const ChatWindow = ({
   });
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isScrolling, setIsScrolling] = useState(false); // Hide messages while scrolling
   const [userProfiles, setUserProfiles] = useState({});
   const [isBlocked, setIsBlocked] = useState(false);
   const [isBlockedByOther, setIsBlockedByOther] = useState(false);
@@ -532,8 +532,6 @@ const ChatWindow = ({
         if (!res.ok) throw new Error("Failed to fetch messages");
         const data = await res.json();
 
-        // Hide messages during initial scroll
-        setIsScrolling(true);
         setMessages(data.messages || []);
 
         // Parse message statuses from the API response
@@ -561,6 +559,7 @@ const ChatWindow = ({
         setError(err.message || "Error fetching messages");
       } finally {
         setLoading(false);
+        setIsInitialLoading(false);
       }
     };
     fetchChatAndMessages();
@@ -857,11 +856,11 @@ const ChatWindow = ({
         prevMessages.map((m) =>
           m.message_id === data.message_id
             ? {
-                ...m,
-                message_text: data.message_text,
-                updated_at: data.updated_at,
-                updated: data.updated,
-              }
+              ...m,
+              message_text: data.message_text,
+              updated_at: data.updated_at,
+              updated: data.updated,
+            }
             : m
         )
       );
@@ -1029,41 +1028,37 @@ const ChatWindow = ({
     // eslint-disable-next-line
   }, [chatId, userId]);
 
-  
+
   // Scroll to bottom with improved reliability using SimpleBar's scroll element
   const scrollToBottom = useCallback(() => {
-    // Hide messages while scrolling to prevent jank
-    setIsScrolling(true);
-
     const performScroll = () => {
-      // Try to get SimpleBar's scrollable element
       const scrollableElement = simpleBarRef.current?.getScrollElement?.();
 
       if (scrollableElement) {
-        // Scroll to the absolute bottom of the container
-        scrollableElement.scrollTop = scrollableElement.scrollHeight;
+        scrollableElement.scrollTo({
+          top: scrollableElement.scrollHeight,
+          behavior: 'smooth'
+        });
       } else if (messagesEndRef.current) {
-        // Fallback to scrollIntoView
-        messagesEndRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+        messagesEndRef.current.scrollIntoView({
+          behavior: "smooth",  
+          block: "end"
+        });
       }
     };
 
-    // Use requestAnimationFrame for the initial scroll
     requestAnimationFrame(() => {
       performScroll();
     });
 
-    // Use a single debounced check for lazy-loaded content (images, etc.)
     if (observerTimeoutRef.current) {
       clearTimeout(observerTimeoutRef.current);
     }
     observerTimeoutRef.current = setTimeout(() => {
       performScroll();
-      // Show messages again after scroll completes
-      setIsScrolling(false);
     }, 400);
   }, []);
-  
+
   // Scroll to bottom when messages change, with delay for content rendering
   useEffect(() => {
     if (messages.length > 0) {
@@ -1127,7 +1122,7 @@ const ChatWindow = ({
     setReplyToMessage(null);
   };
 
-  const handleSendEditedMessage = async() => {
+  const handleSendEditedMessage = async () => {
     if (!messageText.trim()) return;
 
     const updatedText = messageText.trim();
@@ -1147,7 +1142,7 @@ const ChatWindow = ({
     setEditingMessage("");
   }
 
-  const handleEditMessage = async() => {
+  const handleEditMessage = async () => {
     const messageIndex = messages.findIndex(m => m.message_id === selectedMessage.message_id);
     messageContextMenu.closeMenu();
     if (messageIndex === -1) return;
@@ -1331,7 +1326,7 @@ const ChatWindow = ({
       },
     ];
 
-    if (isOwn && isWithinTwoHours(message.created_at) ) {
+    if (isOwn && isWithinTwoHours(message.created_at)) {
       items.push({
         id: "edit",
         label: "Edit",
@@ -1354,7 +1349,7 @@ const ChatWindow = ({
     } else {
       items.push({
         id: "translate-default",
-        
+
         label: `Translate (${defaultLang.toUpperCase()})`,
         icon: <Languages size={16} />,
         onClick: () => {
@@ -1409,7 +1404,7 @@ const ChatWindow = ({
         onClick: handleDeleteMessageForAll,
       });
     }
-    
+
 
     return items;
   };
@@ -2197,6 +2192,8 @@ const ChatWindow = ({
     return diffMs < TWO_HOURS;
   };
 
+  const messageInputRef = useRef(null);
+
 
   return (
     <div className="chat-window">
@@ -2417,14 +2414,10 @@ const ChatWindow = ({
       <SimpleBar
         ref={simpleBarRef}
         style={{ flex: 1, minHeight: 0, width: "100%" }}
-        autoHide={false}
+        autoHide={true}
       >
-        <div 
+        <div
           className="messages-container"
-          style={{
-            opacity: isScrolling ? 0 : 1,
-            transition: "opacity 0s ease-out"
-          }}
         >
           {loading ? (
             <div className="no-chats">
@@ -2464,8 +2457,8 @@ const ChatWindow = ({
                     <div
                       key={message.message_id}
                       className={`message message-sent ${isCurrentResult(message.message_id)
-                          ? "search-result-current"
-                          : ""
+                        ? "search-result-current"
+                        : ""
                         } ${selectedMessages[message.message_id] ? "selection" : ""
                         }`}
                       style={{
@@ -2653,8 +2646,8 @@ const ChatWindow = ({
                   <div
                     key={message.message_id}
                     className={`message message-received ${isCurrentResult(message.message_id)
-                        ? "search-result-current"
-                        : ""
+                      ? "search-result-current"
+                      : ""
                       } ${selectedMessages[message.message_id] ? "selection" : ""
                       }`}
                     style={{
@@ -3064,12 +3057,12 @@ const ChatWindow = ({
                 </button>
               </div>
             )}
-            
+
 
             {/* Message Input */}
             <form
               onSubmit={(e) => {
-                if(messageEditing) {
+                if (messageEditing) {
                   handleSendEditedMessage();
                 }
                 else {
@@ -3097,16 +3090,35 @@ const ChatWindow = ({
                 <Paperclip size={22} />
               </button>
 
-              <input
-                type="text"
+              <textarea
+                ref={messageInputRef}
                 className="message-input"
                 placeholder={
                   selectedFile ? "Add message (optional)" : "Type a message..."
                 }
                 value={messageText}
+                rows={1}
                 onChange={(e) => {
                   setMessageText(e.target.value);
                   handleTyping();
+                  const el = messageInputRef.current;
+                  if (el) {
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Enter to send, Shift+Enter for newline
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (messageEditing) {
+                      handleSendEditedMessage();
+                    } else if (selectedFile) {
+                      handleSendWithAttachment();
+                    } else {
+                      handleSendMessage(e);
+                    }
+                  }
                 }}
                 disabled={uploading}
               />

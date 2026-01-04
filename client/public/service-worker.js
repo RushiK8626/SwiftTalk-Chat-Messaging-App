@@ -70,7 +70,7 @@ self.addEventListener('notificationclick', (event) => {
   const chatType = data.chat_type;
   
   // Construct URL based on action
-  let url = '/chats'; // Default to chats page
+  let url = '/chats'; // Default to chats page (path router)
   
   if (action === 'open_chat' && chatId) {
     url = `/chats?selectedChat=${chatId}`;
