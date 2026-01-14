@@ -1,6 +1,5 @@
 // API Configuration for different environments
 const isDevelopment = process.env.NODE_ENV === "development";
-const isProduction = process.env.NODE_ENV === "production";
 
 // Production API URL - used as fallback when env var is not set
 const PRODUCTION_API_URL = "https://convohub-api.me";

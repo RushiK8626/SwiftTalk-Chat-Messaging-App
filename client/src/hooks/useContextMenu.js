@@ -10,6 +10,8 @@ export const useContextMenu = () => {
     x: 0,
     y: 0,
     anchorEl: null,
+    position: 'bottom-right', // Default position
+    maxX: null, // Optional max X boundary
   });
 
   /**
@@ -85,7 +87,7 @@ export const useContextMenu = () => {
    * Close the context menu
    */
   const closeMenu = useCallback(() => {
-    setMenu({ isOpen: false, x: 0, y: 0, anchorEl: null });
+    setMenu({ isOpen: false, x: 0, y: 0, anchorEl: null, position: 'bottom-right', maxX: null });
   }, []);
 
   /**
@@ -120,6 +122,8 @@ export const useContextMenu = () => {
     x: menu.x,
     y: menu.y,
     anchorEl: menu.anchorEl,
+    position: menu.position,
+    maxX: menu.maxX,
 
     // Handlers
     handleContextMenu,

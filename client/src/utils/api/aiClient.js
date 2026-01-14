@@ -133,10 +133,12 @@ export const AI_ASSISTANT = {
   isAI: true,
 };
 
-export default {
+const aiClient = {
   getSmartReplies,
   translateText,
   summarizeChat,
   detectLanguage,
   getConversationStarters,
 };
+
+export default aiClient;

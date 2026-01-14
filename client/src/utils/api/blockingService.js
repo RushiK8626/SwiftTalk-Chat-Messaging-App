@@ -81,10 +81,12 @@ export const checkBlockStatus = async (userId, otherUserId) => {
   return await apiGet(url);
 };
 
-export default {
+const blockingService = {
   blockUser,
   unblockUser,
   getBlockedUsers,
   isUserBlocked,
   checkBlockStatus,
 };
+
+export default blockingService;

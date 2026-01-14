@@ -265,14 +265,16 @@
   transition: all 0.3s ease;
   /* remove default separators between chat items */
   border-bottom: none;
-  animation: fadeIn 0.4s ease-out;
+  animation: ease-in 0.3s ease-out;
+  transform: translateY(0);
   background: var(--background-color);
 }
 
 /* On hover show a bottom accent line and accent the text */
 .chat-item:hover {
   background: transparent; /* don't change background, only show accent line */
-  /* border-bottom: 2px solid var(--accent-color); */
+  animation: 0.3s ease-out;
+  transform: translateY(-5px);
 }
 
 .chat-item:active {
@@ -435,51 +437,7 @@
   color: var(--text-secondary);
 }
 
-.new-chat-btn {
-  width: 56px;
-  height: 56px;
-  background: var(--accent-color);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-  transition: all 0.3s ease;
-  position: fixed;
-  bottom: 100px;
-  right: 20px;
-  left: auto;
-  z-index: 101;
-}
 
-/* Mobile: adjust new chat button position to account for shifted bottom tab bar */
-@media (max-width: 899px) {
-  .new-chat-btn {
-    bottom: 110px;
-  }
-}
-
-/* Wide screens: position the button within left panel */
-@media (min-width: 900px) {
-  .new-chat-btn {
-    position: absolute;
-    bottom: 80px;
-    right: 20px;
-    left: auto;
-  }
-}
-
-.new-chat-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.6);
-}
-
-.new-chat-btn:active {
-  transform: scale(0.95);
-}
 
 @media (min-width: 900px) {
   .chat-home {
@@ -589,11 +547,6 @@
   .left-panel .bottom-tab-bar {
     display: none;
   }
-
-  /* .new-chat-btn {
-    right: 40px;
-    bottom: 40px;
-  } */
 }
 
 /* New Chat Modal */

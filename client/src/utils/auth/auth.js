@@ -80,9 +80,11 @@ export const getCurrentUser = () => {
   }
 };
 
-export default {
+const auth = {
   handleSessionExpiry,
   refreshAccessToken,
   isAuthenticated,
   getCurrentUser,
 };
+
+export default auth;

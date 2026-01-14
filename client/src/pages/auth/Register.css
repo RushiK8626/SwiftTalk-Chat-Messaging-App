@@ -98,30 +98,7 @@
   color: var(--text-color);
 }
 
-.btn-register {
-  width: 100%;
-  margin-top: 8px;
-  background: var(--accent-color);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 10px 0;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  transition: background 0.15s, box-shadow 0.15s;
-}
 
-.btn-register:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-register:hover:not(:disabled) {
-  background: var(--accent-color);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.12);
-}
 
 .register-footer {
   text-align: center;

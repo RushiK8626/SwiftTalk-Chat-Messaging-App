@@ -203,9 +203,6 @@ export const useFetchNotifications = (token, userId) => {
         })
       );
 
-      const results = await Promise.all(deletePromises);
-      const successCount = results.filter((r) => r && r.ok).length;
-
       // Clear local state
       setNotifications([]);
       setUnreadCount(0);

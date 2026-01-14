@@ -40,7 +40,6 @@
 
 .settings-content {
   animation: fadeIn 0.4s ease-out;
-  /* Hide scrollbars */
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
