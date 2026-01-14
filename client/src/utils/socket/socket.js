@@ -26,13 +26,11 @@ class SocketService {
   connect(userId) {
     // If already connected with the same user, return existing socket
     if (this.socket && this.isConnected && this.userId === userId) {
-      // console.log('Using existing socket connection');
       return this.socket;
     }
 
     // If connecting with a different user, disconnect first
     if (this.socket && this.userId && this.userId !== userId) {
-      // console.log('Switching user, reconnecting socket...');
       this.disconnect();
     }
 
@@ -51,12 +49,10 @@ class SocketService {
     });
 
     this.socket.on("connect", () => {
-      // console.log('Socket connected:', this.socket.id);
       this.isConnected = true;
     });
 
-    this.socket.on("disconnect", (reason) => {
-      // console.log('Socket disconnected:', reason);
+    this.socket.on("disconnect", () => {
       this.isConnected = false;
     });
 
@@ -74,7 +70,6 @@ class SocketService {
       this.socket = null;
       this.isConnected = false;
       this.userId = null;
-      // console.log('Socket disconnected and cleaned up');
     }
   }
 
@@ -85,7 +80,6 @@ class SocketService {
       const numericChatId =
         typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
       this.socket.emit("join_chat", { chatId: numericChatId });
-      // console.log(`Joined chat room: ${numericChatId}`);
     } else {
       console.warn("⚠️ Cannot join chat - socket not connected");
     }
@@ -97,7 +91,6 @@ class SocketService {
       const numericChatId =
         typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
       this.socket.emit("leave_chat", { chatId: numericChatId });
-      // console.log(`Left chat room: ${numericChatId}`);
     }
   }
 
@@ -116,9 +109,7 @@ class SocketService {
 
       // Use acknowledgment to ensure server received and saved the message
       this.socket.emit("send_message", dataToSend, (response) => {
-        if (response && response.success) {
-          // console.log('Server confirmed message received and saved:', response.message_id);
-        } else {
+        if (!response || !response.success) {
           console.error(
             "Server failed to save message:",
             response?.error || "Unknown error"
@@ -135,11 +126,6 @@ class SocketService {
     if (this.socket && this.isConnected) {
       const {
         fileBuffer,
-        chat_id,
-        fileName,
-        fileSize,
-        fileType,
-        message_text,
         tempId,
       } = fileMessageData;
 
@@ -177,7 +163,7 @@ class SocketService {
         });
       }
     } else {
-      console.error("❌ Cannot send file message - socket not connected");
+      console.error("Cannot send file message - socket not connected");
     }
   }
 
@@ -197,8 +183,6 @@ class SocketService {
     const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunks
     const totalChunks = Math.ceil(fileBuffer.length / CHUNK_SIZE);
     
-    console.log(`📦 Sending file in ${totalChunks} chunks (${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB total)`);
-
     // Send chunks sequentially to avoid overwhelming the socket
     const sendChunk = (chunkIndex) => {
       const startIdx = chunkIndex * CHUNK_SIZE;
@@ -232,8 +216,6 @@ class SocketService {
           if (onProgress) {
             onProgress(progress);
           }
-          
-          console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} sent (${progress}%)`);
           
           // Send next chunk if not last
           if (!isLastChunk) {
