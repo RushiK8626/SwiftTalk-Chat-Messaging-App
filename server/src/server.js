@@ -123,11 +123,11 @@ const chatVisibilityRoutes = require('./routes/chatVisibility.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const aiRoutes = require('./routes/ai.routes');
 const userCacheRoutes = require('./routes/user-cache.routes');
+const taskRoutes = require('./routes/task.router');
 
 // Use routes
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
-// Pass io instance to chat routes via middleware
 app.use('/api/chats', (req, res, next) => {
   req.io = io;
   next();
@@ -135,9 +135,10 @@ app.use('/api/chats', (req, res, next) => {
 app.use('/api/chat-visibility', chatVisibilityRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/uploads', uploadRoutes); // Secure file serving
-app.use('/api/ai', aiRoutes); // AI features
-app.use('/api/cache', userCacheRoutes); // User cache endpoints
+app.use('/uploads', uploadRoutes); 
+app.use('/api/ai', aiRoutes); 
+app.use('/api/cache', userCacheRoutes); 
+app.use('/api/tasks', taskRoutes); 
 
 // Serve static files AFTER API routes to avoid conflicts
 app.use(express.static('.'));
