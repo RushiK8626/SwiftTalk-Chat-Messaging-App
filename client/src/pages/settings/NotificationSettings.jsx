@@ -10,14 +10,12 @@ const NotificationSettings = ({ isEmbedded = false }) => {
   const isWideScreen = useResponsive();
   const [error, setError] = useState(null);
 
-  // Handle responsive layout changes - navigate to settings page when screen becomes wide
   useEffect(() => {
     if (!isEmbedded && isWideScreen) {
       navigate("/settings", { state: { selectedSettingId: "notifications" } });
     }
   }, [isWideScreen, isEmbedded, navigate]);
 
-  // Get userId and token from localStorage for this page
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?.user_id; // Try 'id' first, fall back to 'user_id'
   const token = localStorage.getItem("accessToken");
@@ -30,13 +28,11 @@ const NotificationSettings = ({ isEmbedded = false }) => {
     disableNotifications,
   } = useNotifications(userId, token);
 
-  // Handle toggle with better error feedback
   const handleToggle = async (e) => {
     setError(null);
     const checked = e.target.checked;
 
     if (checked) {
-      // Enable notifications
       if (!userId || !token) {
         const msg = "Missing credentials. Please log in again.";
         setError(msg);
@@ -45,7 +41,6 @@ const NotificationSettings = ({ isEmbedded = false }) => {
       }
       await enableNotifications();
     } else {
-      // Disable notifications
       if (!token) {
         const msg = "Missing authentication token. Please log in again.";
         setError(msg);
@@ -79,7 +74,7 @@ const NotificationSettings = ({ isEmbedded = false }) => {
         title="Notifications"
         onBack={() => {
           if (isEmbedded) {
-            navigate(-1); // Go back to previous page in split layout
+            navigate(-1); 
           } else {
             navigate("/settings");
           }

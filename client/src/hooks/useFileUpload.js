@@ -14,7 +14,7 @@ const useFileUpload = () => {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("originalname", file.name); // Send original filename
+        formData.append("originalname", file.name); 
         formData.append("chat_id", chatId);
         formData.append("sender_id", senderId);
         if (messageText) {
@@ -26,7 +26,6 @@ const useFileUpload = () => {
 
         const xhr = new XMLHttpRequest();
 
-        // Track upload progress
         if (xhr.upload) {
           xhr.upload.addEventListener("progress", (e) => {
             if (e.lengthComputable) {

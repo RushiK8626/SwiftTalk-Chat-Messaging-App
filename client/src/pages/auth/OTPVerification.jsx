@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
 import { io } from "socket.io-client";
 import { subscribeToPushNotifications } from "../../utils/notifications";
+import axios from "axios";
 import "./OTPVerification.css";
 
 const OTPVerification = () => {
@@ -14,21 +15,19 @@ const OTPVerification = () => {
   const location = useLocation();
   const { toasts, showSuccess, showError, showInfo, removeToast } = useToast();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [timer, setTimer] = useState(300); // 5 minutes
+  const [timer, setTimer] = useState(300);
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
   const socketRef = useRef(null);
   const verifiedRef = useRef(false);
   const type = location.state?.type || "login";
-  // Get username and userId from navigation state or from URL query param (uid)
   const username = location.state?.username || "";
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const rawUserId = location.state?.userId ?? params.get("uid") ?? null;
   const userId = rawUserId != null ? Number(rawUserId) : null;
   const { refreshAuth } = useContext(AuthContext);
 
-  // Initialize WebSocket connection for registration monitoring
   useEffect(() => {
     if (type !== "register" || !username) return;
 
@@ -43,35 +42,30 @@ const OTPVerification = () => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      // console.log('Registration WebSocket connected:', socket.id);
-      // Start monitoring this registration
       socket.emit("monitor_registration", { username });
     });
 
-    socket.on("monitoring_started", (data) => {
-      // console.log('Monitoring started for:', data.username);
-    });
+    // socket.on("monitoring_started", (data) => {
+    // console.log('Monitoring started for:', data.username);
+    // });
 
     socket.on("registration_cancelled", (data) => {
-      // console.log('Registration cancelled:', data.username);
       if (!verifiedRef.current) {
         showInfo("Registration cancelled. Please try again.");
         navigate("/register");
       }
     });
 
-    socket.on("disconnect", () => {
-      // console.log('Registration WebSocket disconnected');
-    });
+    // socket.on("disconnect", () => {
+    // console.log('Registration WebSocket disconnected');
+    // });
 
     socket.on("connect_error", (err) => {
       console.error("WebSocket connection error:", err);
     });
 
-    // Cleanup on unmount
     return () => {
       if (socket && socket.connected) {
-        // Only cancel if not verified
         if (!verifiedRef.current) {
           socket.emit("cancel_registration", { username });
         }
@@ -80,14 +74,12 @@ const OTPVerification = () => {
     };
   }, [username, type, navigate, showInfo]);
 
-  // Initialize WebSocket connection for login monitoring
   useEffect(() => {
     if (type !== "login" || !userId) return;
 
     const SOCKET_URL =
       process.env.REACT_APP_SOCKET_URL || "http://localhost:3001";
 
-    // Connect to login namespace
     const socket = io(`${SOCKET_URL}/login`, {
       transports: ["websocket", "polling"],
     });
@@ -95,35 +87,30 @@ const OTPVerification = () => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      // console.log('Login WebSocket connected:', socket.id);
-      // Start monitoring this login OTP
       socket.emit("monitor_login", { userId: Number(userId) });
     });
 
-    socket.on("monitoring_started", (data) => {
-      console.log("Login monitoring started for userId:", data.userId);
-    });
+    // socket.on("monitoring_started", (data) => {
+    //   console.log("Login monitoring started for userId:", data.userId);
+    // });
 
     socket.on("login_cancelled", (data) => {
-      // console.log('Login cancelled for userId:', data.userId);
       if (!verifiedRef.current) {
         showInfo("Login session expired. Please try again.");
         navigate("/login");
       }
     });
 
-    socket.on("disconnect", () => {
-      // console.log('Login WebSocket disconnected');
-    });
+    // socket.on("disconnect", () => {
+    // console.log('Login WebSocket disconnected');
+    // });
 
     socket.on("connect_error", (err) => {
       console.error("Login WebSocket connection error:", err);
     });
 
-    // Cleanup on unmount
     return () => {
       if (socket && socket.connected) {
-        // Only cancel if not verified
         if (!verifiedRef.current) {
           socket.emit("cancel_login", { userId });
         }
@@ -142,17 +129,6 @@ const OTPVerification = () => {
       setCanResend(true);
     }
   }, [timer]);
-
-  useEffect(() => {
-    // Debug: log incoming navigation state to help trace reset flow
-    console.debug("OTPVerification mounted", {
-      state: location.state,
-      queryUid: params.get("uid"),
-      resolvedUserId: userId,
-      type,
-    });
-    inputRefs.current[0]?.focus();
-  }, [location.state, params, type, userId]);
 
   useEffect(() => {
     showSuccess("OTP sent to your registered Email", 1000);
@@ -219,7 +195,6 @@ const OTPVerification = () => {
       return;
     }
 
-    // For password reset flow, verify OTP together with new password by calling reset API
     if (type === "reset") {
       if (!userId) {
         showError(
@@ -227,13 +202,6 @@ const OTPVerification = () => {
           1000
         );
         navigate("/forgot-password");
-        return;
-      }
-
-      const otpString = otp.join("");
-      if (otpString.length !== 6) {
-        setError("Please enter the 6-digit code.");
-        showError("Please enter the complete 6-digit code.", 2000);
         return;
       }
 
@@ -254,48 +222,46 @@ const OTPVerification = () => {
         const API_URL = (
           process.env.REACT_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
-        const endpoint = `${API_URL}/api/auth/reset-password`;
-        const body = { userId, otpCode: otpString, newPassword };
-        // Diagnostic log: show payload and endpoint so it's easy to verify the request in the browser console
-        console.debug("Reset password POST", { endpoint, body });
-        showInfo("Resetting password...");
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = await response.json();
-        if (response.ok) {
-          // Clear persisted userId since reset is complete
-          try {
-            sessionStorage.removeItem("passwordResetUserId");
-          } catch (e) {
-            /* ignore */
-          }
-          showSuccess(
-            data.message || "Password reset successful. Please login.",
-            1000
-          );
-          // disconnect socket if present
-          if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.disconnect();
-          }
-          setTimeout(() => navigate("/login"), 1500);
-        } else {
-          showError(
-            data.error || data.message || "Failed to reset password",
-            1000
-          );
-          setTimeout(() => navigate("/forgot-password"), 1200);
+
+        const { data } = await axios.post(`${API_URL}/api/auth/reset-password`, {
+          userId,
+          otpCode: otpString,
+          newPassword,
+        })
+
+        try {
+          sessionStorage.removeItem("passwordResetUserId");
+        } catch (e) {
+          /* ignore */
         }
+
+        showSuccess(
+          data.message || "Password reset successful. Please login.",
+          1000
+        );
+
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.disconnect();
+        }
+        setTimeout(() => navigate("/login"), 1500);
       } catch (err) {
         console.error("Reset password error:", err);
-        showError("Unable to reset password. Try again later.", 1000);
+
+        if (err.response) {
+          showError(
+            err.response.data.error ||
+            err.response.data.message ||
+            "Failed to reset password",
+            1000
+          );
+        } else {
+          showError("Unable to reset password. Try again later.", 1000);
+        }
+
         setTimeout(() => navigate("/forgot-password"), 1200);
       } finally {
         setLoading(false);
       }
-
       return;
     }
 
@@ -305,116 +271,84 @@ const OTPVerification = () => {
         process.env.REACT_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
 
-      // Use different endpoints based on type
       const endpoint =
         type === "register"
           ? `${API_URL}/api/auth/verify-registration-otp`
           : `${API_URL}/api/auth/verify-otp`;
-
-      console.log('OTP Verification - API_URL:', API_URL);
-      console.log('OTP Verification - Full endpoint:', endpoint);
 
       const requestBody =
         type === "register"
           ? { username: username, otpCode: otpString }
           : { userId: Number(userId), otpCode: otpString };
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const { data } = await axios.post(endpoint, requestBody)
 
-      let data;
-      const contentType = response.headers.get("content-type");
-      
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        // Handle non-JSON responses (like HTML error pages)
-        const text = await response.text();
-        console.error("Received non-JSON response:", text.substring(0, 200));
-        throw new Error("Server returned an invalid response. Please try again later.");
-      }
+      verifiedRef.current = true; 
 
-      if (response.ok) {
-        verifiedRef.current = true; // Mark as verified to prevent cancellation
-
-        if (type === "register") {
-          // Registration verification successful
-          showSuccess(
-            "Registration verified successfully! Please login.",
-            1000
-          );
-
-          // Disconnect socket before redirecting
-          if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.disconnect();
-          }
-
-          // Redirect to login after 2 seconds
-          setTimeout(() => {
-            navigate("/login");
-          }, 2000);
-        } else {
-          // Login verification successful
-          showSuccess("Login successful!", 1000);
-
-          // Save tokens for further requests
-          localStorage.setItem("accessToken", data.accessToken);
-          localStorage.setItem("refreshToken", data.refreshToken);
-          localStorage.setItem("user", JSON.stringify(data.user));
-
-          // Disconnect socket before redirecting
-          if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.disconnect();
-          }
-
-          refreshAuth(); // force App rerender to update auth state
-
-          // Subscribe to push notifications after successful login
-          if ("serviceWorker" in navigator && "PushManager" in window) {
-            // First request notification permission
-            const permissionGranted = await Notification.requestPermission();
-
-            if (
-              permissionGranted === "granted" ||
-              permissionGranted === "default"
-            ) {
-              subscribeToPushNotifications(data.user.id, data.accessToken)
-                .then((success) => {
-                  if (!success) {
-                    console.log("⚠️ Push notifications subscription skipped");
-                  }
-                })
-                .catch((error) => {
-                  console.error(
-                    "Error subscribing to push notifications:",
-                    error
-                  );
-                });
-            } else {
-              console.warn("⚠️ Notification permission denied by user");
-            }
-          }
-
-          // Redirect to chats after a short delay
-          setTimeout(() => {
-            navigate("/chats");
-          }, 1000);
-        }
-      } else {
-        setError(data.error || data.message || "OTP verification failed.");
-        showError(
-          data.error ||
-            data.message ||
-            "OTP verification failed. Please try again.",
+      if (type === "register") {
+        showSuccess(
+          "Registration verified successfully! Please login.",
           1000
         );
 
-        // If OTP expired, redirect back
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.disconnect();
+        }
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        showSuccess("Login successful!", 1000);
+
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.disconnect();
+        }
+
+        refreshAuth(); 
+
+        if ("serviceWorker" in navigator && "PushManager" in window) {
+          const permissionGranted = await Notification.requestPermission();
+
+          if (
+            permissionGranted === "granted" ||
+            permissionGranted === "default"
+          ) {
+            subscribeToPushNotifications(data.user.id, data.accessToken)
+              .then((success) => {
+                if (!success) {
+                  // console.log("⚠️ Push notifications subscription skipped");
+                }
+              })
+              .catch((error) => {
+                console.error(
+                  "Error subscribing to push notifications:",
+                  error
+                );
+              });
+          }
+        }
+
+        setTimeout(() => {
+          navigate("/chats");
+        }, 1000);
+      }
+    } catch (err) {
+      console.error("OTP verification error:", err);
+
+      if (err.response) {
+        const data = err.response.data;
+
+        showError(
+          err.response.data.error ||
+          err.response.data.message ||
+          "OTP verification failed. Please try again.",
+          1000
+        );
+
         if (data.error && data.error.includes("expired")) {
           setTimeout(() => {
             if (socketRef.current && socketRef.current.connected) {
@@ -426,10 +360,10 @@ const OTPVerification = () => {
           }, 3000);
         }
       }
-    } catch (err) {
-      console.error("OTP verification error:", err);
-      setError("Unable to connect to server. Please try again later.");
-      showError("Unable to connect to server. Please try again later.", 1000);
+      else {
+        setError("Unable to connect to server. Please try again later.");
+        showError("Unable to connect to server. Please try again later.", 1000);
+      }
     } finally {
       setLoading(false);
     }
@@ -449,44 +383,30 @@ const OTPVerification = () => {
           ? `${API_URL}/api/auth/resend-registration-otp`
           : `${API_URL}/api/auth/resend-otp`;
 
-      console.log('Resend OTP - API_URL:', API_URL);
-      console.log('Resend OTP - Full endpoint:', endpoint);
-
       const requestBody =
         type === "register"
           ? { username: username }
           : { userId: Number(userId), otpType: "login" };
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const { data } = await axios.post(endpoint, requestBody);
 
-      let data;
-      const contentType = response.headers.get("content-type");
-      
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        // Handle non-JSON responses (like HTML error pages)
-        const text = await response.text();
-        console.error("Received non-JSON response:", text.substring(0, 200));
-        throw new Error("Server returned an invalid response. Please try again later.");
-      }
+      showSuccess("OTP resent successfully!", 1000);
+      setTimer(data.expiresIn || 300);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      console.error("Resend OTP error:", err);
 
-      if (response.ok) {
-        showSuccess("OTP resent successfully!", 1000);
-        setTimer(data.expiresIn || 300);
-        setCanResend(false);
-        setOtp(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
-      } else {
-        showError(data.error || data.message || "Failed to resend OTP", 1000);
+      if (err.response) {
+        const data = err.response.data;
 
-        // If no pending session, redirect back
+        showError(data.error ||
+            data.message ||
+            "Failed to resend OTP", 
+            1000
+        );
+
         if (
           data.error &&
           (data.error.includes("No pending") || data.error.includes("expired"))
@@ -499,9 +419,7 @@ const OTPVerification = () => {
           }, 2000);
         }
       }
-    } catch (err) {
-      console.error("Resend OTP error:", err);
-      showError("Unable to resend OTP. Please try again.", 1000);
+      else showError("Unable to resend OTP. Please try again.", 1000);
     } finally {
       setLoading(false);
     }
@@ -545,8 +463,8 @@ const OTPVerification = () => {
             {type === "register"
               ? "email and mobile"
               : type === "reset"
-              ? "email"
-              : "registered contact"}
+                ? "email"
+                : "registered contact"}
           </p>
         </div>
 
@@ -615,8 +533,8 @@ const OTPVerification = () => {
                 ? "Resetting..."
                 : "Verifying..."
               : type === "reset"
-              ? "Reset Password"
-              : "Verify & Continue"}
+                ? "Reset Password"
+                : "Verify & Continue"}
           </button>
         </form>
 

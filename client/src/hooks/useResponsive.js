@@ -12,7 +12,6 @@ const isStandalonePWA = () => {
   );
 };
 
-// Detect phone (exclude iPad/tablets so they can still use wide layout)
 const isPhoneUA = () => {
   if (typeof navigator === "undefined") return false;
   return /Android|iPhone|iPod/i.test(navigator.userAgent || "");
@@ -41,8 +40,6 @@ export const useResponsive = () => {
 
     window.addEventListener("resize", handleResize);
 
-    // Some browsers report incorrect width on first load in standalone;
-    // re-evaluate after a short delay.
     const t = setTimeout(handleResize, 150);
 
     return () => {

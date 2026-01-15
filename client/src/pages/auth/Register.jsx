@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios"
 import { User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
@@ -57,52 +58,46 @@ const Register = () => {
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       try {
-        // Get server URL from environment or use default
         const API_URL = (
           process.env.REACT_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
 
-        const response = await fetch(`${API_URL}/api/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            full_name: formData.fullName,
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-            phone: formData.mobile,
-          }),
+        await axios.post(`${API_URL}/api/auth/register`, {
+          full_name: formData.fullName,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.mobile,
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          showSuccess("Registration successful! Please verify your OTP.");
-          // Navigate to OTP verification page
-          navigate("/verify-otp", {
-            state: {
-              type: "register",
-              username: formData.username,
-            },
-          });
-        } else if (response.status === 409) {
-          showError("Username or Email already exists.");
-        } else {
-          showError(data.message || "Registration failed. Please try again.");
-          setErrors({ submit: data.message || "Registration failed" });
-        }
+        showSuccess("Registration successful! Please verify your OTP.");
+        navigate("/verify-otp", {
+          state: {
+            type: "register",
+            username: formData.username,
+          },
+        });
       } catch (err) {
         console.error("Registration error:", err);
-        showError("Unable to connect to server. Please try again later.");
-        setErrors({ submit: "Network error. Please try again." });
+
+        if (err.response) {
+          if (err.response.status === 409) {
+            showError("Username or Email already exists.");
+          } else {
+            const data = err.response.data;
+            showError(data.message || "Registration failed. Please try again.");
+            setErrors({ submit: data.message || "Registration failed" });
+          }
+        }
+        else {
+          showError("Unable to connect to server. Please try again later.");
+          setErrors({ submit: "Network error. Please try again." });
+        }
       } finally {
         setLoading(false);
       }
     } else {
       setErrors(newErrors);
-      // showError('Please fill in all required fields correctly.');
     }
   };
 
@@ -223,9 +218,8 @@ const Register = () => {
                 type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
                 name="confirmPassword"
-                className={`input-field ${
-                  errors.confirmPassword ? "error" : ""
-                }`}
+                className={`input-field ${errors.confirmPassword ? "error" : ""
+                  }`}
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -250,12 +244,6 @@ const Register = () => {
           >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
-
-          {/* {errors.submit && (
-            <div className="error-message" style={{ marginTop: '10px', textAlign: 'center', color: '#ef4444' }}>
-              {errors.submit}
-            </div>
-          )} */}
         </form>
 
         <div className="register-footer">

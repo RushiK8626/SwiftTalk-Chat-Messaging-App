@@ -55,9 +55,19 @@ import {
   blockUser,
   unblockUser,
   checkBlockStatus,
+  fetchChatInfo,
+  fetchChatMessages,
+  fetchUserProfileById,
+  fetchChatImage as fetchChatImageApi,
+  deleteMessage,
+  deleteMessagesBatch,
+  clearChat,
+  searchUsers,
+  addMemberToGroup,
+  exitGroup,
+  translateText,
 } from "../../utils/api";
 import EmojiPicker from "../../components/common/EmojiPicker";
-import { translateText } from "../../utils/api";
 import "./ChatWindow.css";
 
 const ChatWindow = ({
@@ -84,18 +94,12 @@ const ChatWindow = ({
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadingMessages, setUploadingMessages] = useState({}); // Track upload progress per message tempId
+  const [uploadingMessages, setUploadingMessages] = useState({});
   const { toasts, showError, showSuccess, removeToast } = useToast();
-
-  // Message context menu hook
   const messageContextMenu = useContextMenu();
   const [selectedMessage, setSelectedMessage] = useState(null);
-
-  // Header context menu hook
   const headerContextMenu = useContextMenu();
-  // Removed unused header button refs
 
-  // Get userId from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.user_id;
   const [chatInfo, setChatInfo] = useState({
@@ -127,7 +131,6 @@ const ChatWindow = ({
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchAddMember, setSearchAddMember] = useState("");
 
-  // AI Features State
   const [showSmartReplies, setShowSmartReplies] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
   const [translateMessage, setTranslateMessage] = useState(null);
@@ -163,22 +166,15 @@ const ChatWindow = ({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingMessage, setEditingMessage] = useState('');
 
-  // Calculate messages container height dynamically
   useEffect(() => {
     const calculateHeight = () => {
-      // Use requestAnimationFrame to ensure DOM is updated
       requestAnimationFrame(() => {
-        // Smart Replies is absolutely positioned, so don't include in height calculation
       });
     };
-
-    // Calculate immediately
     calculateHeight();
 
-    // Also calculate after a short delay to catch any async renders
     const timer = setTimeout(calculateHeight, 150);
 
-    // Use MutationObserver to watch for changes in input container height
     const observer = new MutationObserver(() => {
       calculateHeight();
     });
@@ -295,33 +291,11 @@ const ChatWindow = ({
     );
   };
 
-  // Function to fetch user profile by user_id
   const fetchUserProfile = useCallback(async (senderId) => {
     if (userProfiles[senderId] || senderId === userId) return;
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(
-        `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-        }/api/users/public/id/${senderId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const userData = data.user;
-
-        // Convert profile_pic to full URL if it exists
-        if (userData.profile_pic) {
-          // Extract filename from path like /uploads/25002-xxx.jpg
-          const filename = userData.profile_pic.split("/uploads/").pop();
-          userData.profile_pic = `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-            }/uploads/profiles/${filename}`;
-        }
-
+      const userData = await fetchUserProfileById(senderId);
+      if (userData) {
         setUserProfiles((prev) => ({
           ...prev,
           [senderId]: userData,
@@ -332,24 +306,11 @@ const ChatWindow = ({
     }
   }, [userProfiles, userId]);
 
-  // Function to fetch chat image with token
   const fetchChatImage = async (imagePath) => {
     if (!imagePath) return;
     try {
-      const token = localStorage.getItem("accessToken");
-      const filename = imagePath.split("/uploads/").pop();
-      const res = await fetch(
-        `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-        }/uploads/chat-images/${filename}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (res.ok) {
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
+      const blobUrl = await fetchChatImageApi(imagePath);
+      if (blobUrl) {
         setChatImageUrl(blobUrl);
       }
     } catch (err) {
@@ -357,32 +318,24 @@ const ChatWindow = ({
     }
   };
 
-  // Handle clicking on chat avatar/name to show info modal
   const handleShowChatInfo = () => {
     setShowChatInfoModal(true);
   };
 
-  // Handle clicking on message avatar to show user profile
   const handleShowUserProfile = (senderId) => {
     setSelectedUserId(senderId);
     setShowUserProfileModal(true);
   };
 
-  // Handle member click from group info modal
   const handleMemberClick = (memberId) => {
-    // If onMemberClick callback provided, use it to show member profile in modal
     if (onMemberClick) {
       onMemberClick(memberId);
       return;
     }
-
-    // Otherwise, navigate to user profile
     navigate(`/user/${memberId}`);
   };
 
-  // Handle responsive layout changes
   useEffect(() => {
-    // If viewing ChatWindow as a full page (not embedded) on a wide screen, navigate back to ChatHome with the chat open
     if (
       !isEmbedded &&
       isWideScreen &&
@@ -395,7 +348,6 @@ const ChatWindow = ({
 
   useEffect(() => {
     const fetchChatAndMessages = async () => {
-      // Validate userId before making requests
       if (!userId) {
         console.error("[ERROR] userId is not available");
         setError("User not authenticated");
@@ -406,23 +358,8 @@ const ChatWindow = ({
       setLoading(true);
       setError("");
       try {
-        const token = localStorage.getItem("accessToken");
-
-        // Fetch chat info
-        const chatRes = await fetch(
-          `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-          }/api/chats/${chatId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!chatRes.ok) throw new Error("Failed to fetch chat info");
-        const chatData = await chatRes.json();
+        const chatData = await fetchChatInfo(chatId);
         const chat = chatData.chat;
-        // Set chatInfo for header display
         let chatType = chat.chat_type;
         let members = chat.members || [];
         let chatName = "";
@@ -437,7 +374,6 @@ const ChatWindow = ({
               chatName = other.user.username;
             }
 
-            // Check blocking status
             try {
               const blockStatus = await checkBlockStatus(userId, other.user_id);
               if (blockStatus && blockStatus.isBlocked) {
@@ -452,18 +388,15 @@ const ChatWindow = ({
           }
         } else if (chatType === "group") {
           chatName = chat.chat_name;
-          // Fetch group chat image if available
           if (chat.chat_image) {
             fetchChatImage(chat.chat_image);
           }
         }
 
-        // Fetch other user's profile in private chat
         if (otherUserId) {
           fetchUserProfile(otherUserId);
         }
 
-        // Get is_online and last_seen for private chats
         let isOnline = false;
         let lastSeen = null;
         if (chatType === "private" && otherUserId) {
@@ -487,31 +420,15 @@ const ChatWindow = ({
           admins: chat.admins || [],
           description: chat.chat_description || chat.description || "",
           chat_image: chat.chat_image || null,
-          // mark whether current user is admin in this group
           is_admin:
             Array.isArray(chat.admins) &&
             chat.admins.some((a) => a.user_id === userId),
         }));
 
-        // Fetch messages with proper userId parameter
-        const res = await fetch(
-          `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-          }/api/messages/chat/${chatId}?userId=${encodeURIComponent(
-            String(userId)
-          )}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!res.ok) throw new Error("Failed to fetch messages");
-        const data = await res.json();
+        const data = await fetchChatMessages(chatId, userId);
 
         setMessages(data.messages || []);
 
-        // Parse message statuses from the API response
         if (data.messages && Array.isArray(data.messages)) {
           const statusMap = {};
           data.messages.forEach((message) => {
@@ -541,7 +458,6 @@ const ChatWindow = ({
     fetchChatAndMessages();
   }, [chatId, userId, fetchUserProfile]);
 
-  // Handle greeting message for newly created private chats
   useEffect(() => {
     const greetingChatId = sessionStorage.getItem("sendGreetingOnChatLoad");
     if (
@@ -549,17 +465,14 @@ const ChatWindow = ({
       Number(greetingChatId) === Number(chatId) &&
       messages.length > 0
     ) {
-      // Clear the flag
       sessionStorage.removeItem("sendGreetingOnChatLoad");
       setShouldSendGreeting(true);
     }
   }, [chatId, messages.length]);
 
-  // Send greeting message when flag is set and chat is ready
   useEffect(() => {
     if (shouldSendGreeting && !loading && messages.length > 0) {
       setShouldSendGreeting(false);
-      // Send greeting with a small delay to ensure everything is loaded
       const timer = setTimeout(() => {
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const messageData = {
@@ -575,7 +488,6 @@ const ChatWindow = ({
     }
   }, [shouldSendGreeting, loading, messages.length, chatId, userId]);
 
-  // Fetch user profiles for message senders
   useEffect(() => {
     messages.forEach((message) => {
       if (message.sender_id && message.sender_id !== userId) {
@@ -584,27 +496,21 @@ const ChatWindow = ({
     });
   }, [messages, fetchUserProfile, userId]);
 
-  // Mark received messages as read when they come into view
   useEffect(() => {
     if (messages.length === 0) return;
 
-    // Mark messages from other users as read (they're already delivered from API)
     messages.forEach((message) => {
-      // Only mark messages from other users (not sent by current user)
       if (message.sender_id !== userId) {
         const currentStatus = messageStatuses[message.message_id];
         const userStatus = currentStatus?.[userId];
 
-        // If message hasn't been marked as read yet, mark it as read
         if (userStatus !== "read") {
           socketService.updateMessageStatus(message.message_id, "read");
         }
       }
     });
-    // eslint-disable-next-line
   }, [messages, userId, messageStatuses]);
 
-  // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (chatImageUrl) {
@@ -613,17 +519,13 @@ const ChatWindow = ({
     };
   }, [chatImageUrl]);
 
-  // Socket.IO setup - Connect and join chat room
   useEffect(() => {
-    // Connect to socket
     const socket = socketService.connect(userId);
 
-    // Function to join chat when socket is ready
     const joinChatWhenReady = () => {
       if (socketService.isSocketConnected()) {
         socketService.joinChat(chatId);
       } else {
-        // Wait for connection
         socket.once("connect", () => {
           socketService.joinChat(chatId);
         });
@@ -632,7 +534,6 @@ const ChatWindow = ({
 
     joinChatWhenReady();
 
-    // DEBUG: Log all socket events for this chat
     const onAnyEvent = (event, data) => {
       if (
         event.includes("member") ||
@@ -643,9 +544,7 @@ const ChatWindow = ({
     };
     socket.onAny(onAnyEvent);
 
-    // Listen for new messages
     const handleNewMessage = (message) => {
-      // Only handle messages for the current chat
       const currentChatId = parseInt(chatId);
       const messageChatId = parseInt(message.chat_id);
 
@@ -654,13 +553,11 @@ const ChatWindow = ({
       }
 
       setMessages((prevMessages) => {
-        // Check if this is a real message (has message_id that's a number, not temp)
         const isRealMessage =
           message.message_id &&
           !message.message_id.toString().startsWith("temp");
 
         if (isRealMessage) {
-          // Check if we already have this real message (avoid duplicates)
           const existingRealMessage = prevMessages.some(
             (m) => m.message_id === message.message_id && !m.isOptimistic
           );
@@ -668,33 +565,27 @@ const ChatWindow = ({
             return prevMessages;
           }
 
-          // Find and remove the matching optimistic message by tempId
           const filteredMessages = prevMessages.filter((m) => {
-            // If it's not an optimistic message, keep it
             if (!m.isOptimistic) return true;
 
-            // Remove optimistic message if tempId matches
             if (m.tempId === message.tempId) {
-              return false; // Remove this optimistic message
+              return false; 
             }
 
-            return true; // Keep this optimistic message
+            return true;
           });
 
           return [...filteredMessages, message];
         } else {
-          // If it's an optimistic message, just add it
           return [...prevMessages, message];
         }
       });
 
-      // Fetch user profile if needed
       if (message.sender_id && message.sender_id !== userId) {
         fetchUserProfile(message.sender_id);
       }
     };
 
-    // Listen for typing indicators
     const handleUserTyping = ({ userId: typingUserId, userName }) => {
       if (typingUserId !== userId) {
         setTypingUsers((prev) => {
@@ -719,7 +610,6 @@ const ChatWindow = ({
       });
     };
 
-    // Listen for user online event
     const handleUserOnline = ({ user_id, username, full_name, status }) => {
       setChatInfo((prev) => {
         if (prev.otherUserId === user_id) {
@@ -733,7 +623,6 @@ const ChatWindow = ({
       });
     };
 
-    // Listen for user offline event
     const handleUserOffline = ({ user_id, username, lastSeen }) => {
       setChatInfo((prev) => {
         if (prev.otherUserId === user_id) {
@@ -747,7 +636,6 @@ const ChatWindow = ({
       });
     };
 
-    // Listen for user online status updates
     const handleUserOnlineStatus = ({
       userId: statusUserId,
       isOnline,
@@ -765,7 +653,6 @@ const ChatWindow = ({
       });
     };
 
-    // Listen for file upload progress updates from server
     const handleFileUploadProgress = (progressData) => {
       const { progress, tempId } = progressData;
       setUploadProgress(progress);
@@ -777,17 +664,14 @@ const ChatWindow = ({
       }
     };
 
-    // Listen for file upload success from server
     const handleFileUploadSuccess = (messageData) => {
       const { tempId } = messageData;
 
-      // Clear uploading state for this message
       if (tempId) {
         setUploadingMessages(prev => {
           const newState = { ...prev };
           delete newState[tempId];
 
-          // Reset global upload state if no more uploads pending
           if (Object.keys(newState).length === 0) {
             setUploading(false);
             setUploadProgress(0);
@@ -796,7 +680,6 @@ const ChatWindow = ({
           return newState;
         });
 
-        // Update the optimistic message to mark it as no longer uploading
         setMessages(prevMessages =>
           prevMessages.map(msg =>
             msg.tempId === tempId
@@ -806,11 +689,9 @@ const ChatWindow = ({
         );
       }
 
-      // Show success toast
       showSuccess("File uploaded successfully!");
     };
 
-    // Listen for message status updates (delivered/read)
     const handleMessageStatusUpdated = (statusData) => {
       const { message_id, user_id, status } = statusData;
 
@@ -825,7 +706,6 @@ const ChatWindow = ({
       });
     };
 
-    // Listen for message update events
     const handleMessageUpdated = (data) => {
       setMessages((prevMessages) =>
         prevMessages.map((m) =>
@@ -841,7 +721,6 @@ const ChatWindow = ({
       );
     };
 
-    // Listen for message deletion events
     const handleMessageDeletedForAllUsers = (data) => {
       setMessages((prevMessages) =>
         prevMessages.filter((m) => m.message_id !== data.message_id)
@@ -866,14 +745,11 @@ const ChatWindow = ({
       setEditingMessageId(null);
     };
 
-    // Handle member added to group
     const handleMemberAdded = (data) => {
-      // Only add system message if event is for current chat
       if (data.chat_id !== parseInt(chatId)) {
         return;
       }
 
-      // Add system message to chat
       const systemMessage = {
         message_id: `system_${Date.now()}_${Math.random()}`,
         chat_id: chatId,
@@ -895,14 +771,11 @@ const ChatWindow = ({
       setMessages((prevMessages) => [...prevMessages, systemMessage]);
     };
 
-    // Handle member added to group
     const handleMemberExited = (data) => {
-      // Only add system message if event is for current chat
       if (data.chat_id !== parseInt(chatId)) {
         return;
       }
 
-      // Add system message to chat
       const systemMessage = {
         message_id: `system_${Date.now()}_${Math.random()}`,
         chat_id: chatId,
@@ -924,7 +797,6 @@ const ChatWindow = ({
       setMessages((prevMessages) => [...prevMessages, systemMessage]);
     };
 
-    // Add listeners
     socket.on("new_message", handleNewMessage);
     socket.on("user_typing", handleUserTyping);
     socket.on("user_stopped_typing", handleUserStoppedTyping);
@@ -943,15 +815,12 @@ const ChatWindow = ({
     socket.on("member_removed", handleMemberAdded);
     socket.on("member_exited", handleMemberExited);
 
-    // Cleanup on unmount - MUST remove listeners with same callback reference
     return () => {
       socketService.leaveChat(chatId);
 
       if (socket) {
-        // Remove debug listener
         socket.offAny(onAnyEvent);
 
-        // Remove each listener with the exact callback reference
         socket.off("new_message", handleNewMessage);
         socket.off("user_typing", handleUserTyping);
         socket.off("user_stopped_typing", handleUserStoppedTyping);
@@ -971,11 +840,8 @@ const ChatWindow = ({
         socket.off("member_exited", handleMemberExited);
       }
     };
-    // eslint-disable-next-line
   }, [chatId, userId]);
 
-
-  // Scroll to bottom with improved reliability using SimpleBar's scroll element
   const scrollToBottom = useCallback(() => {
     const performScroll = () => {
       const scrollableElement = simpleBarRef.current?.getScrollElement?.();
@@ -1005,10 +871,8 @@ const ChatWindow = ({
     }, 400);
   }, []);
 
-  // Scroll to bottom when messages change, with delay for content rendering
   useEffect(() => {
     if (messages.length > 0) {
-      // Small delay to allow DOM to update
       const timer = setTimeout(() => {
         scrollToBottom();
       }, 50);
@@ -1021,33 +885,29 @@ const ChatWindow = ({
     if (!messageText.trim()) return;
 
     const messageToSend = messageText.trim();
-    setMessageText(""); // Clear input immediately for better UX
+    setMessageText("");
 
-    // Stop typing indicator
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }
     socketService.sendStoppedTyping(chatId, userId);
 
-    // Generate temporary ID for tracking the message
     const tempId = `temp_${Date.now()}_${Math.random()}`;
 
-    // Send message via Socket.IO with tempId
     const messageData = {
       chat_id: parseInt(chatId),
       sender_id: userId,
       message_text: messageToSend,
       message_type: "text",
-      tempId: tempId, // Include tempId so server can send it back
-      reply_to_id: replyToMessage?.message_id || null, // Include reply_to_id if replying
+      tempId: tempId, 
+      reply_to_id: replyToMessage?.message_id || null, 
     };
 
     socketService.sendMessage(messageData);
 
-    // Optimistically add message to UI with a unique temporary ID
     const optimisticMessage = {
-      message_id: tempId, // Temporary unique ID
+      message_id: tempId, 
       tempId: tempId,
       ...messageData,
       created_at: new Date().toISOString(),
@@ -1058,13 +918,12 @@ const ChatWindow = ({
         profile_pic: user.profile_pic,
       },
       status: [{ status: "sending" }],
-      isOptimistic: true, // Flag to identify optimistic messages
-      reply_to_message: replyToMessage, // Include the reply message for UI
+      isOptimistic: true, 
+      reply_to_message: replyToMessage, 
     };
 
     setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
 
-    // Clear reply mode after sending
     setReplyToMessage(null);
   };
 
@@ -1073,7 +932,6 @@ const ChatWindow = ({
 
     const updatedText = messageText.trim();
 
-    // Send message edit via Socket.IO
     const messageData = {
       message_id: editingMessageId,
       message_text: updatedText
@@ -1081,7 +939,6 @@ const ChatWindow = ({
 
     socketService.updateMessage(messageData);
 
-    // Reset editing state
     setMessageEditing(false);
     setEditingMessageId(null);
     setMessageText("");
@@ -1099,7 +956,6 @@ const ChatWindow = ({
     setEditingMessageId(selectedMessage.message_id);
   }
 
-  // Handle typing indicator
   const handleTyping = useCallback(() => {
     if (!socketService.isSocketConnected()) {
       return;
@@ -1107,18 +963,15 @@ const ChatWindow = ({
 
     socketService.sendTyping(chatId, userId);
 
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set new timeout to stop typing indicator after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socketService.sendStoppedTyping(chatId, userId);
     }, 2000);
   }, [chatId, userId]);
 
-  // Message context menu handlers
   const handleReplyMessage = (referenced_message) => {
     const messageToReply = selectedMessage || referenced_message;
     if (messageToReply) {
@@ -1145,24 +998,9 @@ const ChatWindow = ({
     if (!selectedMessage) return;
 
     try {
-      const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
-      ).replace(/\/+$/, "");
-      const token = localStorage.getItem("accessToken");
+      const success = await deleteMessage(selectedMessage.message_id);
 
-      const res = await fetch(
-        `${API_URL}/api/messages/${selectedMessage.message_id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (res.ok) {
-        // Remove message from local state
+      if (success) {
         setMessages((prevMessages) =>
           prevMessages.filter(
             (m) => m.message_id !== selectedMessage.message_id
@@ -1181,7 +1019,6 @@ const ChatWindow = ({
   const handleDeleteMessageForAll = async () => {
     if (!selectedMessage) return;
 
-    // Only allow deletion if it's the sender's message or if user is admin
     const isOwn = selectedMessage.sender_id === userId;
     const isAdmin = chatInfo.is_admin;
 
@@ -1195,7 +1032,7 @@ const ChatWindow = ({
     }
 
     try {
-      socketService.deleteMessageForAll(selectedMessage.message_id); // ✅ USE WEBSOCKET
+      socketService.deleteMessageForAll(selectedMessage.message_id);
       showSuccess("Message deleted for everyone");
       messageContextMenu.closeMenu();
     } catch (err) {
@@ -1204,13 +1041,11 @@ const ChatWindow = ({
     }
   };
 
-  // Handle inline translation of a message
   const handleTranslateMessage = async (message, targetLanguage) => {
     if (!message?.message_text) return;
 
     const messageId = message.message_id;
 
-    // Set loading state
     setMessageTranslations(prev => ({
       ...prev,
       [messageId]: { text: '', lang: targetLanguage, loading: true }
@@ -1227,7 +1062,6 @@ const ChatWindow = ({
     } catch (error) {
       console.error('Translation error:', error);
       showError('Translation failed. Please try again.');
-      // Remove the translation entry on error
       setMessageTranslations(prev => {
         const newTranslations = { ...prev };
         delete newTranslations[messageId];
@@ -1236,7 +1070,6 @@ const ChatWindow = ({
     }
   };
 
-  // Clear translation for a message (show original)
   const handleShowOriginal = (messageId) => {
     setMessageTranslations(prev => {
       const newTranslations = { ...prev };
@@ -1245,12 +1078,10 @@ const ChatWindow = ({
     });
   };
 
-  // Get default translation language from settings
   const getDefaultTranslationLanguage = () => {
     return localStorage.getItem("defaultTranslationLanguage") || "en";
   };
 
-  // Get context menu items based on message ownership
   const getMessageContextMenuItems = (message) => {
     const isOwn = message?.sender_id === userId;
     const hasTranslation = messageTranslations[message?.message_id];
@@ -1281,7 +1112,6 @@ const ChatWindow = ({
       })
     }
 
-    // Add translation options based on whether message already has translation
     if (hasTranslation) {
       items.push({
         id: "show-original",
@@ -1339,7 +1169,6 @@ const ChatWindow = ({
       }
     );
 
-    // Only show delete for all option for own messages or admins
     if (isOwn || chatInfo.is_admin) {
       items.push({ id: "divider", divider: true });
       items.push({
@@ -1355,7 +1184,6 @@ const ChatWindow = ({
     return items;
   };
 
-  /// For sent messages (aligned right) - use right edge
   const handleSentMessageContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1368,7 +1196,6 @@ const ChatWindow = ({
     });
   };
 
-  // For received messages (aligned left) - use left edge
   const handleReceivedMessageContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1388,34 +1215,12 @@ const ChatWindow = ({
       )
     ) {
       try {
-        const API_URL = (
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
-        ).replace(/\/+$/, "");
-        const token = localStorage.getItem("accessToken");
-
-        const res = await fetch(
-          `${API_URL}/api/messages/chat/${chatId}/clear`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          // Clear messages from local state
-          setMessages([]);
-          showSuccess(`Chat cleared successfully (${data.deletedCount} messages)`);
-        } else {
-          const errorData = await res.json();
-          showError(errorData.error || "Failed to clear chat");
-        }
+        const data = await clearChat(chatId);
+        setMessages([]);
+        showSuccess(`Chat cleared successfully (${data.deletedCount} messages)`);
       } catch (err) {
         console.error("Error clearing chat:", err);
-        showError("Error clearing chat");
+        showError(err.message || "Error clearing chat");
       }
     }
   };
@@ -1427,7 +1232,6 @@ const ChatWindow = ({
   const handleBlockUser = async () => {
     if (chatInfo.chat_type !== "private") return;
 
-    // chatInfo uses camelCase otherUserId
     const otherUserId = chatInfo.otherUserId;
     if (!otherUserId) return;
 
@@ -1476,7 +1280,6 @@ const ChatWindow = ({
     setAddMemberResults([]);
   };
 
-  // Search for users to add to group (excluding existing members)
   const searchUsersForAddMember = useCallback(
     async (query) => {
       if (!query.trim()) {
@@ -1486,43 +1289,18 @@ const ChatWindow = ({
       }
 
       try {
-        const API_URL = (
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
-        ).replace(/\/+$/, "");
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(
-          `${API_URL}/api/users/public/search?query=${encodeURIComponent(
-            query
-          )}&page=1&limit=10`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          // Get existing member IDs
-          const existingMemberIds =
-            chatInfo.members?.map((m) => m.user_id) || [];
+        const users = await searchUsers(query, 1, 10);
+        
+        const existingMemberIds =
+          chatInfo.members?.map((m) => m.user_id) || [];
 
-          // Filter out existing members and current user
-          const usersWithPics = (data.users || [])
-            .filter(
-              (user) =>
-                user.user_id !== userId &&
-                !existingMemberIds.includes(user.user_id)
-            )
-            .map((user) => {
-              if (user.profile_pic) {
-                const filename = user.profile_pic.split("/uploads/").pop();
-                user.profile_pic = `${API_URL}/uploads/profiles/${filename}`;
-              }
-              return user;
-            });
-          setAddMemberResults(usersWithPics);
-        }
+        const filteredUsers = users.filter(
+          (user) =>
+            user.user_id !== userId &&
+            !existingMemberIds.includes(user.user_id)
+        );
+        
+        setAddMemberResults(filteredUsers);
       } catch (err) {
         console.error("Error searching users:", err);
         showError("Error searching users");
@@ -1533,7 +1311,6 @@ const ChatWindow = ({
     [chatInfo.members, userId, showError]
   );
 
-  // Debounce effect for add member search
   useEffect(() => {
     if (!searchAddMember.trim()) {
       setAddMemberResults([]);
@@ -1544,12 +1321,11 @@ const ChatWindow = ({
     setAddMemberLoading(true);
     const debounceTimer = setTimeout(() => {
       searchUsersForAddMember(searchAddMember);
-    }, 300); // 300ms debounce
+    }, 300); 
 
     return () => clearTimeout(debounceTimer);
   }, [searchAddMember, searchUsersForAddMember]);
 
-  // Reset confirmation state when add member modal closes
   useEffect(() => {
     if (!showAddMemberModal) {
       setShowAddMemberConfirmation(false);
@@ -1558,92 +1334,34 @@ const ChatWindow = ({
     }
   }, [showAddMemberModal]);
 
-  // Show confirmation before adding user to group
   const handleSelectUserToAddClick = (selectedUser) => {
     setSelectedUserToAdd(selectedUser);
     setShowAddMemberConfirmation(true);
   };
 
-  // Handle selecting a user to add to group
   const handleSelectUserToAdd = async () => {
     if (!selectedUserToAdd) return;
 
     try {
       setIsAddingMember(true);
-      const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
-      ).replace(/\/+$/, "");
-      let token = localStorage.getItem("accessToken");
+      
+      await addMemberToGroup(chatId, selectedUserToAdd.user_id);
+      
+      showSuccess(
+        `${selectedUserToAdd.full_name || selectedUserToAdd.username
+        } added to group`
+      );
 
-      // Add member to group
-      let addMemberRes = await fetch(`${API_URL}/api/chats/${chatId}/members`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: selectedUserToAdd.user_id,
-        }),
-      });
-
-      // If unauthorized, try to refresh token
-      if (addMemberRes.status === 401) {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (refreshToken) {
-          try {
-            const refreshRes = await fetch(
-              `${API_URL}/api/auth/refresh-token`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ refreshToken: String(refreshToken) }),
-              }
-            );
-            if (refreshRes.ok) {
-              const refreshData = await refreshRes.json();
-              localStorage.setItem("accessToken", refreshData.accessToken);
-              token = refreshData.accessToken;
-
-              // Retry adding member with new token
-              addMemberRes = await fetch(
-                `${API_URL}/api/chats/${chatId}/members`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    user_id: selectedUserToAdd.user_id,
-                  }),
-                }
-              );
-            }
-          } catch (refreshErr) {
-            console.error("Token refresh failed:", refreshErr);
-          }
-        }
-      }
-
-      if (addMemberRes.ok) {
-        showSuccess(
-          `${selectedUserToAdd.full_name || selectedUserToAdd.username
-          } added to group`
-        );
-        // Close modal and clear search
-        setShowAddMemberModal(false);
-        setShowAddMemberConfirmation(false);
-        setSearchAddMember("");
-        setAddMemberResults([]);
-        setSelectedUserToAdd(null);
-      } else {
-        const errorData = await addMemberRes.json();
-        showError(errorData.message || "Failed to add member");
-      }
+      setShowAddMemberModal(false);
+      setShowAddMemberConfirmation(false);
+      setSearchAddMember("");
+      setAddMemberResults([]);
+      setSelectedUserToAdd(null);
     } catch (err) {
       console.error("Error adding member:", err);
-      showError("Failed to add member");
+      showError(err.message || "Failed to add member");
+    } finally {
+      setIsAddingMember(false);
     }
   };
 
@@ -1652,7 +1370,6 @@ const ChatWindow = ({
   };
 
   const handleGroupInfoUpdateSuccess = (updatedChat) => {
-    // Update chat info with new details
     setChatInfo((prev) => ({
       ...prev,
       name: updatedChat.chat_name || prev.name,
@@ -1660,7 +1377,6 @@ const ChatWindow = ({
       description: updatedChat.chat_description || "",
     }));
 
-    // Refetch chat image if available
     if (updatedChat.chat_image) {
       fetchChatImage(updatedChat.chat_image);
     }
@@ -1673,20 +1389,9 @@ const ChatWindow = ({
 
     if (window.confirm("Are you sure you want to exit this group?")) {
       try {
-        const token = localStorage.getItem("accessToken");
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL || "http://localhost:3001"
-          }/api/chats/${chatId}/members/${userId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const success = await exitGroup(chatId, userId);
 
-        if (response.ok) {
+        if (success) {
           showSuccess("Exited group successfully");
           setTimeout(() => navigate("/chats"), 1500);
         } else {
@@ -1699,18 +1404,13 @@ const ChatWindow = ({
     }
   };
 
-  // Generate header context menu items based on chat type
   const getHeaderMenuItems = () => {
     const items = [
       {
         id: "search",
         label: "Search",
         icon: <Search size={16} />,
-        onClick: (e) => {
-          // e.preventDefault();
-          // e.stopPropagation();
-          setShowSearch(!showSearch);
-        },
+        onClick: () => setShowSearch(!showSearch),
       },
       {
         id: "summary",
@@ -1735,9 +1435,7 @@ const ChatWindow = ({
         onClick: handleViewContactOrGroupInfo,
       });
 
-      // Show Block or Unblock based on current status
       if (isBlocked && !isBlockedByOther) {
-        // User has blocked the other person - show unblock option
         items.push({
           id: "unblock",
           label: "Unblock User",
@@ -1746,7 +1444,6 @@ const ChatWindow = ({
           onClick: handleUnblockUser,
         });
       } else if (!isBlocked) {
-        // Not blocked - show block option
         items.push({
           id: "block",
           label: "Block User",
@@ -1763,7 +1460,6 @@ const ChatWindow = ({
         onClick: handleViewContactOrGroupInfo,
       });
 
-      // Show add member only to group admin
       if (chatInfo.is_admin) {
         items.push({
           id: "add-member",
@@ -1812,7 +1508,6 @@ const ChatWindow = ({
 
     const file = files[0];
 
-    // Validate file size (max 50MB)
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       alert("File size exceeds 50MB limit");
@@ -1822,11 +1517,9 @@ const ChatWindow = ({
       return;
     }
 
-    // Store file for later sending
     setSelectedFile(file);
     setShowFilePreview(true);
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -1844,30 +1537,25 @@ const ChatWindow = ({
       setUploading(true);
       setUploadProgress(0);
 
-      // Generate temporary ID for tracking the message
       const tempId = `temp-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}`;
 
-      // Initialize upload progress tracking for this message
       setUploadingMessages(prev => ({
         ...prev,
         [tempId]: { progress: 0, fileName: selectedFile.name, fileSize: selectedFile.size }
       }));
 
-      // Convert file to base64
       const reader = new FileReader();
       reader.onload = () => {
-        const base64File = reader.result.split(",")[1]; // Get only the base64 part
+        const base64File = reader.result.split(",")[1]; 
 
-        // Update progress to show file read is complete (10%)
         setUploadingMessages(prev => ({
           ...prev,
           [tempId]: { ...prev[tempId], progress: 10 }
         }));
         setUploadProgress(10);
 
-        // Prepare file message data
         const fileMessageData = {
           chat_id: parseInt(chatId),
           message_text: messageText.trim() || "",
@@ -1878,7 +1566,6 @@ const ChatWindow = ({
           tempId: tempId,
         };
 
-        // Add optimistic message to UI immediately with uploading flag
         const optimisticMessage = {
           message_id: tempId,
           tempId: tempId,
@@ -1907,9 +1594,7 @@ const ChatWindow = ({
 
         setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
 
-        // Progress callback for upload tracking
         const onProgress = (progress) => {
-          // Scale progress: 10% is file read, 10-100% is upload
           const scaledProgress = 10 + (progress * 0.9);
           setUploadingMessages(prev => ({
             ...prev,
@@ -1918,10 +1603,8 @@ const ChatWindow = ({
           setUploadProgress(scaledProgress);
         };
 
-        // Send via WebSocket with progress callback
         socketService.sendFileMessage(fileMessageData, onProgress);
 
-        // Clear input states after sending (but keep uploading state until complete)
         setSelectedFile(null);
         setShowFilePreview(false);
         setMessageText("");
@@ -1940,9 +1623,8 @@ const ChatWindow = ({
 
       reader.readAsDataURL(selectedFile);
     } catch (err) {
-      console.error("❌ File upload error:", err);
+      console.error("File upload error:", err);
 
-      // Parse error message for better user feedback
       let errorMessage = "File upload failed";
       const errorStr = err.message || err.toString();
 
@@ -1959,18 +1641,15 @@ const ChatWindow = ({
         errorMessage = errorStr;
       }
 
-      // Remove the selected file and close preview
       setSelectedFile(null);
       setShowFilePreview(false);
       setUploading(false);
       setUploadProgress(0);
 
-      // Show error toast
       showError(errorMessage, 4000);
     }
   };
 
-  // Get initials from display name
   const getInitials = (name) => {
     if (!name) return "💬";
     const words = name.trim().split(" ");
@@ -1980,7 +1659,6 @@ const ChatWindow = ({
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Helper function to get referenced message from messages array
   const getReferencedMessage = (referencedMessageId) => {
     if (!referencedMessageId) return null;
     return messages.find((msg) => msg.message_id === referencedMessageId);
@@ -1996,11 +1674,9 @@ const ChatWindow = ({
         [id]: !prevItems[id],
       };
 
-      // Calculate the actual count of selected items
       const selectedCount =
         Object.values(newSelectedMessages).filter(Boolean).length;
 
-      // Update messageSelection based on count
       setMessageSelection(selectedCount > 0);
 
       return newSelectedMessages;
@@ -2014,7 +1690,6 @@ const ChatWindow = ({
     setMessageSelection(false);
   };
 
-  // Batch delete selected messages for self
   const handleDeleteSelectedMessages = async () => {
     const selectedIds = Object.keys(selectedMessages).filter(
       (id) => selectedMessages[id]
@@ -2034,48 +1709,28 @@ const ChatWindow = ({
     }
 
     try {
-      const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
-      ).replace(/\/+$/, "");
-      const token = localStorage.getItem("accessToken");
-
-      const res = await fetch(`${API_URL}/api/messages/batch`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message_ids: selectedIds }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        // Remove deleted messages from local state
-        setMessages((prevMessages) =>
-          prevMessages.filter((m) => !selectedIds.includes(m.message_id))
-        );
-        clearAllSelection();
-        showSuccess(`${data.deletedCount} message(s) deleted`);
-      } else {
-        const errorData = await res.json();
-        showError(errorData.error || "Failed to delete messages");
-      }
+      const data = await deleteMessagesBatch(selectedIds);
+      setMessages((prevMessages) =>
+        prevMessages.filter((m) => !selectedIds.includes(m.message_id))
+      );
+      clearAllSelection();
+      showSuccess(`${data.deletedCount} message(s) deleted`);
     } catch (err) {
       console.error("Error deleting messages:", err);
-      showError("Error deleting messages");
+      showError(err.message || "Error deleting messages");
     }
   };
 
   const addEmoji = (emoji) => {
-    setMessageText((prev) => prev + emoji.native); // insert emoji directly
+    setMessageText((prev) => prev + emoji.native);
   };
 
   const isWithinTwoHours = (timestamp) => {
-    const now = Date.now();               // current time in ms
-    const past = new Date(timestamp).getTime(); // given timestamp in ms
+    const now = Date.now();             
+    const past = new Date(timestamp).getTime();
 
     const diffMs = now - past;
-    const TWO_HOURS = 2 * 60 * 60 * 1000; // 2 hours in ms
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
 
     return diffMs < TWO_HOURS;
   };
@@ -2085,7 +1740,6 @@ const ChatWindow = ({
 
   return (
     <div className="chat-window">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -2229,12 +1883,10 @@ const ChatWindow = ({
         )}
       </div>
 
-      {/* Search Box */}
       {showSearch && (
         <div className="search-box-container">
           <div className="search-box-wrapper">
             <div className="search-input-wrapper">
-              {/* <Search size={18} className="search-icon" /> */}
               <input
                 ref={searchInputRef}
                 type="text"
@@ -2319,7 +1971,6 @@ const ChatWindow = ({
             </div>
           ) : (
             messages.map((message) => {
-              // Handle system messages (member added, removed, etc.)
               if (message.isSystem || message.message_type === "system") {
                 return (
                   <SystemMessage
@@ -2336,7 +1987,6 @@ const ChatWindow = ({
 
               const isSelf = message.sender_id === userId;
               const isGroup = chatInfo.chat_type === "group";
-              // For self messages, align right and do not show avatar or sender name
               if (isSelf) {
                 return (
                   <>
@@ -2464,7 +2114,6 @@ const ChatWindow = ({
                                 )
                                 : message.message_text}
                             </p>
-                            {/* Inline Translation */}
                             {messageTranslations[message.message_id] && (
                               <div className="message-translation">
                                 {messageTranslations[message.message_id].loading ? (
@@ -2526,7 +2175,6 @@ const ChatWindow = ({
                   </>
                 );
               }
-              // For messages from others, align left, show avatar and sender name in group chat
               return (
                 <>
                   <div
@@ -2824,11 +2472,9 @@ const ChatWindow = ({
               </div>
             )}
 
-            {/* File Preview Section */}
             {showFilePreview && selectedFile && (
               <div className="file-preview-container">
                 {isImageFile(selectedFile.name, selectedFile.type) ? (
-                  // Image preview
                   <div className="file-preview-image">
                     <img
                       src={URL.createObjectURL(selectedFile)}
@@ -2845,7 +2491,6 @@ const ChatWindow = ({
                     </button>
                   </div>
                 ) : (
-                  // File card with logo
                   <div className="file-preview-card">
                     <div className="file-logo-wrapper">
                       <img
@@ -2876,7 +2521,6 @@ const ChatWindow = ({
               </div>
             )}
 
-            {/* Upload Progress Bar */}
             {uploading && (
               <div className="upload-progress-container">
                 <div className="upload-progress-bar">
@@ -2895,7 +2539,6 @@ const ChatWindow = ({
               </div>
             )}
 
-            {/* Reply Preview */}
             {replyToMessage && (
               <div className="reply-preview-container">
                 <div className="reply-preview">
@@ -2926,7 +2569,6 @@ const ChatWindow = ({
               </div>
             )}
 
-            {/* Edit Mode Indicator */}
             {messageEditing && (
               <div className="edit-indicator">
                 <div className="edit-label">
@@ -2944,8 +2586,6 @@ const ChatWindow = ({
               </div>
             )}
 
-
-            {/* Message Input */}
             <form
               onSubmit={(e) => {
                 if (messageEditing) {
@@ -2994,7 +2634,6 @@ const ChatWindow = ({
                   }
                 }}
                 onKeyDown={(e) => {
-                  // Enter to send, Shift+Enter for newline
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     if (messageEditing) {
@@ -3043,12 +2682,10 @@ const ChatWindow = ({
               </button>
             </form>
 
-            {/* Typing indicator */}
             {typingUsers.length > 0 && !selectedFile && (
               <TypingIndicator typingUsers={typingUsers} />
             )}
 
-            {/* Smart Replies - inside input container, above the form */}
             {showSmartReplies && (
               <div ref={smartRepliesRef} className="smart-replies-wrapper">
                 <SmartReplies
@@ -3063,7 +2700,6 @@ const ChatWindow = ({
               </div>
             )}
 
-            {/* Conversation Starters - show when no messages */}
             {messages.length === 0 && !loading && showConversationStarters && (
               <div className="conversation-starters-wrapper">
                 <ConversationStarters
@@ -3080,7 +2716,6 @@ const ChatWindow = ({
         )}
       </div>
 
-      {/* Chat Info Modal */}
       <ChatInfoModal
         isOpen={showChatInfoModal}
         onClose={() => setShowChatInfoModal(false)}
@@ -3090,7 +2725,6 @@ const ChatWindow = ({
         onMemberClick={handleMemberClick}
       />
 
-      {/* Update Group Info Modal */}
       <UpdateGroupInfoModal
         isOpen={showUpdateGroupInfoModal}
         onClose={() => setShowUpdateGroupInfoModal(false)}
@@ -3103,7 +2737,6 @@ const ChatWindow = ({
         onUpdateSuccess={handleGroupInfoUpdateSuccess}
       />
 
-      {/* User Profile Modal */}
       <ChatInfoModal
         isOpen={showUserProfileModal}
         onClose={() => setShowUserProfileModal(false)}
@@ -3112,7 +2745,6 @@ const ChatWindow = ({
         otherUserId={selectedUserId}
       />
 
-      {/* Message Context Menu */}
       <ContextMenu
         isOpen={messageContextMenu.isOpen}
         x={messageContextMenu.x}
@@ -3121,7 +2753,6 @@ const ChatWindow = ({
         onClose={messageContextMenu.closeMenu}
       />
 
-      {/* Header Context Menu */}
       <ContextMenu
         isOpen={headerContextMenu.isOpen}
         x={headerContextMenu.x}
@@ -3131,7 +2762,6 @@ const ChatWindow = ({
         onClose={headerContextMenu.closeMenu}
       />
 
-      {/* Add Member Modal */}
       {showAddMemberModal && (
         <div
           className="modal-overlay"
@@ -3213,7 +2843,6 @@ const ChatWindow = ({
         </div>
       )}
 
-      {/* Add Member Confirmation */}
       <ConfirmationBox
         isOpen={showAddMemberConfirmation}
         title="Add Member"
@@ -3229,8 +2858,6 @@ const ChatWindow = ({
         }}
       />
 
-      {/* AI Features Modals */}
-      {/* Message Translator */}
       {showTranslator && translateMessage && (
         <MessageTranslator
           messageText={translateMessage.message_text}
@@ -3248,12 +2875,10 @@ const ChatWindow = ({
         />
       )}
 
-      {/* Chat Summary */}
       {showSummary && (
         <ChatSummary chatId={chatId} onClose={() => setShowSummary(false)} />
       )}
 
-      {/* Toast notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );

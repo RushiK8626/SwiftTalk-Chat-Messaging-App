@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./ForgotPassword.css";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
@@ -22,34 +23,36 @@ const ForgotPassword = () => {
       const API_URL = (
         process.env.REACT_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
-      const res = await fetch(`${API_URL}/api/auth/request-password-reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/request-password-reset`,
+        { email },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      showSuccess(data.message || "OTP sent to your email");
+      const numericId = Number(data.user_id);
+      const url = `/verify-otp?uid=${encodeURIComponent(numericId)}`;
+      navigate(url, {
+        state: {
+          userId: numericId,
+          type: "reset",
+          message: data.message,
+          expiresIn: data.expiresIn,
+        },
       });
-      const data = await res.json();
-      if (res.ok) {
-        showSuccess(data.message || "OTP sent to your email");
-        // Expect backend to return a userId/session identifier to continue reset
-        // Pass the numeric id through navigation state and as a URL query parameter
-        const numericId = Number(data.user_id);
-        const url = `/verify-otp?uid=${encodeURIComponent(numericId)}`;
-        navigate(url, {
-          state: {
-            userId: numericId,
-            type: "reset",
-            message: data.message,
-            expiresIn: data.expiresIn,
-          },
-        });
-      } else {
-        showError(
-          data.error || data.message || "Failed to request password reset"
-        );
-      }
     } catch (err) {
       console.error("Request password reset error:", err);
-      showError("Unable to request password reset. Try again later.");
+      if (err.response) {
+        showError(
+          err.response.data.error ||
+          err.response.data.message ||
+          "Failed to request password reset"
+        );
+      }
+      else showError("Unable to request password reset. Try again later.");
     } finally {
       setLoading(false);
     }

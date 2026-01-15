@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
@@ -21,7 +22,6 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: "" });
     }
@@ -45,42 +45,29 @@ const Login = () => {
           process.env.REACT_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
 
-        const response = await fetch(`${API_URL}/api/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: formData.username,
-            email: formData.username,
-            password: formData.password,
-          }),
+        const { data } = await axios.post(`${API_URL}/api/auth/login`, {
+          username: formData.username,
+          email: formData.username,
+          password: formData.password,
         });
 
-        let data;
-        const contentType = response.headers.get("content-type");
-
-        if (response.ok) {
-          if (contentType && contentType.includes("application/json")) {
-            data = await response.json();
-          } else {
-            throw new Error("Server returned an invalid response");
+        navigate("/verify-otp", {
+          state: {
+            userId: data.userId,
+            username: data.username,
+            type: "login",
+            message: data.message,
+            expiresIn: data.expiresIn || 300,
           }
-          // Navigate to OTP verification with userId and other details
-          navigate("/verify-otp", {
-            state: {
-              userId: data.userId,
-              username: data.username,
-              type: "login",
-              message: data.message,
-              expiresIn: data.expiresIn || 300,
-            },
-          });
-        } else if (response.status === 401) {
-          showError("Invalid Credentials. Login Failed");
-        } else {
-          if (contentType && contentType.includes("application/json")) {
-            const errData = await response.json();
+        });
+      } catch (error) {
+        console.error("Login error:", error);
+
+        if (error.response) {
+          if (error.response.status === 401) {
+            showError("Invalid Credentials. Login Failed");
+          } else {
+            const errData = error.response.data;
             showError("Login Failed. Please try again");
             setErrors({
               api:
@@ -88,19 +75,13 @@ const Login = () => {
                 errData.message ||
                 "Login failed. Please try again.",
             });
-          } else {
-            showError("Unable to connect to server");
-            setErrors({
-              api: "Unable to connect to server. Please try again later.",
-            });
           }
+        } else {
+          showError("Unable to connect to server. Please try again later.");
+          setErrors({
+            api: "Unable to connect to server. Please try again later.",
+          });
         }
-      } catch (error) {
-        showError("Unable to connect to server. Please try again later.");
-        setErrors({
-          api: "Unable to connect to server. Please try again later.",
-        });
-        console.error("Login error:", error);
       } finally {
         setLoading(false);
       }

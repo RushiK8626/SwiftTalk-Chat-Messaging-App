@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Sparkles, Copy, Edit, Trash2, Redo2, Languages } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Copy, Edit, Trash2, Redo2, Languages, X } from 'lucide-react';
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { sendAIMessage, AI_ASSISTANT } from '../../utils/ai';
+import { sendAIMessage, AI_ASSISTANT } from '../../utils/api/aiClient';
 import { formatMessageTime } from '../../utils/date';
 import useContextMenu from "../../hooks/useContextMenu";
 import ContextMenu from "../../components/common/ContextMenu";
@@ -36,7 +36,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
   const [translateMessage, setTranslateMessage] = useState(null);
   const [messageTranslations, setMessageTranslations] = useState({});
 
-  // Load messages from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('ai_chat_history');
     if (saved) {
@@ -48,23 +47,18 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     }
   }, []);
 
-  // Save messages to localStorage
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('ai_chat_history', JSON.stringify(messages.slice(-100)));
     }
-    console.log(JSON.stringify(messages));
   }, [messages]);
 
-  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Auto-resize textarea
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    // Auto-resize
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   };
@@ -83,7 +77,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     setInputText('');
     setLoading(true);
 
-    // Reset textarea height
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
     }
@@ -119,12 +112,9 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
   };
 
   const handleEditSubmit = async (id) => {
-    // Find the index of the message being edited
     const messageIndex = messages.findIndex(m => m.id === id);
     if (messageIndex === -1) return;
 
-    // Create a new history: Keep everything BEFORE the edited message, 
-    // then add the newly edited message.
     const updatedHistory = messages.slice(0, messageIndex);
     const editedMessage = {
       ...messages[messageIndex],
@@ -135,7 +125,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     const finalMessages = [...updatedHistory, editedMessage];
     setMessages(finalMessages);
 
-    // Update state and reset UI
     setEditingMessage(null);
     setEditingMessageId(null);
     setMessageEditing(false);
@@ -144,7 +133,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
 
 
     try {
-      // Include all messages up to and including the edited message as conversation history
       const apiHistory = finalMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
       const response = await sendAIMessage(editedMessage.content, apiHistory);
 
@@ -154,12 +142,9 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
         content: response.response,
         timestamp: new Date().toISOString(),
       };
-
-      // Update messages with both edited message and new AI response
       setMessages([...finalMessages, aiMessage]);
     } catch (error) {
       console.error(error);
-      // Revert to edited message state on error
       setMessages(finalMessages);
     } finally {
       setLoading(false);
@@ -191,14 +176,13 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
   const handleRegenerateMessage = () => {
     if (selectedMessage?.role === 'assistant' && selectedMessage?.id) {
       messageContextMenu.closeMenu();
-      // Find the index and remove all messages from this point onward
+
       const messageIndex = messages.findIndex(m => m.id === selectedMessage.id);
       if (messageIndex !== -1) {
         const updatedMessages = messages.slice(0, messageIndex);
         setMessages(updatedMessages);
         setLoading(true);
 
-        // Get the previous user message to regenerate from
         const userMessage = updatedMessages[updatedMessages.length - 1];
         if (userMessage?.role === 'user') {
           const conversationHistory = updatedMessages.slice(0, -1).map(m => ({
@@ -232,18 +216,15 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     }
   };
 
-  // Get default translation language from settings
   const getDefaultTranslationLanguage = () => {
     return localStorage.getItem("defaultTranslationLanguage") || "en";
   };
 
-  // Handle inline translation of a message
   const handleTranslateMessage = async (message, targetLanguage) => {
     if (!message?.content) return;
 
     const messageId = message.id;
 
-    // Set loading state
     setMessageTranslations(prev => ({
       ...prev,
       [messageId]: { text: '', lang: targetLanguage, loading: true }
@@ -260,7 +241,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     } catch (error) {
       console.error('Translation error:', error);
       showError('Translation failed. Please try again.');
-      // Remove the translation entry on error
       setMessageTranslations(prev => {
         const newTranslations = { ...prev };
         delete newTranslations[messageId];
@@ -269,7 +249,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     }
   };
 
-  // Clear translation for a message (show original)
   const handleShowOriginal = (messageId) => {
     setMessageTranslations(prev => {
       const newTranslations = { ...prev };
@@ -369,11 +348,9 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     let x = e.clientX;
     let y = e.clientY;
 
-    // Prevent right-side overflow
     if (x + menuWidth > window.innerWidth) {
       x = window.innerWidth - menuWidth - 16;
     }
-    // Prevent bottom overflow
     if (y + menuHeight > window.innerHeight) {
       y = window.innerHeight - menuHeight - 16;
     }
@@ -383,7 +360,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
 
   return (
     <div className={`chat-window ai-chat-window ${isEmbedded ? 'embedded' : ''}`}>
-      {/* Header */}
       <div className="chat-window-header ai-header">
         {!isEmbedded && (
           <button className="back-btn" onClick={handleBack}>
@@ -408,7 +384,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
         </button>
       </div>
 
-      {/* Messages */}
       <SimpleBar className="messages-container">
         {messages.length === 0 && (
           <div className="ai-welcome">
@@ -454,14 +429,12 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
               )}
 
               <div className="message-bubble">
-                {/* Loading indicator */}
                 {hasTranslation?.loading && (
                   <div className="translation-loading">
                     <span>Translating...</span>
                   </div>
                 )}
 
-                {/* Message text (original or translated) */}
                 <div className="message-text">
                   {msg.role === 'assistant' ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -472,7 +445,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
                   )}
                 </div>
 
-                {/* Translation info and toggle button */}
                 {hasTranslation && !hasTranslation.loading && (
                   <div className="translation-info">
                     <span className="translation-badge">
@@ -527,10 +499,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
         onClose={messageContextMenu.closeMenu}
       />
 
-      {/* Input */}
       <div className={`message-input-container ${messageEditing ? 'editing-mode' : ''}`}>
-
-        {/* Edit Mode Indicator */}
         {messageEditing && (
           <div className="edit-indicator">
             <div className="edit-label">
@@ -543,7 +512,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
               setEditingMessage('');
               setInputText('');
             }} title="Cancel editing">
-              ✕
+              <X size={20} />
             </button>
           </div>
         )}

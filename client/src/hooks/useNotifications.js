@@ -11,7 +11,6 @@ export const useNotifications = (userId, token) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check if notifications are supported
     const supported =
       "Notification" in window &&
       "serviceWorker" in navigator &&
@@ -22,7 +21,6 @@ export const useNotifications = (userId, token) => {
       return;
     }
 
-    // Check notification permission status
     if (Notification.permission === "granted") {
       setIsEnabled(true);
     } else if (Notification.permission === "denied") {
@@ -35,11 +33,9 @@ export const useNotifications = (userId, token) => {
   const enableNotifications = async () => {
     setIsLoading(true);
     try {
-      // First request permission
       const permissionGranted = await requestNotificationPermission();
 
       if (permissionGranted) {
-        // Then subscribe to push
         const subscribed = await subscribeToPushNotifications(userId, token);
 
         if (subscribed) {
@@ -70,7 +66,7 @@ export const useNotifications = (userId, token) => {
       }
     } catch (error) {
       console.error("Error disabling notifications:", error);
-      setIsEnabled(false); // Disable in UI even if backend fails
+      setIsEnabled(false); 
     } finally {
       setIsLoading(false);
     }

@@ -28,14 +28,12 @@ const Language = ({ isEmbedded = false }) => {
     return localStorage.getItem("defaultTranslationLanguage") || "en";
   });
 
-  // Handle responsive layout changes - navigate to settings page when screen becomes wide
   useEffect(() => {
     if (!isEmbedded && isWideScreen) {
       navigate("/settings", { state: { selectedSettingId: "language" } });
     }
   }, [isWideScreen, isEmbedded, navigate]);
 
-  // Save to localStorage whenever language changes
   const handleLanguageSelect = (langCode) => {
     setDefaultTranslationLanguage(langCode);
     localStorage.setItem("defaultTranslationLanguage", langCode);

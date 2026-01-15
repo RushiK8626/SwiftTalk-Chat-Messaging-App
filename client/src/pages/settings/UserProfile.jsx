@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ToastContainer from "../../components/common/ToastContainer";
 import { useToast } from "../../hooks/useToast";
+import { fetchPublicProfile } from "../../utils/api"
 import "./Profile.css";
 
 const UserProfile = ({
@@ -13,10 +14,7 @@ const UserProfile = ({
   const navigate = useNavigate();
   const location = useLocation();
   const embedFromState = location.state?.isEmbedded || false;
-
-  // Use prop userId if provided (embedded), otherwise use URL param
   const userId = propUserId || paramUserId;
-  // Use prop isEmbedded if provided, otherwise check state
   const isEmbeddedMode = isEmbedded || embedFromState;
 
   const { toasts, showError, removeToast } = useToast();
@@ -28,27 +26,8 @@ const UserProfile = ({
     const fetchPublicUser = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(
-          `${
-            (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-          }/api/users/public/id/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data.user || data);
-        } else {
-          const d = await res.json().catch(() => ({}));
-          setError(d.message || "Unable to load user");
-          showError(d.message || "Unable to load user");
-        }
+        const data = fetchPublicProfile(userId);
+        setProfile(data.user || data);
       } catch (err) {
         console.error("Error fetching public user:", err);
         setError("Unable to load user");
@@ -68,13 +47,11 @@ const UserProfile = ({
       const diff = Math.floor((Date.now() - ts) / 1000);
       if (diff < 60) return "a moment ago";
       if (diff < 3600)
-        return `${Math.floor(diff / 60)} minute${
-          Math.floor(diff / 60) > 1 ? "s" : ""
-        } ago`;
+        return `${Math.floor(diff / 60)} minute${Math.floor(diff / 60) > 1 ? "s" : ""
+          } ago`;
       if (diff < 86400)
-        return `${Math.floor(diff / 3600)} hour${
-          Math.floor(diff / 3600) > 1 ? "s" : ""
-        } ago`;
+        return `${Math.floor(diff / 3600)} hour${Math.floor(diff / 3600) > 1 ? "s" : ""
+          } ago`;
       const d = new Date(ts);
       return d.toLocaleString();
     } catch (e) {
@@ -90,10 +67,9 @@ const UserProfile = ({
           className="back-btn"
           onClick={() => {
             if (onBackClick) {
-              // If onBackClick callback provided (embedded in ChatHome), use it
               onBackClick();
             } else if (isEmbeddedMode) {
-              navigate(-1); // Go back to previous page in split layout
+              navigate(-1);
             } else {
               navigate("/chats");
             }
@@ -119,11 +95,10 @@ const UserProfile = ({
             <div className="profile-avatar-large">
               {profile?.profile_pic ? (
                 <img
-                  src={`${
-                    (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-                  }/uploads/profiles/${String(profile.profile_pic)
-                    .split("/uploads/")
-                    .pop()}`}
+                  src={`${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+                    }/uploads/profiles/${String(profile.profile_pic)
+                      .split("/uploads/")
+                      .pop()}`}
                   alt="profile"
                   style={{
                     width: "100%",
@@ -142,7 +117,6 @@ const UserProfile = ({
             </div>
           </div>
 
-          {/* Online status / last seen */}
           <div style={{ textAlign: "center", marginTop: 8 }}>
             {profile?.is_online ? (
               <div className="status-row">

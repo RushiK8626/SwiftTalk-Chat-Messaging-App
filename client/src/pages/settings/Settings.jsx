@@ -34,7 +34,6 @@ const Settings = ({ isEmbedded = false }) => {
   const location = useLocation();
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    // Get saved width from shared storage or use default
     return getSidebarWidth();
   });
   const containerRef = useRef(null);
@@ -46,7 +45,6 @@ const Settings = ({ isEmbedded = false }) => {
   );
   const isWideScreen = useResponsive();
 
-  // Calculate settings menu height dynamically
   useEffect(() => {
     const calculateHeight = () => {
       const headerHeight = headerRef.current?.offsetHeight || 0;
@@ -131,11 +129,9 @@ const Settings = ({ isEmbedded = false }) => {
     []
   );
 
-  // Restore selectedSetting from navigation state (when returning from sub-page on wide screen)
   useEffect(() => {
     const selectedSettingId = location.state?.selectedSettingId;
     if (selectedSettingId && isWideScreen) {
-      // Find the setting item by id
       for (const section of settingsSections) {
         const item = section.items.find((item) => item.id === selectedSettingId);
         if (item) {
@@ -146,35 +142,28 @@ const Settings = ({ isEmbedded = false }) => {
     }
   }, [location.state?.selectedSettingId, isWideScreen, settingsSections]);
 
-  // Handle responsive layout changes - navigate to setting page when screen becomes narrow
   useEffect(() => {
     if (!isWideScreen && selectedSetting?.path) {
-      // Screen changed to narrow while a setting is open in split view
       navigate(selectedSetting.path);
     }
   }, [isWideScreen, selectedSetting, navigate]);
 
   const handleLogout = async () => {
     if (window.confirm("Are you sure you want to logout?")) {
-      // Clear local data immediately to ensure logout works even if network calls fail
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = user.id || user.user_id;
       const token = localStorage.getItem("accessToken");
 
-      // Clear localStorage first
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       localStorage.clear();
 
-      // Attempt cleanup in background (don't wait for these)
       Promise.race([
         Promise.all([
-          // Unsubscribe from push notifications
           token
             ? unsubscribeFromPushNotifications(token).catch(() => {})
             : Promise.resolve(),
-          // Logout from backend
           userId
             ? fetch(
                 `${(
@@ -188,10 +177,8 @@ const Settings = ({ isEmbedded = false }) => {
               ).catch(() => {})
             : Promise.resolve(),
         ]),
-        // Timeout after 2 seconds
         new Promise((resolve) => setTimeout(resolve, 2000)),
       ]).finally(() => {
-        // Redirect to login
         window.location.replace("/login");
       });
     }
@@ -199,19 +186,16 @@ const Settings = ({ isEmbedded = false }) => {
 
   const handleItemClick = (item) => {
     if (typeof window !== "undefined" && window.innerWidth < 900) {
-      // On mobile, navigate to the page
       if (item.path) {
         navigate(item.path);
       } else if (item.action) {
         item.action();
       }
     } else {
-      // On wide screens, select the setting to show on right panel
       setSelectedSetting(item);
     }
   };
 
-  // Handle column resize
   useEffect(() => {
     const handleMouseDown = (e) => {
       if (!containerRef.current) return;
@@ -236,7 +220,6 @@ const Settings = ({ isEmbedded = false }) => {
         Math.min(newWidth, SIDEBAR_CONFIG.MAX_WIDTH)
       );
       setLeftPanelWidth(newWidth);
-      // Save to shared storage
       setSidebarWidth(newWidth);
     };
 
@@ -273,7 +256,6 @@ const Settings = ({ isEmbedded = false }) => {
             : {}
         }
       >
-        {/* Left Panel - Settings Menu */}
         <div className="settings-left-panel">
           <div ref={headerRef}>
             <PageHeader

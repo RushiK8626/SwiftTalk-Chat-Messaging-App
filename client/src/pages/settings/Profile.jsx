@@ -6,6 +6,7 @@ import PageHeader from "../../components/common/PageHeader";
 import ToastContainer from "../../components/common/ToastContainer";
 import { useToast } from "../../hooks/useToast";
 import useResponsive from "../../hooks/useResponsive";
+import { fetchPersonalProfile } from "../../utils/api";
 import "./Profile.css";
 
 const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
@@ -19,14 +20,12 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
   const fileInputRef = React.useRef(null);
   const { toasts, showSuccess, showError, removeToast } = useToast();
 
-  // Handle responsive layout changes - navigate to settings page when screen becomes wide
   useEffect(() => {
     if (!isEmbedded && isWideScreen) {
       navigate("/settings", { state: { selectedSettingId: "profile" } });
     }
   }, [isWideScreen, isEmbedded, navigate]);
 
-  // Get userId from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.user_id;
 
@@ -51,47 +50,29 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       }
 
       try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(
-          `${
-            (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-          }/api/auth/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const data = await fetchPersonalProfile(userId);
 
-        if (res.ok) {
-          const data = await res.json();
-          const userData = data.user;
+        const userData = data.user;
 
-          // Process profile pic URL
-          let profilePicUrl = null;
-          if (userData.profile_pic) {
-            const filename = userData.profile_pic.split("/uploads/").pop();
-            profilePicUrl = `${
-              (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+        let profilePicUrl = null;
+        if (userData.profile_pic) {
+          const filename = userData.profile_pic.split("/uploads/").pop();
+          profilePicUrl = `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
             }/uploads/profiles/${filename}`;
-          }
-
-          const profile = {
-            fullName: userData.full_name || "",
-            username: userData.username || "",
-            email: userData.email || user.email || "", // Try userData.email first, then localStorage
-            mobile: userData.phone || user.phone || "", // Get phone from API response
-            bio: userData.status_message || "",
-            avatar: "👨",
-            profilePic: profilePicUrl,
-          };
-
-          setProfileData(profile);
-          setEditData(profile);
-        } else {
-          throw new Error("Failed to fetch profile");
         }
+
+        const profile = {
+          fullName: userData.full_name || "",
+          username: userData.username || "",
+          email: userData.email || user.email || "", 
+          mobile: userData.phone || user.phone || "", 
+          bio: userData.status_message || "",
+          avatar: "👨",
+          profilePic: profilePicUrl,
+        };
+
+        setProfileData(profile);
+        setEditData(profile);
       } catch (err) {
         console.error("Error fetching profile:", err);
         setError("Failed to load profile");
@@ -108,7 +89,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
   };
 
   const handleSave = async () => {
-    // Determine which fields have been changed
     const updatedFields = {};
 
     if (editData.fullName !== profileData.fullName) {
@@ -123,7 +103,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       updatedFields.status_message = editData.bio;
     }
 
-    // If no fields were changed, just exit edit mode
     if (Object.keys(updatedFields).length === 0) {
       setIsEditing(false);
       return;
@@ -132,8 +111,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `${
-          (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+        `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
         }/api/users/${userId}`,
         {
           method: "PUT",
@@ -149,7 +127,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         await response.json();
         showSuccess("Profile updated successfully!");
 
-        // Update profile data with the new values
         setProfileData({ ...editData });
         setIsEditing(false);
       } else {
@@ -184,7 +161,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     const validImageTypes = [
       "image/jpeg",
       "image/jpg",
@@ -197,22 +173,19 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024; 
     if (file.size > maxSize) {
       showError("Image size should not exceed 5MB");
       return;
     }
 
-    // Upload the file
     try {
       const formData = new FormData();
-      formData.append("profilePic", file); 
+      formData.append("profilePic", file);
 
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `${
-          (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+        `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
         }/uploads/profile-pic`,
         {
           method: "POST",
@@ -226,12 +199,10 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         const data = await response.json();
         showSuccess("Profile picture updated successfully!");
 
-        // Update profile picture URL
         if (data.profile_pic) {
           const filename = data.profile_pic.split("/uploads/").pop();
-          const newProfilePicUrl = `${
-            (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-          }/uploads/profiles/${filename}`;
+          const newProfilePicUrl = `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+            }/uploads/profiles/${filename}`;
 
           setProfileData((prev) => ({
             ...prev,
@@ -259,7 +230,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         title="Profile"
         onBack={() => {
           if (isEmbedded) {
-            navigate(-1); // Go back to previous page in split layout
+            navigate(-1); 
           } else {
             navigate("/settings");
           }
@@ -312,11 +283,11 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
                   {profileData.fullName
                     ? profileData.fullName.split(" ").length >= 2
                       ? (
-                          profileData.fullName.split(" ")[0][0] +
-                          profileData.fullName.split(" ")[
-                            profileData.fullName.split(" ").length - 1
-                          ][0]
-                        ).toUpperCase()
+                        profileData.fullName.split(" ")[0][0] +
+                        profileData.fullName.split(" ")[
+                        profileData.fullName.split(" ").length - 1
+                        ][0]
+                      ).toUpperCase()
                       : profileData.fullName.substring(0, 2).toUpperCase()
                     : profileData.username.substring(0, 2).toUpperCase()}
                 </span>

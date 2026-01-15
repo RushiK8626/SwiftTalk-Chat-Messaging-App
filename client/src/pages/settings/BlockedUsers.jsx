@@ -16,7 +16,6 @@ const BlockedUsers = ({ isEmbedded = false }) => {
   const [loading, setLoading] = useState(true);
   const [unblockingUserId, setUnblockingUserId] = useState(null);
 
-  // Handle responsive layout changes - navigate to settings page when screen becomes wide
   useEffect(() => {
     if (!isEmbedded && isWideScreen) {
       navigate("/settings", { state: { selectedSettingId: "blocked-users" } });
@@ -36,7 +35,6 @@ const BlockedUsers = ({ isEmbedded = false }) => {
     }
   }, [showError]);
 
-  // Fetch blocked users on component mount
   useEffect(() => {
     fetchBlockedUsers();
   }, [fetchBlockedUsers]);

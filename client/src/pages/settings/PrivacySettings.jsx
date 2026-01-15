@@ -9,7 +9,6 @@ const PrivacySettings = ({ isEmbedded = false }) => {
     const isWideScreen = useResponsive();
     const [error, setError] = useState(null);
 
-    // Handle responsive layout changes - navigate to settings page when screen becomes wide
     useEffect(() => {
         if (!isEmbedded && isWideScreen) {
             navigate("/settings", { state: { selectedSettingId: "privacy" } });
@@ -21,13 +20,11 @@ const PrivacySettings = ({ isEmbedded = false }) => {
         return stored === null ? true : stored === 'true';
     });
 
-    // Handle toggle with better error feedback
     const handleAIAssistantToggle = async (e) => {
         setError(null);
         const newValue = !convohubAssistantEnabled;
         localStorage.setItem('convhub_assistant', newValue);
         SeConvohubAssistantEnabled(newValue);
-        // Dispatch custom event so other components can react
         window.dispatchEvent(new Event('convhub_assistant_changed'));
     };
 
@@ -37,7 +34,7 @@ const PrivacySettings = ({ isEmbedded = false }) => {
                 title="Privacy"
                 onBack={() => {
                     if (isEmbedded) {
-                        navigate(-1); // Go back to previous page in split layout
+                        navigate(-1);
                     } else {
                         navigate("/settings");
                     }

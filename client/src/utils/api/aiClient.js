@@ -3,11 +3,7 @@
  * Handles all AI-related API calls: smart replies, translation, summarization, etc.
  */
 
-import { apiPost } from "./apiClient";
-
-const API_BASE_URL = (
-  process.env.REACT_APP_API_URL || "http://localhost:3001"
-).replace(/\/+$/, "");
+import axiosInstance from "./axiosInstance";
 
 /**
  * Get smart reply suggestions for a chat
@@ -17,11 +13,11 @@ const API_BASE_URL = (
  */
 export const getSmartReplies = async (chatId, limit = 3) => {
   try {
-    const response = await apiPost(`${API_BASE_URL}/api/ai/smart-replies`, {
+    const response = await axiosInstance.post(`/api/ai/smart-replies`, {
       chat_id: chatId,
       limit: limit,
     });
-    return response.suggestions || response || [];
+    return response.data.suggestions || response.data || [];
   } catch (error) {
     console.error("Error getting smart replies:", error);
     throw error;
@@ -36,11 +32,11 @@ export const getSmartReplies = async (chatId, limit = 3) => {
  */
 export const translateText = async (text, targetLanguage) => {
   try {
-    const response = await apiPost(`${API_BASE_URL}/api/ai/translate`, {
+    const response = await axiosInstance.post(`/api/ai/translate`, {
       text: text,
       target_language: targetLanguage,
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error("Error translating text:", error);
     throw error;
@@ -55,11 +51,11 @@ export const translateText = async (text, targetLanguage) => {
  */
 export const summarizeChat = async (chatId, summaryType = "brief") => {
   try {
-    const response = await apiPost(`${API_BASE_URL}/api/ai/summarize`, {
+    const response = await axiosInstance.post(`/api/ai/summarize`, {
       chat_id: chatId,
       summary_type: summaryType,
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error("Error summarizing chat:", error);
     throw error;
@@ -73,10 +69,10 @@ export const summarizeChat = async (chatId, summaryType = "brief") => {
  */
 export const detectLanguage = async (text) => {
   try {
-    const response = await apiPost(`${API_BASE_URL}/api/ai/detect-language`, {
+    const response = await axiosInstance.post(`/api/ai/detect-language`, {
       text: text,
     });
-    return response;
+    return response.data;
   } catch (error) {
     console.error("Error detecting language:", error);
     throw error;
@@ -90,38 +86,22 @@ export const detectLanguage = async (text) => {
  */
 export const getConversationStarters = async (chatId) => {
   try {
-    const response = await apiPost(
-      `${API_BASE_URL}/api/ai/conversation-starters`,
-      {
-        chat_id: chatId,
-      }
-    );
-    return response;
+    const response = await axiosInstance.post(`/api/ai/conversation-starters`, {
+      chat_id: chatId,
+    });
+    return response.data;
   } catch (error) {
     console.error("Error getting conversation starters:", error);
     throw error;
   }
 };
 
-const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
-
 export const sendAIMessage = async (message, conversationHistory = []) => {
-  const token = localStorage.getItem('accessToken');
-  
-  const response = await fetch(`${API_URL}/api/ai/chat`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ message, conversation_history: conversationHistory }),
+  const response = await axiosInstance.post(`/api/ai/chat`, {
+    message,
+    conversation_history: conversationHistory,
   });
-
-  if (!response.ok) {
-    throw new Error('Failed to get AI response');
-  }
-
-  return response.json();
+  return response.data;
 };
 
 // AI Assistant info constant
@@ -139,6 +119,8 @@ const aiClient = {
   summarizeChat,
   detectLanguage,
   getConversationStarters,
+  sendAIMessage,
+  AI_ASSISTANT,
 };
 
 export default aiClient;

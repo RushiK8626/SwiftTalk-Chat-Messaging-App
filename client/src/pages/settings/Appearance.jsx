@@ -19,7 +19,6 @@ const Appearance = ({ isEmbedded = false }) => {
   const isWideScreen = useResponsive();
   const { theme, setLightTheme, setDarkTheme, accent, setAccent } = useTheme();
 
-  // Handle responsive layout changes - navigate to settings page when screen becomes wide
   useEffect(() => {
     if (!isEmbedded && isWideScreen) {
       navigate("/settings", { state: { selectedSettingId: "appearance" } });

@@ -40,12 +40,10 @@ export const useContextMenu = () => {
     let x = rect.right - menuWidth;
     let y = rect.bottom + offset;
 
-    // Adjust if menu would go off-screen horizontally
     if (x < 0) {
       x = rect.left;
     }
 
-    // Adjust if menu would go off-screen vertically
     if (y + 400 > window.innerHeight) {
       y = rect.top - 400;
     }
@@ -83,9 +81,6 @@ export const useContextMenu = () => {
     document.addEventListener("touchend", handleTouchEnd);
   }, []);
 
-  /**
-   * Close the context menu
-   */
   const closeMenu = useCallback(() => {
     setMenu({ isOpen: false, x: 0, y: 0, anchorEl: null, position: 'bottom-right', maxX: null });
   }, []);

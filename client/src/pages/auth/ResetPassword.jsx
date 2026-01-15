@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./ResetPassword.css";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
@@ -8,7 +9,6 @@ const ResetPassword = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toasts, showError, showSuccess, removeToast } = useToast();
-  // Allow userId from navigation state or query param (uid)
   const params = new URLSearchParams(location.search);
   const rawUserId = location.state?.userId ?? params.get("uid") ?? null;
   const userId = rawUserId != null ? Number(rawUserId) : null;
@@ -39,36 +39,29 @@ const ResetPassword = () => {
       const API_URL = (
         process.env.REACT_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
-      console.log(
-        JSON.stringify({
-          userId: Number(userId),
-          otpCode,
-          newPassword: password,
-        })
+
+      const { data } = axios.post(`${API_URL}/api/auth/reset-password`, {
+        userId: Number(userId),
+        otpCode,
+        newPassword: password,
+      })
+
+      showSuccess(
+        data.message || "Password reset successfully. You can now login."
       );
-      const res = await fetch(`${API_URL}/api/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: Number(userId),
-          otpCode,
-          newPassword: password,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showSuccess(
-          data.message || "Password reset successfully. You can now login."
-        );
-        setTimeout(() => navigate("/login"), 1500);
-      } else {
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err) {
+      console.error("Reset password error:", err);
+
+      if (err.response) {
+        const data = err.response.data;
         showError(data.error || data.message || "Failed to reset password");
         setTimeout(() => navigate("/forgot-password"), 1200);
       }
-    } catch (err) {
-      console.error("Reset password error:", err);
-      showError("Unable to reset password. Try again later.");
-      setTimeout(() => navigate("/forgot-password"), 1200);
+      else {
+        showError("Unable to reset password. Try again later.");
+        setTimeout(() => navigate("/forgot-password"), 1200);
+      }
     } finally {
       setLoading(false);
     }

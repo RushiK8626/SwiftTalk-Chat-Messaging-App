@@ -16,8 +16,8 @@ import {
     setSidebarWidth,
     SIDEBAR_CONFIG
 } from "../../../utils/storage";
+import { fetchUserTasks, deleteTask, updateTaskStatus } from "../../../utils/api";
 import "./Tasks.css";
-import { handleSessionExpiry } from "../../../utils/auth";
 
 const Tasks = ({ isEmbedded = false }) => {
     const navigate = useNavigate();
@@ -46,7 +46,6 @@ const Tasks = ({ isEmbedded = false }) => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [showNewTaskModal, setShowNewTaskModal] = useState(false);
 
-    // Calculate tasks menu height dynamically
     useEffect(() => {
         const calculateHeight = () => {
             const headerHeight = headerRef.current?.offsetHeight || 0;
@@ -60,7 +59,6 @@ const Tasks = ({ isEmbedded = false }) => {
         return () => window.removeEventListener("resize", calculateHeight);
     }, [selectedTask]);
 
-    // Handle column resize
     useEffect(() => {
         const handleMouseDown = (e) => {
             if (!containerRef.current) return;
@@ -125,45 +123,29 @@ const Tasks = ({ isEmbedded = false }) => {
         });
     };
 
-    const updateTaskStatus = async (task) => {
+    const handleUpdateTaskStatus = async (task) => {
         if (!task) return;
         try {
-            const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
-            ).replace(/\/+$/, "");
-            const token = localStorage.getItem("accessToken");
-
             const taskId = task.task_id ?? task.id ?? task._id;
             if (!taskId) return;
 
             const currentStatus = task.status ?? task.completed ?? "pending";
             const newStatus = currentStatus === "completed" ? "pending" : "completed";
 
-            const res = await fetch(`${API_URL}/api/tasks/${taskId}`, {
-                method: "PUT",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ status: newStatus }),
+            await updateTaskStatus(taskId, newStatus);
+
+            setTasks((prev) =>
+                prev.map((t) => {
+                    const id = t.task_id ?? t.id ?? t._id;
+                    return id === taskId ? { ...t, status: newStatus } : t;
+                })
+            );
+
+            setSelectedTask((prev) => {
+                if (!prev) return prev;
+                const id = prev.task_id ?? prev.id ?? prev._id;
+                return id === taskId ? { ...prev, status: newStatus } : prev;
             });
-
-            if (res.ok) {
-                setTasks((prev) =>
-                    prev.map((t) => {
-                        const id = t.task_id ?? t.id ?? t._id;
-                        return id === taskId ? { ...t, status: newStatus } : t;
-                    })
-                );
-
-                setSelectedTask((prev) => {
-                    if (!prev) return prev;
-                    const id = prev.task_id ?? prev.id ?? prev._id;
-                    return id === taskId ? { ...prev, status: newStatus } : prev;
-                });
-            } else {
-                showToast("Failed to mark task as completed", "error");
-            }
         } catch (err) {
             console.error("Error marking task as completed:", err);
             showToast("Failed to mark task as completed", "error");
@@ -173,34 +155,19 @@ const Tasks = ({ isEmbedded = false }) => {
     const handleTaskDelete = async (task) => {
         if (!task) return;
         try {
-            const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
-            ).replace(/\/+$/, "");
-            const token = localStorage.getItem("accessToken");
-
             const taskId = task.task_id ?? task.id ?? task._id;
             if (!taskId) return;
 
-            const res = await fetch(`${API_URL}/api/tasks/${taskId}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                }
+            await deleteTask(taskId);
+
+            const updatedTasks = tasks.filter(task => task.task_id !== taskId);
+            setTasks(updatedTasks);
+
+            setSelectedTask((prev) => {
+                if (!prev) return prev;
+                const id = prev.task_id ?? prev.id ?? prev._id;
+                return id === taskId ? null : prev;
             });
-
-            if (res.ok) {
-                const updatedTasks = tasks.filter(task => task.task_id !== taskId);
-                setTasks(updatedTasks);
-
-                setSelectedTask((prev) => {
-                    if (!prev) return prev;
-                    const id = prev.task_id ?? prev.id ?? prev._id;
-                    return id === taskId ? null : prev;
-                });
-            } else {
-                showToast("Failed to delete the task", "error");
-            }
         } catch (err) {
             console.error("Error deleting the task: ", err);
             showToast("Failed to delete the task", "error");
@@ -253,7 +220,6 @@ const Tasks = ({ isEmbedded = false }) => {
         setSelectedTask(prev => updateSubtasks(prev));
     };
 
-
     useEffect(() => {
         const handlePopState = (event) => {
             if (selectedTask && !isWideScreen) {
@@ -290,66 +256,7 @@ const Tasks = ({ isEmbedded = false }) => {
                 return;
             }
             try {
-                const API_URL = (
-                    process.env.REACT_APP_API_URL || "http://localhost:3001"
-                ).replace(/\/+$/, "");
-                const token = localStorage.getItem("accessToken");
-                const res = await fetch(
-                    `${API_URL}/api/tasks`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-
-                if (res.status === 401 && !retry) {
-                    const refreshToken = localStorage.getItem("refreshToken");
-                    if (!refreshToken) {
-                        handleSessionExpiry();
-                        return;
-                    }
-                    try {
-                        const refreshRes = await fetch(
-                            `${API_URL}/api/tasks`,
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                    "Content-Type": "application/json",
-                                },
-                            }
-                        );
-                        if (!refreshRes.ok) {
-                            handleSessionExpiry();
-                            return;
-                        }
-                        const contentType = refreshRes.headers.get("content-type");
-                        if (!contentType || !contentType.includes("application/json")) {
-                            setError("Unable to connect to server. Please check your connection.");
-                            setLoading(false);
-                            return;
-                        }
-
-                        const refreshData = await refreshRes.json();
-                        localStorage.setItem("accessToken", refreshData.accessToken);
-
-                        await fetchTasks(true);
-                        return;
-                    } catch (refreshErr) {
-                        handleSessionExpiry();
-                        return;
-                    }
-                }
-                if (!res.ok) {
-                    throw new Error("Failed to fetch tasks");
-                }
-                const contentType = res.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Unable to connect to server. Please check your connection.");
-                }
-                const data = await res.json();
-
+                const data = await fetchUserTasks(userId);
                 const sortedTasks = sortTasks(data.tasks || []);
                 setTasks(sortedTasks);
             } catch (err) {
@@ -427,7 +334,7 @@ const Tasks = ({ isEmbedded = false }) => {
                                                     isCompleted={task.status === "completed"}
                                                     onClick={() => handleTaskSelect(task)}
                                                     onDelete={() => handleTaskDelete(task)}
-                                                    onToggleComplete={() => updateTaskStatus(task)}
+                                                    onToggleComplete={() => handleUpdateTaskStatus(task)}
                                                 />
                                             );
                                         })

@@ -76,7 +76,6 @@ export const useFetchNotifications = (token, userId) => {
       const data = await response.json();
       setUnreadCount(data.unread_count || 0);
 
-      // Update badge
       if ("setAppBadge" in navigator) {
         navigator.setAppBadge(data.unread_count || 0);
       }
@@ -103,7 +102,6 @@ export const useFetchNotifications = (token, userId) => {
         throw new Error("Failed to mark as read");
       }
 
-      // Update local state
       setNotifications((prev) =>
         prev.map((n) =>
           n.notification_id === notificationId
@@ -112,7 +110,6 @@ export const useFetchNotifications = (token, userId) => {
         )
       );
 
-      // Update badge
       await fetchUnreadCount();
     } catch (err) {
       console.error("Error marking notification as read:", err);
@@ -134,7 +131,6 @@ export const useFetchNotifications = (token, userId) => {
         throw new Error("Failed to mark all as read");
       }
 
-      // Update local state
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, is_read: true, read_at: new Date() }))
       );
@@ -182,8 +178,7 @@ export const useFetchNotifications = (token, userId) => {
     }
 
     try {
-      // Delete all notifications in parallel
-      const deletePromises = notifications.map((notification) =>
+      notifications.map((notification) =>
         fetch(
           `${config.API_BASE_URL}${config.api.notifications.delete(
             notification.notification_id
@@ -203,11 +198,9 @@ export const useFetchNotifications = (token, userId) => {
         })
       );
 
-      // Clear local state
       setNotifications([]);
       setUnreadCount(0);
 
-      // Clear badge
       if ("clearAppBadge" in navigator) {
         navigator.clearAppBadge();
       }
@@ -225,11 +218,9 @@ export const useFetchNotifications = (token, userId) => {
       return;
     }
 
-    // Initial fetch
     fetchNotifications();
     fetchUnreadCount();
 
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(() => {
       fetchUnreadCount();
     }, 30000);
