@@ -30,7 +30,7 @@ import "./styles/theme.css";
 export const AuthContext = createContext({ refreshAuth: () => {} });
 
 function App() {
-  const [authState, setAuthState] = useState(0); // Dummy state to trigger rerender
+  const [, setAuthState] = useState(0); // Dummy state to trigger rerender
 
   const refreshAuth = () => {
     // Force a rerender by updating a dummy state
@@ -62,6 +62,10 @@ function App() {
               />
               <Route
                 path="/chat/:chatId"
+                element={hasToken ? <ChatWindow /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/chat/new"
                 element={hasToken ? <ChatWindow /> : <Navigate to="/login" />}
               />
               <Route
