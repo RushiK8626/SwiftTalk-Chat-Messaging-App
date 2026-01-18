@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
 import {
@@ -66,6 +66,7 @@ import {
   addMemberToGroup,
   exitGroup,
   translateText,
+  createChat,
 } from "../../utils/api";
 import EmojiPicker from "../../components/common/EmojiPicker";
 import "./ChatWindow.css";
@@ -73,14 +74,17 @@ import "./ChatWindow.css";
 const ChatWindow = ({
   chatId: propChatId,
   isEmbedded = false,
-  onClose = null,
+  recipient: propRecipient = null,
   onMemberClick = null,
+  onChatCreated = null,
 }) => {
   const params = useParams();
+  const location = useLocation();
   const chatId = propChatId || params?.chatId;
+  const recipient = propRecipient || location.state?.recipient || null;
+  const isNewChat = !chatId && recipient !== null;
   const navigate = useNavigate();
   const isWideScreen = useResponsive();
-  const [shouldSendGreeting, setShouldSendGreeting] = useState(false);
   const messagesEndRef = useRef(null);
   const simpleBarRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -102,6 +106,9 @@ const ChatWindow = ({
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.user_id;
+  const [currentChatId, setCurrentChatId] = useState(chatId);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  
   const [chatInfo, setChatInfo] = useState({
     id: chatId,
     name: "",
@@ -115,7 +122,7 @@ const ChatWindow = ({
     chat_image: null,
   });
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isNewChat);
   const [error, setError] = useState("");
   const [userProfiles, setUserProfiles] = useState({});
   const [isBlocked, setIsBlocked] = useState(false);
@@ -342,12 +349,52 @@ const ChatWindow = ({
       typeof window !== "undefined" &&
       window.innerWidth >= 900
     ) {
-      navigate("/chats", { state: { selectedChatId: chatId } });
+      navigate("/chats", { state: { selectedChatId: currentChatId || chatId } });
     }
-  }, [isWideScreen, isEmbedded, chatId, navigate]);
+  }, [isWideScreen, isEmbedded, currentChatId, chatId, navigate]);
+
+  useEffect(() => {
+    if (isNewChat && recipient) {
+      const recipientName = recipient.full_name || recipient.username || '';
+      const isOnline = recipient.is_online || false;
+      const lastSeen = recipient.last_seen || null;
+      
+      setChatInfo({
+        id: null,
+        name: recipientName,
+        avatar: "💬",
+        online: isOnline,
+        is_online: isOnline,
+        last_seen: lastSeen,
+        chat_type: "private",
+        members: [],
+        otherUserId: recipient.user_id,
+        admins: [],
+        is_admin: false,
+        description: "",
+        chat_image: null,
+      });
+      
+      setUserProfiles(prev => ({
+        ...prev,
+        [recipient.user_id]: recipient,
+      }));
+      
+      setLoading(false);
+    }
+  }, [isNewChat, recipient]);
 
   useEffect(() => {
     const fetchChatAndMessages = async () => {
+      if (isNewChat) {
+        return;
+      }
+      
+      const chatIdToFetch = currentChatId || chatId;
+      if (!chatIdToFetch) {
+        return;
+      }
+
       if (!userId) {
         console.error("[ERROR] userId is not available");
         setError("User not authenticated");
@@ -358,7 +405,7 @@ const ChatWindow = ({
       setLoading(true);
       setError("");
       try {
-        const chatData = await fetchChatInfo(chatId);
+        const chatData = await fetchChatInfo(chatIdToFetch);
         const chat = chatData.chat;
         let chatType = chat.chat_type;
         let members = chat.members || [];
@@ -425,7 +472,7 @@ const ChatWindow = ({
             chat.admins.some((a) => a.user_id === userId),
         }));
 
-        const data = await fetchChatMessages(chatId, userId);
+        const data = await fetchChatMessages(chatIdToFetch, userId);
 
         setMessages(data.messages || []);
 
@@ -456,37 +503,8 @@ const ChatWindow = ({
       }
     };
     fetchChatAndMessages();
-  }, [chatId, userId, fetchUserProfile]);
-
-  useEffect(() => {
-    const greetingChatId = sessionStorage.getItem("sendGreetingOnChatLoad");
-    if (
-      greetingChatId &&
-      Number(greetingChatId) === Number(chatId) &&
-      messages.length > 0
-    ) {
-      sessionStorage.removeItem("sendGreetingOnChatLoad");
-      setShouldSendGreeting(true);
-    }
-  }, [chatId, messages.length]);
-
-  useEffect(() => {
-    if (shouldSendGreeting && !loading && messages.length > 0) {
-      setShouldSendGreeting(false);
-      const timer = setTimeout(() => {
-        const tempId = `temp_${Date.now()}_${Math.random()}`;
-        const messageData = {
-          chat_id: parseInt(chatId),
-          sender_id: userId,
-          message_text: "Hello!👋",
-          message_type: "text",
-          tempId: tempId,
-        };
-        socketService.sendMessage(messageData);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [shouldSendGreeting, loading, messages.length, chatId, userId]);
+  }, [chatId, currentChatId, userId, fetchUserProfile, isNewChat]);
+  
 
   useEffect(() => {
     messages.forEach((message) => {
@@ -520,14 +538,20 @@ const ChatWindow = ({
   }, [chatImageUrl]);
 
   useEffect(() => {
+    // Skip socket setup if no chat exists yet (new chat scenario)
+    const activeChatId = currentChatId || chatId;
+    if (!activeChatId) {
+      return;
+    }
+    
     const socket = socketService.connect(userId);
 
     const joinChatWhenReady = () => {
       if (socketService.isSocketConnected()) {
-        socketService.joinChat(chatId);
+        socketService.joinChat(activeChatId);
       } else {
         socket.once("connect", () => {
-          socketService.joinChat(chatId);
+          socketService.joinChat(activeChatId);
         });
       }
     };
@@ -545,10 +569,10 @@ const ChatWindow = ({
     socket.onAny(onAnyEvent);
 
     const handleNewMessage = (message) => {
-      const currentChatId = parseInt(chatId);
+      const parsedChatId = parseInt(activeChatId);
       const messageChatId = parseInt(message.chat_id);
 
-      if (messageChatId !== currentChatId) {
+      if (messageChatId !== parsedChatId) {
         return;
       }
 
@@ -734,25 +758,25 @@ const ChatWindow = ({
     };
 
     const handleDeleteError = (data) => {
-      console.error("❌ Delete error:", data);
+      console.error("Delete error:", data);
       showError(data.error || "Failed to delete message");
     };
 
     const handleUpdateError = (data) => {
-      console.error("❌ Update error:", data);
+      console.error("Update error:", data);
       showError(data.error || "Failed to update message");
       setMessageEditing(false);
       setEditingMessageId(null);
     };
 
     const handleMemberAdded = (data) => {
-      if (data.chat_id !== parseInt(chatId)) {
+      if (data.chat_id !== parseInt(activeChatId)) {
         return;
       }
 
       const systemMessage = {
         message_id: `system_${Date.now()}_${Math.random()}`,
-        chat_id: chatId,
+        chat_id: activeChatId,
         message_text:
           data.message ||
           `${data.member?.full_name || data.member?.username} joined the group`,
@@ -772,13 +796,13 @@ const ChatWindow = ({
     };
 
     const handleMemberExited = (data) => {
-      if (data.chat_id !== parseInt(chatId)) {
+      if (data.chat_id !== parseInt(activeChatId)) {
         return;
       }
 
       const systemMessage = {
         message_id: `system_${Date.now()}_${Math.random()}`,
-        chat_id: chatId,
+        chat_id: activeChatId,
         message_text:
           data.message ||
           `${data.member?.full_name || data.member?.username} joined the group`,
@@ -816,7 +840,7 @@ const ChatWindow = ({
     socket.on("member_exited", handleMemberExited);
 
     return () => {
-      socketService.leaveChat(chatId);
+      socketService.leaveChat(activeChatId);
 
       if (socket) {
         socket.offAny(onAnyEvent);
@@ -840,7 +864,7 @@ const ChatWindow = ({
         socket.off("member_exited", handleMemberExited);
       }
     };
-  }, [chatId, userId]);
+  }, [chatId, currentChatId, userId]);
 
   const scrollToBottom = useCallback(() => {
     const performScroll = () => {
@@ -880,23 +904,69 @@ const ChatWindow = ({
     }
   }, [messages, scrollToBottom]);
 
+  const createNewChat = async () => {
+    if (!recipient) {
+      throw new Error("No recipient specified for new chat");
+    }
+    
+    setIsCreatingChat(true);
+    try {
+      const chatData = await createChat("private", [userId, recipient.user_id]);
+      const newChatId = chatData.chat?.chat_id || chatData.chatId || chatData.chat_id;
+      
+      if (!newChatId) {
+        throw new Error("Failed to get chat ID from response");
+      }
+      
+      setCurrentChatId(newChatId);
+      
+      socketService.joinChat(newChatId);
+      
+      if (onChatCreated) {
+        onChatCreated(newChatId);
+      }
+      
+      if (!isEmbedded) {
+        navigate(`/chat/${newChatId}`, { replace: true });
+      }
+      
+      return newChatId;
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageText.trim()) return;
+    if (isCreatingChat) return;
 
     const messageToSend = messageText.trim();
     setMessageText("");
+
+    let activeChatId = currentChatId || chatId;
+    
+    if (isNewChat && !currentChatId) {
+      try {
+        activeChatId = await createNewChat();
+      } catch (err) {
+        console.error("Error creating new chat:", err);
+        showError("Failed to create chat. Please try again.");
+        setMessageText(messageToSend); 
+        return;
+      }
+    }
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }
-    socketService.sendStoppedTyping(chatId, userId);
+    socketService.sendStoppedTyping(activeChatId, userId);
 
     const tempId = `temp_${Date.now()}_${Math.random()}`;
 
     const messageData = {
-      chat_id: parseInt(chatId),
+      chat_id: parseInt(activeChatId),
       sender_id: userId,
       message_text: messageToSend,
       message_type: "text",
@@ -957,20 +1027,23 @@ const ChatWindow = ({
   }
 
   const handleTyping = useCallback(() => {
+    const activeChatId = currentChatId || chatId;
+    if (!activeChatId) return;
+    
     if (!socketService.isSocketConnected()) {
       return;
     }
 
-    socketService.sendTyping(chatId, userId);
+    socketService.sendTyping(activeChatId, userId);
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      socketService.sendStoppedTyping(chatId, userId);
+      socketService.sendStoppedTyping(activeChatId, userId);
     }, 2000);
-  }, [chatId, userId]);
+  }, [chatId, currentChatId, userId]);
 
   const handleReplyMessage = (referenced_message) => {
     const messageToReply = selectedMessage || referenced_message;
@@ -1411,18 +1484,21 @@ const ChatWindow = ({
         label: "Search",
         icon: <Search size={16} />,
         onClick: () => setShowSearch(!showSearch),
+        disabled: isNewChat && !currentChatId,
       },
       {
         id: "summary",
         label: "Summarize Chat",
         icon: <FileText size={16} />,
         onClick: () => setShowSummary(true),
+        disabled: isNewChat && !currentChatId,
       },
       {
         id: "clear",
         label: "Clear Chat",
         icon: <Eraser size={16} />,
         onClick: handleClearChat,
+        disabled: isNewChat && !currentChatId,
       },
       { id: "divider1", divider: true },
     ];
@@ -1532,6 +1608,21 @@ const ChatWindow = ({
 
   const handleSendWithAttachment = async () => {
     if (!selectedFile) return;
+    if (isCreatingChat) return;
+
+    // Determine the chat ID to use
+    let activeChatId = currentChatId || chatId;
+    
+    // If this is a new chat (no chatId), create it first
+    if (isNewChat && !currentChatId) {
+      try {
+        activeChatId = await createNewChat();
+      } catch (err) {
+        console.error("Error creating new chat:", err);
+        showError("Failed to create chat. Please try again.");
+        return;
+      }
+    }
 
     try {
       setUploading(true);
@@ -1557,7 +1648,7 @@ const ChatWindow = ({
         setUploadProgress(10);
 
         const fileMessageData = {
-          chat_id: parseInt(chatId),
+          chat_id: parseInt(activeChatId),
           message_text: messageText.trim() || "",
           fileBuffer: base64File,
           fileName: selectedFile.name,
@@ -1573,7 +1664,7 @@ const ChatWindow = ({
           isUploading: true,
           sender_id: userId,
           message_text: fileMessageData.message_text,
-          chat_id: parseInt(chatId),
+          chat_id: parseInt(activeChatId),
           attachments: [
             {
               file_url: "",
@@ -1737,7 +1828,6 @@ const ChatWindow = ({
 
   const messageInputRef = useRef(null);
 
-
   return (
     <div className="chat-window">
       <input
@@ -1751,7 +1841,7 @@ const ChatWindow = ({
           onClose={() => setMessageForwarding(false)}
           userId={userId}
           messageId={forwardMessageId}
-          currentChatId={chatId}
+          currentChatId={currentChatId || chatId}
         />
       )}
       <div className="chat-window-header" ref={headerRef}>
@@ -2629,8 +2719,9 @@ const ChatWindow = ({
                   handleTyping();
                   const el = messageInputRef.current;
                   if (el) {
+                    el.style.minHeight = '46px';
                     el.style.height = 'auto';
-                    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+                    el.style.height = Math.min(el.scrollHeight, 220) + 'px';
                   }
                 }}
                 onKeyDown={(e) => {
@@ -2676,7 +2767,7 @@ const ChatWindow = ({
               <button
                 type="submit"
                 className="send-btn"
-                disabled={uploading || (!messageText.trim() && !selectedFile) || (messageText === editingMessage)}
+                disabled={uploading || isCreatingChat || (!messageText.trim() && !selectedFile) || (messageText === editingMessage)}
               >
                 <Send size={22} />
               </button>
@@ -2686,10 +2777,10 @@ const ChatWindow = ({
               <TypingIndicator typingUsers={typingUsers} />
             )}
 
-            {showSmartReplies && (
+            {showSmartReplies && !isNewChat && (
               <div ref={smartRepliesRef} className="smart-replies-wrapper">
                 <SmartReplies
-                  chatId={chatId}
+                  chatId={currentChatId || chatId}
                   onSelectReply={(reply) => {
                     setMessageText(reply);
                     setShowSmartReplies(false);
@@ -2700,10 +2791,10 @@ const ChatWindow = ({
               </div>
             )}
 
-            {messages.length === 0 && !loading && showConversationStarters && (
+            {messages.length === 0 && !loading && showConversationStarters && !isNewChat && (
               <div className="conversation-starters-wrapper">
                 <ConversationStarters
-                  chatId={chatId}
+                  chatId={currentChatId || chatId}
                   onSelectStarter={(starter) => {
                     setMessageText(starter);
                   }}
@@ -2719,7 +2810,7 @@ const ChatWindow = ({
       <ChatInfoModal
         isOpen={showChatInfoModal}
         onClose={() => setShowChatInfoModal(false)}
-        chatId={chatId}
+        chatId={currentChatId || chatId}
         chatType={chatInfo.chat_type}
         otherUserId={chatInfo.otherUserId}
         onMemberClick={handleMemberClick}
@@ -2728,7 +2819,7 @@ const ChatWindow = ({
       <UpdateGroupInfoModal
         isOpen={showUpdateGroupInfoModal}
         onClose={() => setShowUpdateGroupInfoModal(false)}
-        chatId={chatId}
+        chatId={currentChatId || chatId}
         currentChatInfo={{
           name: chatInfo.name,
           description: chatInfo.description || "",
@@ -2875,8 +2966,8 @@ const ChatWindow = ({
         />
       )}
 
-      {showSummary && (
-        <ChatSummary chatId={chatId} onClose={() => setShowSummary(false)} />
+      {showSummary && (currentChatId || chatId) && (
+        <ChatSummary chatId={currentChatId || chatId} onClose={() => setShowSummary(false)} />
       )}
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />

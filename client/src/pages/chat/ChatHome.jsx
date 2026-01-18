@@ -43,7 +43,6 @@ import {
   fetchChatInfo,
   fetchActiveChats,
   searchUsers as searchUsersService,
-  createChat,
   markChatAsRead,
   toggleChatPin,
   deleteChat,
@@ -77,6 +76,7 @@ const ChatHome = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUserForNewChat, setSelectedUserForNewChat] = useState(null);
+  const [newPrivateChatUser, setNewPrivateChatUser] = useState(null);
   const [showNewChatConfirmation, setShowNewChatConfirmation] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [showChatInfoModal, setShowChatInfoModal] = useState(false);
@@ -574,6 +574,9 @@ const ChatHome = () => {
     const chat = typeof chatOrId === 'object' ? chatOrId : filteredChats.find(c => c.chat_id === chatOrId);
     const isAI = chat?.isAI || chatOrId === 'ai-assistant';
 
+    // Clear new private chat user when clicking on an existing chat
+    setNewPrivateChatUser(null);
+
     if (typeof window !== "undefined" && window.innerWidth < 900) {
       if (isAI) {
         navigate('/ai-chat');
@@ -612,14 +615,6 @@ const ChatHome = () => {
   }, [isWideScreen, selectedChatId, showAIChat, navigate]);
 
   useEffect(() => {
-    const greetingChatId = sessionStorage.getItem("sendGreetingOnChatLoad");
-    if (greetingChatId && selectedChatId === Number(greetingChatId)) {
-      sessionStorage.removeItem("sendGreetingOnChatLoad");
-      const timer = setTimeout(() => {
-        handleSendGreeting(selectedChatId, userId);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
   }, [selectedChatId, userId]);
 
   const handleChatAvatarClick = (e, chat) => {
@@ -937,47 +932,22 @@ const ChatHome = () => {
 
     try {
       setIsCreatingChat(true);
-
-      const currentUserId = Number(userId);
-      const otherUserId = Number(selectedUserForNewChat.user_id);
-
-      const chatData = await createChat("private", [currentUserId, otherUserId]);
-      const newChatId = chatData.chat?.chat_id;
-
-      if (newChatId) {
-        setShowNewChatModal(false);
-        setShowNewChatConfirmation(false);
-        setSelectedUserForNewChat(null);
-
-        sessionStorage.setItem("sendGreetingOnChatLoad", newChatId);
-
-        if (typeof window !== "undefined" && window.innerWidth < 900) {
-          navigate(`/chat/${newChatId}`, { state: { sendGreeting: true } });
-        } else {
-          setSelectedChatId(newChatId);
-        }
+      setShowNewChatModal(false);
+      setShowNewChatConfirmation(false);
+      setSelectedUserForNewChat(null);
+      
+      if (typeof window !== "undefined" && window.innerWidth < 900) {
+        navigate('/chat/new', { state: { recipient: selectedUserForNewChat } });
       } else {
-        throw new Error("Chat ID not found in response");
+        setNewPrivateChatUser(selectedUserForNewChat);
+        setSelectedChatId(null);
       }
     } catch (err) {
-      console.error("Error creating chat:", err);
-      alert("Failed to create chat. Please try again.");
+      console.error("Error setting up new chat:", err);
+      alert("Failed to start chat. Please try again.");
     } finally {
       setIsCreatingChat(false);
     }
-  };
-
-  const handleSendGreeting = (chatId, userId) => {
-    const messageToSend = "Hello!👋";
-
-    const messageData = {
-      chat_id: parseInt(chatId),
-      sender_id: userId,
-      message_text: messageToSend,
-      message_type: "text",
-    };
-
-    socketService.sendMessage(messageData);
   };
 
   const clearAllSelection = (e) => {
@@ -1349,13 +1319,20 @@ const ChatHome = () => {
               isEmbedded={true}
               onClose={() => setShowAIChat(false)}
             />
-          ) : selectedChatId ? (
+          ) : (selectedChatId || newPrivateChatUser) ? (
             <ChatWindow
               chatId={selectedChatId}
+              recipient={newPrivateChatUser}
               isEmbedded={true}
               onMemberClick={(memberId) => {
                 setSelectedUserForModal(memberId);
                 setShowUserProfileModal(true);
+              }}
+              onChatCreated={(newChatId) => {
+                // When a new chat is created, update the selected chat ID
+                // and clear the newPrivateChatUser
+                setSelectedChatId(newChatId);
+                setNewPrivateChatUser(null);
               }}
             />
           ) : (
@@ -1498,7 +1475,7 @@ const ChatHome = () => {
         title="Start New Chat"
         message={`Start a new conversation with ${selectedUserForNewChat?.full_name || selectedUserForNewChat?.username
           }?`}
-        confirmText='Send "Hello!👋"'
+        confirmText="Start Chat"
         cancelText="Cancel"
         isLoading={isCreatingChat}
         onConfirm={handleSelectUser}
