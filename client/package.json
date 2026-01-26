@@ -19,7 +19,7 @@
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.4",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^5.0.1",
     "react-scrollbars-custom": "^4.1.1",
     "remark-gfm": "^4.0.1",
     "simplebar": "^6.3.3",
@@ -60,7 +60,7 @@
     ]
   },
   "devDependencies": {
-    "@craco/craco": "^7.1.0",
+    "@craco/craco": "^5.9.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "wait-on": "^9.0.3"

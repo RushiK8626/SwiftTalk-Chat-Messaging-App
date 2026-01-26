@@ -864,7 +864,7 @@ const ChatWindow = ({
         socket.off("member_exited", handleMemberExited);
       }
     };
-  }, [chatId, currentChatId, userId]);
+  }, [chatId, currentChatId, userId, fetchUserProfile, messageContextMenu, showError, showSuccess]);
 
   const scrollToBottom = useCallback(() => {
     const performScroll = () => {

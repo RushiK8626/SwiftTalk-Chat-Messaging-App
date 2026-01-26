@@ -228,7 +228,7 @@ const ChatHome = () => {
         fetchChatImage(chat.chat_id, chat.chat_image);
       }
     });
-  }, [chats]);
+  }, [chats, fetchChatImage, fetchUserProfile, userId]);
 
   const aiChatItem = {
     chat_id: 'ai-assistant',

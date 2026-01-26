@@ -70,7 +70,7 @@ export const ThemeProvider = ({ children }) => {
 
     // Trigger a reflow to ensure styles are applied
     void root.offsetWidth;
-  }, [accent]);
+  }, [accent, ACCENT_COLOR_MAP]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));

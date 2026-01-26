@@ -226,7 +226,7 @@ export const useFetchNotifications = (token, userId) => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [token, userId]);
+  }, [token, userId, fetchNotifications, fetchUnreadCount]);
 
   return {
     notifications,
