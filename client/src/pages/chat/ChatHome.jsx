@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   MessageCircle,
@@ -148,7 +149,7 @@ const ChatHome = () => {
         const timeB = new Date(
           b.last_message_timestamp || b.created_at || 0
         ).getTime();
-        return timeB - timeA; 
+        return timeB - timeA;
       }
       return a.pinned ? -1 : 1;
     });
@@ -454,7 +455,7 @@ const ChatHome = () => {
         chat_name: group_name,
         chat_type: "group",
         chat_image: chat_image || null,
-        members: [], 
+        members: [],
         last_message: {
           message_id: null,
           preview_text: message,
@@ -616,7 +617,7 @@ const ChatHome = () => {
   }, [selectedChatId, userId]);
 
   const handleChatAvatarClick = (e, chat) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
 
     if (chat.chat_type === "group") {
       setSelectedChatInfo({
@@ -641,13 +642,13 @@ const ChatHome = () => {
     e.stopPropagation();
 
     const rect = e.currentTarget.getBoundingClientRect();
-    
-    newChatContextMenu.setMenu({ 
-      isOpen: true, 
-      x: rect.left + rect.width / 2, 
-      y: rect.top, 
-      position: 'top-left', 
-      maxX: window.innerWidth >= 900 ? leftPanelWidth : undefined 
+
+    newChatContextMenu.setMenu({
+      isOpen: true,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+      position: 'top-left',
+      maxX: window.innerWidth >= 900 ? leftPanelWidth : undefined
     });
   };
 
@@ -698,7 +699,7 @@ const ChatHome = () => {
       const chatId = selectedChatIdParam || selectedChatForMenu.chat_id;
 
       await markChatAsRead(chatId, currentUserId);
-      
+
       // Update local state
       setChats((prevChats) =>
         prevChats.map((c) =>
@@ -770,7 +771,7 @@ const ChatHome = () => {
 
     try {
       await exitGroupChat(selectedChatForMenu.chat_id);
-      
+
       setChats((prevChats) =>
         prevChats.filter((c) => c.chat_id !== selectedChatForMenu.chat_id)
       );
@@ -903,7 +904,7 @@ const ChatHome = () => {
     setSearchLoading(true);
     const debounceTimer = setTimeout(() => {
       searchUsersAPI(searchUsers);
-    }, 300); 
+    }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [searchUsers, searchUsersAPI]);
@@ -933,7 +934,7 @@ const ChatHome = () => {
       setShowNewChatModal(false);
       setShowNewChatConfirmation(false);
       setSelectedUserForNewChat(null);
-      
+
       if (typeof window !== "undefined" && window.innerWidth < 900) {
         navigate('/chat/new', { state: { recipient: selectedUserForNewChat } });
       } else {
@@ -1037,454 +1038,463 @@ const ChatHome = () => {
   };
 
   return (
-    <div className="chat-home" onClick={clearAllSelection}>
-      <div
-        className="chat-home-container"
-        ref={containerRef}
-        style={
-          typeof window !== "undefined" && window.innerWidth >= 900
-            ? {
-              gridTemplateColumns: `${leftPanelWidth}px 1fr`,
-            }
-            : {}
-        }
-      >
-        <div className="left-panel">
-          <div className="chat-home-header" ref={headerRef}>
-            <div className="header-top">
-              <h1>{greeting}</h1>
-              <div className="header-actions">
-                {chatSelection ? (
-                  <>
-                    <button
-                      className="delete-chats-header-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteAllSelectedChats();
-                      }}
-                    >
-                      <Trash2 size={24} />
-                    </button>
-                    <button
-                      className="mark-all-read-header-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        markReadAllSelectedChats();
-                      }}
-                    >
-                      <CircleCheckBig size={24} />
-                    </button>
-                    <button className="mute-all-header-btn">
-                      <BellOff size={24} />
-                    </button>
-                    <button className="archive-all-header-btn">
-                      <Archive size={24} />
-                    </button>
-                    <button
-                      className="pin-all-header-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        pinAllSelectedChats();
-                      }}
-                    >
-                      <Pin size={24} />
-                    </button>
-                    <button
-                      className="cancel-all-selection-header-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        clearAllSelection();
-                      }}
-                    >
-                      <X size={24} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <NotificationCenter
-                      token={localStorage.getItem("accessToken")}
-                      userId={userId}
-                    />
-                  </>
-                )}
+    <>
+      <Helmet>
+        <title>Chats | ConvoHub</title>
+        <meta name="description" content="View and manage your conversations on ConvoHub." />
+        <meta property="og:title" content="Chats | ConvoHub" />
+        <meta property="og:description" content="View and manage your conversations on ConvoHub." />
+      </Helmet>
+      <div className="chat-home" onClick={clearAllSelection}>
+        <div
+          className="chat-home-container"
+          ref={containerRef}
+          style={
+            typeof window !== "undefined" && window.innerWidth >= 900
+              ? {
+                gridTemplateColumns: `${leftPanelWidth}px 1fr`,
+              }
+              : {}
+          }
+        >
+          <div className="left-panel">
+            <div className="chat-home-header" ref={headerRef}>
+              <div className="header-top">
+                <h1>{greeting}</h1>
+                <div className="header-actions">
+                  {chatSelection ? (
+                    <>
+                      <button
+                        className="delete-chats-header-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          deleteAllSelectedChats();
+                        }}
+                      >
+                        <Trash2 size={24} />
+                      </button>
+                      <button
+                        className="mark-all-read-header-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          markReadAllSelectedChats();
+                        }}
+                      >
+                        <CircleCheckBig size={24} />
+                      </button>
+                      <button className="mute-all-header-btn">
+                        <BellOff size={24} />
+                      </button>
+                      <button className="archive-all-header-btn">
+                        <Archive size={24} />
+                      </button>
+                      <button
+                        className="pin-all-header-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          pinAllSelectedChats();
+                        }}
+                      >
+                        <Pin size={24} />
+                      </button>
+                      <button
+                        className="cancel-all-selection-header-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clearAllSelection();
+                        }}
+                      >
+                        <X size={24} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <NotificationCenter
+                        token={localStorage.getItem("accessToken")}
+                        userId={userId}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search conversations..."
+              />
             </div>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search conversations..."
-            />
-          </div>
 
-          <div className="chat-list-wrapper">
-            <SimpleBar style={{ maxHeight: chatListHeight }}>
-              <div className="chat-list">
-                {loading ? (
-                  <div className="no-chats">
-                    <p>Loading chats...</p>
-                  </div>
-                ) : error ? (
-                  <div className="no-chats">
-                    <p>{error}</p>
-                  </div>
-                ) : filteredChats.length > 0 ? (
-                  filteredChats.map((chat) => {
-                    let displayName = chat.chat_name;
-                    let otherUserId = null;
-                    let chatImage = null;
+            <div className="chat-list-wrapper">
+              <SimpleBar style={{ maxHeight: chatListHeight }}>
+                <div className="chat-list">
+                  {loading ? (
+                    <div className="no-chats">
+                      <p>Loading chats...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="no-chats">
+                      <p>{error}</p>
+                    </div>
+                  ) : filteredChats.length > 0 ? (
+                    filteredChats.map((chat) => {
+                      let displayName = chat.chat_name;
+                      let otherUserId = null;
+                      let chatImage = null;
 
-                    if (chat.isAI && convohubAssistantEnabled) {
+                      if (chat.isAI && convohubAssistantEnabled) {
+                        return (
+                          <div
+                            key={chat.chat_id}
+                            className={`chat-item ${showAIChat ? "selected" : ""}`}
+                            onClick={() => handleChatClick(chat)}
+                          >
+                            <div className="chat-avatar ai-chat-avatar">
+                              <Sparkles size={24} color="white" />
+                            </div>
+                            <div className="chat-info">
+                              <div className="chat-header-info">
+                                <h3 className="chat-name">{displayName}</h3>
+                                <span className="ai-badge">AI</span>
+                              </div>
+                              <div className="chat-last-message">
+                                <p className="last-message">
+                                  {chat.last_message?.preview_text || "Ask me anything!"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (
+                        chat.chat_type === "private" &&
+                        Array.isArray(chat.members)
+                      ) {
+                        const currentUserId = Number(userId);
+                        const other = chat.members.find(
+                          (m) => Number(m.user_id) !== currentUserId
+                        );
+
+                        if (other) {
+                          otherUserId = other.user_id;
+                          if (other.user && other.user.full_name) {
+                            displayName = other.user.full_name;
+                          } else if (other.user && other.user.username) {
+                            displayName = other.user.username;
+                          } else if (userProfiles[other.user_id]?.full_name) {
+                            displayName = userProfiles[other.user_id].full_name;
+                          } else if (userProfiles[other.user_id]?.username) {
+                            displayName = userProfiles[other.user_id].username;
+                          }
+                        }
+                      } else if (chat.chat_type === "group") {
+                        chatImage = chatImages[chat.chat_id];
+                      }
+                      const profilePic =
+                        otherUserId && userProfiles[otherUserId]?.profile_pic;
+
+                      const getInitials = (name) => {
+                        if (!name) return "💬";
+                        const words = name.trim().split(" ");
+                        if (words.length >= 2) {
+                          return (
+                            words[0][0] + words[words.length - 1][0]
+                          ).toUpperCase();
+                        }
+                        return name.substring(0, 2).toUpperCase();
+                      };
+
                       return (
                         <div
                           key={chat.chat_id}
-                          className={`chat-item ${showAIChat ? "selected" : ""}`}
-                          onClick={() => handleChatClick(chat)}
+                          className={`chat-item ${parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
+                            } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
+                          onClick={(e) => {
+                            if (chatSelection) {
+                              e.stopPropagation();
+                              handleChatsSelection(chat.chat_id);
+                            } else handleChatClick(chat.chat_id);
+                          }}
+                          onContextMenu={(e) => handleChatContextMenu(e, chat)}
                         >
-                          <div className="chat-avatar ai-chat-avatar">
-                            <Sparkles size={24} color="white" />
+                          <div
+                            className="chat-avatar"
+                            onClick={(e) => handleChatAvatarClick(e, chat)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            {profilePic || chatImage ? (
+                              <img
+                                src={profilePic || chatImage}
+                                alt={
+                                  chat.chat_type === "group" ? "group" : "profile"
+                                }
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  borderRadius: "50%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            ) : (
+                              <span className="avatar-emoji">
+                                {chat.chat_type === "private"
+                                  ? getInitials(displayName)
+                                  : "💬"}
+                              </span>
+                            )}
                           </div>
                           <div className="chat-info">
                             <div className="chat-header-info">
                               <h3 className="chat-name">{displayName}</h3>
-                              <span className="ai-badge">AI</span>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                {chat.unread_count > 0 && (
+                                  <span
+                                    style={{
+                                      backgroundColor: "var(--accent-color)",
+                                      color: "white",
+                                      borderRadius: "50%",
+                                      width: "24px",
+                                      height: "24px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontSize: "12px",
+                                      fontWeight: "600",
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {chat.unread_count > 99
+                                      ? "99+"
+                                      : chat.unread_count}
+                                  </span>
+                                )}
+                                {chat.pinned && (
+                                  <Pin
+                                    color="var(--accent-color)"
+                                    size={16}
+                                    strokeWidth={2}
+                                  />
+                                )}
+                                <span className="chat-time">
+                                  {formatChatPreviewTime(
+                                    chat.last_message?.created_at
+                                  )}
+                                </span>
+                              </div>
                             </div>
                             <div className="chat-last-message">
                               <p className="last-message">
-                                {chat.last_message?.preview_text || "Ask me anything!"}
+                                {chat.last_message?.preview_text ||
+                                  "No messages yet"}
                               </p>
                             </div>
                           </div>
                         </div>
                       );
-                    }
+                    })
+                  ) : (
+                    <div className="no-chats">
+                      <MessageCircle size={64} className="no-chats-icon" />
+                      <p>No conversations found</p>
+                    </div>
+                  )}
+                </div>
+              </SimpleBar>
+            </div>
 
-                    if (
-                      chat.chat_type === "private" &&
-                      Array.isArray(chat.members)
-                    ) {
-                      const currentUserId = Number(userId);
-                      const other = chat.members.find(
-                        (m) => Number(m.user_id) !== currentUserId
-                      );
+            <NewBtn onClick={handleNewChat} />
 
-                      if (other) {
-                        otherUserId = other.user_id;
-                        if (other.user && other.user.full_name) {
-                          displayName = other.user.full_name;
-                        } else if (other.user && other.user.username) {
-                          displayName = other.user.username;
-                        } else if (userProfiles[other.user_id]?.full_name) {
-                          displayName = userProfiles[other.user_id].full_name;
-                        } else if (userProfiles[other.user_id]?.username) {
-                          displayName = userProfiles[other.user_id].username;
-                        }
-                      }
-                    } else if (chat.chat_type === "group") {
-                      chatImage = chatImages[chat.chat_id];
-                    }
-                    const profilePic =
-                      otherUserId && userProfiles[otherUserId]?.profile_pic;
+            <div ref={bottomTabBarRef}>
+              <BottomTabBar activeTab="chats" />
+            </div>
+          </div>
 
-                    const getInitials = (name) => {
-                      if (!name) return "💬";
-                      const words = name.trim().split(" ");
-                      if (words.length >= 2) {
-                        return (
-                          words[0][0] + words[words.length - 1][0]
-                        ).toUpperCase();
-                      }
-                      return name.substring(0, 2).toUpperCase();
-                    };
+          <div className="right-panel">
+            {showAIChat ? (
+              <AIChatWindow
+                isEmbedded={true}
+                onClose={() => setShowAIChat(false)}
+              />
+            ) : (selectedChatId || newPrivateChatUser) ? (
+              <ChatWindow
+                key={selectedChatId || `new-${newPrivateChatUser?.user_id}`}
+                chatId={selectedChatId}
+                recipient={newPrivateChatUser}
+                isEmbedded={true}
+                onMemberClick={(memberId) => {
+                  setSelectedUserForModal(memberId);
+                  setShowUserProfileModal(true);
+                }}
+                onChatCreated={(newChatId) => {
+                  // When a new chat is created, update the selected chat ID
+                  // and clear the newPrivateChatUser
+                  setSelectedChatId(newChatId);
+                  setNewPrivateChatUser(null);
+                }}
+              />
+            ) : (
+              <div className="chat-placeholder">
+                <p>Select a conversation to start chatting</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-                    return (
-                      <div
-                        key={chat.chat_id}
-                        className={`chat-item ${parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
-                          } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
-                        onClick={(e) => {
-                          if (chatSelection) {
-                            e.stopPropagation();
-                            handleChatsSelection(chat.chat_id);
-                          } else handleChatClick(chat.chat_id);
-                        }}
-                        onContextMenu={(e) => handleChatContextMenu(e, chat)}
-                      >
-                        <div
-                          className="chat-avatar"
-                          onClick={(e) => handleChatAvatarClick(e, chat)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {profilePic || chatImage ? (
-                            <img
-                              src={profilePic || chatImage}
-                              alt={
-                                chat.chat_type === "group" ? "group" : "profile"
-                              }
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          ) : (
-                            <span className="avatar-emoji">
-                              {chat.chat_type === "private"
-                                ? getInitials(displayName)
-                                : "💬"}
-                            </span>
-                          )}
-                        </div>
-                        <div className="chat-info">
-                          <div className="chat-header-info">
-                            <h3 className="chat-name">{displayName}</h3>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
-                              {chat.unread_count > 0 && (
-                                <span
-                                  style={{
-                                    backgroundColor: "var(--accent-color)",
-                                    color: "white",
-                                    borderRadius: "50%",
-                                    width: "24px",
-                                    height: "24px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "12px",
-                                    fontWeight: "600",
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  {chat.unread_count > 99
-                                    ? "99+"
-                                    : chat.unread_count}
-                                </span>
-                              )}
-                              {chat.pinned && (
-                                <Pin
-                                  color="var(--accent-color)"
-                                  size={16}
-                                  strokeWidth={2}
-                                />
-                              )}
-                              <span className="chat-time">
-                                {formatChatPreviewTime(
-                                  chat.last_message?.created_at
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="chat-last-message">
-                            <p className="last-message">
-                              {chat.last_message?.preview_text ||
-                                "No messages yet"}
-                            </p>
-                          </div>
-                        </div>
+        {showNewChatModal && (
+          <div
+            className="modal-overlay"
+            onClick={() => setShowNewChatModal(false)}
+          >
+            <div className="new-chat-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>New Chat</h2>
+                <button
+                  className="modal-close-btn"
+                  onClick={() => setShowNewChatModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="modal-search">
+                <Search className="search-icon" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by username..."
+                  value={searchUsers}
+                  onChange={(e) => handleSearchUsers(e.target.value)}
+                  className="modal-search-input"
+                  autoFocus
+                />
+              </div>
+              <div className="modal-results">
+                {searchLoading ? (
+                  <p className="modal-message">Searching...</p>
+                ) : searchUsers && searchResults.length === 0 ? (
+                  <p className="modal-message">No users found</p>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.user_id}
+                      className="user-result-item"
+                      onClick={() => handleSelectUserClick(user)}
+                    >
+                      <div className="user-avatar">
+                        {user.profile_pic ? (
+                          <img
+                            src={user.profile_pic}
+                            alt="profile"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <span className="avatar-text">
+                            {user.full_name
+                              ? user.full_name.split(" ").length >= 2
+                                ? (
+                                  user.full_name.split(" ")[0][0] +
+                                  user.full_name.split(" ")[
+                                  user.full_name.split(" ").length - 1
+                                  ][0]
+                                ).toUpperCase()
+                                : user.full_name.substring(0, 2).toUpperCase()
+                              : user.username.substring(0, 2).toUpperCase()}
+                          </span>
+                        )}
                       </div>
-                    );
-                  })
+                      <div className="user-info">
+                        <h4>{user.full_name || user.username}</h4>
+                        <p>@{user.username}</p>
+                      </div>
+                    </div>
+                  ))
                 ) : (
-                  <div className="no-chats">
-                    <MessageCircle size={64} className="no-chats-icon" />
-                    <p>No conversations found</p>
-                  </div>
+                  <p className="modal-message">
+                    Search for users to start a new chat
+                  </p>
                 )}
               </div>
-            </SimpleBar>
-          </div>
-          
-          <NewBtn onClick={handleNewChat} />
-
-          <div ref={bottomTabBarRef}>
-            <BottomTabBar activeTab="chats" />
-          </div>
-        </div>
-
-        <div className="right-panel">
-          {showAIChat ? (
-            <AIChatWindow
-              isEmbedded={true}
-              onClose={() => setShowAIChat(false)}
-            />
-          ) : (selectedChatId || newPrivateChatUser) ? (
-            <ChatWindow
-              chatId={selectedChatId}
-              recipient={newPrivateChatUser}
-              isEmbedded={true}
-              onMemberClick={(memberId) => {
-                setSelectedUserForModal(memberId);
-                setShowUserProfileModal(true);
-              }}
-              onChatCreated={(newChatId) => {
-                // When a new chat is created, update the selected chat ID
-                // and clear the newPrivateChatUser
-                setSelectedChatId(newChatId);
-                setNewPrivateChatUser(null);
-              }}
-            />
-          ) : (
-            <div className="chat-placeholder">
-              <p>Select a conversation to start chatting</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        <ChatInfoModal
+          isOpen={showChatInfoModal}
+          onClose={() => setShowChatInfoModal(false)}
+          chatId={selectedChatInfo?.chatId}
+          chatType={selectedChatInfo?.chatType}
+          otherUserId={selectedChatInfo?.otherUserId}
+        />
+
+        <ChatInfoModal
+          isOpen={showUserProfileModal}
+          onClose={() => {
+            setShowUserProfileModal(false);
+            if (selectedChatInfo) {
+              setShowChatInfoModal(true);
+            }
+          }}
+          chatId={null}
+          chatType="private"
+          otherUserId={selectedUserForModal}
+        />
+
+        <CreateGroupModal
+          isOpen={showCreateGroupModal}
+          onClose={() => setShowCreateGroupModal(false)}
+          onGroupCreated={handleGroupCreated}
+          currentUserId={userId}
+        />
+
+        <ContextMenu
+          isOpen={newChatContextMenu.isOpen}
+          x={newChatContextMenu.x}
+          y={newChatContextMenu.y}
+          position={newChatContextMenu.position}
+          maxX={newChatContextMenu.maxX}
+          items={getNewChatContextMenuItems()}
+          onClose={newChatContextMenu.closeMenu}
+        />
+
+        <ContextMenu
+          isOpen={chatContextMenu.isOpen}
+          x={chatContextMenu.x}
+          y={chatContextMenu.y}
+          items={getContextMenuItems(selectedChatForMenu)}
+          onClose={chatContextMenu.closeMenu}
+        />
+
+        <ConfirmationBox
+          isOpen={showNewChatConfirmation}
+          title="Start New Chat"
+          message={`Start a new conversation with ${selectedUserForNewChat?.full_name || selectedUserForNewChat?.username
+            }?`}
+          confirmText="Start Chat"
+          cancelText="Cancel"
+          isLoading={isCreatingChat}
+          onConfirm={handleSelectUser}
+          onCancel={() => {
+            setShowNewChatConfirmation(false);
+            setSelectedUserForNewChat(null);
+          }}
+        />
+
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
-
-      {showNewChatModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowNewChatModal(false)}
-        >
-          <div className="new-chat-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>New Chat</h2>
-              <button
-                className="modal-close-btn"
-                onClick={() => setShowNewChatModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-search">
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                placeholder="Search by username..."
-                value={searchUsers}
-                onChange={(e) => handleSearchUsers(e.target.value)}
-                className="modal-search-input"
-                autoFocus
-              />
-            </div>
-            <div className="modal-results">
-              {searchLoading ? (
-                <p className="modal-message">Searching...</p>
-              ) : searchUsers && searchResults.length === 0 ? (
-                <p className="modal-message">No users found</p>
-              ) : searchResults.length > 0 ? (
-                searchResults.map((user) => (
-                  <div
-                    key={user.user_id}
-                    className="user-result-item"
-                    onClick={() => handleSelectUserClick(user)}
-                  >
-                    <div className="user-avatar">
-                      {user.profile_pic ? (
-                        <img
-                          src={user.profile_pic}
-                          alt="profile"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <span className="avatar-text">
-                          {user.full_name
-                            ? user.full_name.split(" ").length >= 2
-                              ? (
-                                user.full_name.split(" ")[0][0] +
-                                user.full_name.split(" ")[
-                                user.full_name.split(" ").length - 1
-                                ][0]
-                              ).toUpperCase()
-                              : user.full_name.substring(0, 2).toUpperCase()
-                            : user.username.substring(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="user-info">
-                      <h4>{user.full_name || user.username}</h4>
-                      <p>@{user.username}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="modal-message">
-                  Search for users to start a new chat
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ChatInfoModal
-        isOpen={showChatInfoModal}
-        onClose={() => setShowChatInfoModal(false)}
-        chatId={selectedChatInfo?.chatId}
-        chatType={selectedChatInfo?.chatType}
-        otherUserId={selectedChatInfo?.otherUserId}
-      />
-
-      <ChatInfoModal
-        isOpen={showUserProfileModal}
-        onClose={() => {
-          setShowUserProfileModal(false);
-          if (selectedChatInfo) {
-            setShowChatInfoModal(true);
-          }
-        }}
-        chatId={null}
-        chatType="private"
-        otherUserId={selectedUserForModal}
-      />
-
-      <CreateGroupModal
-        isOpen={showCreateGroupModal}
-        onClose={() => setShowCreateGroupModal(false)}
-        onGroupCreated={handleGroupCreated}
-        currentUserId={userId}
-      />
-
-      <ContextMenu
-        isOpen={newChatContextMenu.isOpen}
-        x={newChatContextMenu.x}
-        y={newChatContextMenu.y}
-        position={newChatContextMenu.position}
-        maxX={newChatContextMenu.maxX}
-        items={getNewChatContextMenuItems()}
-        onClose={newChatContextMenu.closeMenu}
-      />
-
-      <ContextMenu
-        isOpen={chatContextMenu.isOpen}
-        x={chatContextMenu.x}
-        y={chatContextMenu.y}
-        items={getContextMenuItems(selectedChatForMenu)}
-        onClose={chatContextMenu.closeMenu}
-      />
-
-      <ConfirmationBox
-        isOpen={showNewChatConfirmation}
-        title="Start New Chat"
-        message={`Start a new conversation with ${selectedUserForNewChat?.full_name || selectedUserForNewChat?.username
-          }?`}
-        confirmText="Start Chat"
-        cancelText="Cancel"
-        isLoading={isCreatingChat}
-        onConfirm={handleSelectUser}
-        onCancel={() => {
-          setShowNewChatConfirmation(false);
-          setSelectedUserForNewChat(null);
-        }}
-      />
-
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
-    </div>
+    </>
   );
 };
 

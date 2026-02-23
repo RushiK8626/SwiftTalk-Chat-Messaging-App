@@ -1,13 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
+import { HelmetProvider } from 'react-helmet-async';
 import App from "./App";
+import "./index.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <React.StrictMode>
+  <HelmetProvider>
     <App />
-  </React.StrictMode>
+  </HelmetProvider>
 );
 
 // Register service worker for push notifications
@@ -15,7 +16,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/service-worker.js")
-      .then((registration) => {})
+      .then((registration) => { })
       .catch((error) => {
         console.error("Service Worker registration failed:", error);
       });
