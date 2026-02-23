@@ -1,31 +1,115 @@
 /* Default theme (Light Mode) */
 :root {
   color-scheme: light;
-  /* Base colors that don't change with accent */
   --background-color: #f4f8ff;
   --header-background: #eaf2ff;
   --header-text-color: #181c24;
   --card-background: #ffffff;
   --modal-background: #fafdff;
   --text-color: #181c24;
-  --text-secondary: #4a6fa1;
-  
-  /* Accent-dependent colors will be set dynamically via JS */
+  --text-primary: #181c24;
+  --text-secondary: #b5bfcb;
+
+  /* Borders & Dividers */
+  --border-color: #c8d6e5;
+  --shadow: rgba(0, 0, 0, 0.08);
+
+  /* Inputs */
+  --input-background: #f0f4fa;
+
+  /* Hover states */
+  --hover-background: rgba(0, 0, 0, 0.05);
+  --hover-bg: rgba(0, 0, 0, 0.05);
+
+  /* Messages */
+  --message-received-bg: #e8edf4;
+  --message-received-text: #181c24;
+  --message-sent-text: #ffffff;
+  --message-input-bg: #f0f4fa;
+
+  /* Accent helpers */
+  --accent-color-rgb: 0, 122, 255;
+  --primary-light: rgba(0, 122, 255, 0.1);
+  --primary-dark: #005ecb;
+  --primary-color-light: rgba(0, 122, 255, 0.08);
+  --primary-shadow: rgba(0, 122, 255, 0.15);
+
+  /* Overlays & Misc */
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --avatar-bg: #d6e4f0;
+  --icon-background: #eaf2ff;
+  --bg-secondary: #eef3fa;
+  --bg-tertiary: #e4ecf7;
+  --background: #f4f8ff;
+
+  /* Scrollbar */
+  --scrollbar-color: #c0c8d4;
+  --scrollbar-hover: #a0aab8;
+
+  /* Status colors */
+  --danger-color: #ff3b30;
+  --danger-dark: #cc2d25;
+  --danger-light: rgba(255, 59, 48, 0.1);
+  --error-color: #dc3545;
+  --error-light: rgba(220, 53, 69, 0.1);
+  --success-color: #28a745;
 }
 
 /* Dark Mode (Pitch Black) */
 [data-theme="dark"] {
   color-scheme: dark;
-  /* Base colors that don't change with accent */
   --background-color: #0a0e17;
   --header-background: #101a2b;
   --header-text-color: #eaf6ff;
   --card-background: #131e2f;
   --modal-background: #18253a;
   --text-color: #eaf6ff;
-  --text-secondary: #7bb6ff;
-  
-  /* Accent-dependent colors will be set dynamically via JS */
+  --text-primary: #eaf6ff;
+  --text-secondary: #b5bfcb;
+
+  /* Borders & Dividers */
+  --border-color: #2a3a52;
+  --shadow: rgba(0, 0, 0, 0.35);
+
+  /* Inputs */
+  --input-background: #182336;
+
+  /* Hover states */
+  --hover-background: rgba(255, 255, 255, 0.06);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+
+  /* Messages */
+  --message-received-bg: #1c2a3f;
+  --message-received-text: #eaf6ff;
+  --message-sent-text: #ffffff;
+  --message-input-bg: #182336;
+
+  /* Accent helpers */
+  --accent-color-rgb: 0, 122, 255;
+  --primary-light: rgba(0, 122, 255, 0.15);
+  --primary-dark: #3399ff;
+  --primary-color-light: rgba(0, 122, 255, 0.12);
+  --primary-shadow: rgba(0, 122, 255, 0.2);
+
+  /* Overlays & Misc */
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --avatar-bg: #1e2e44;
+  --icon-background: #182336;
+  --bg-secondary: #101a2b;
+  --bg-tertiary: #0e1624;
+  --background: #0a0e17;
+
+  /* Scrollbar */
+  --scrollbar-color: #2a3a52;
+  --scrollbar-hover: #3a4e6a;
+
+  /* Status colors */
+  --danger-color: #ff453a;
+  --danger-dark: #ff6961;
+  --danger-light: rgba(255, 69, 58, 0.15);
+  --error-color: #ff453a;
+  --error-light: rgba(255, 69, 58, 0.12);
+  --success-color: #30d158;
 }
 
 body {

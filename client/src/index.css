@@ -6,13 +6,11 @@
     border-color 0.3s ease;
 }
 
-/* Fix for mobile browser viewport height issues */
 :root {
   --vh: 1vh;
 }
 
 html {
-  /* Use dvh (dynamic viewport height) with fallback */
   height: 100vh;
   height: 100dvh;
 }
@@ -28,12 +26,11 @@ body {
   color: var(--text-color);
   min-height: 100vh;
   min-height: 100dvh;
-  /* Prevent overscroll bounce on iOS */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
 
-code {
+/* code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
-}
+} */

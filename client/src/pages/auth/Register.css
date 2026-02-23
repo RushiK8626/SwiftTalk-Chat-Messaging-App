@@ -96,9 +96,19 @@
   font-size: 14px;
   box-sizing: border-box;
   color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-background);
+  transition: border 0.2s;
 }
 
-
+.register-form .input-wrapper input:focus,
+.register-form input:focus,
+.register-form select:focus,
+.register-form textarea:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
 
 .register-footer {
   text-align: center;
