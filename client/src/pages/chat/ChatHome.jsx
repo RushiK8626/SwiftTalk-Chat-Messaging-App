@@ -106,23 +106,23 @@ const ChatHome = () => {
   const [selectedChatForMenu, setSelectedChatForMenu] = useState(null);
   const [showAIChat, setShowAIChat] = useState(false);
 
-  const [convohubAssistantEnabled, setConvohubAssistantEnabled] = useState(() => {
-    const stored = localStorage.getItem('convhub_assistant');
+  const [swifttalkAssistantEnabled, setSwifttalkAssistantEnabled] = useState(() => {
+    const stored = localStorage.getItem('swifttalk_assistant');
     return stored === null ? true : stored === 'true';
   });
 
   useEffect(() => {
     const handleStorageChange = () => {
-      const stored = localStorage.getItem('convhub_assistant');
-      setConvohubAssistantEnabled(stored === null ? true : stored === 'true');
+      const stored = localStorage.getItem('swifttalk_assistant');
+      setSwifttalkAssistantEnabled(stored === null ? true : stored === 'true');
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('convhub_assistant_changed', handleStorageChange);
+    window.addEventListener('swifttalk_assistant_changed', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('convhub_assistant_changed', handleStorageChange);
+      window.removeEventListener('swifttalk_assistant_changed', handleStorageChange);
     };
   }, []);
 
@@ -240,7 +240,7 @@ const ChatHome = () => {
     unread_count: 0,
   };
 
-  const showAIAssistant = convohubAssistantEnabled && searchQuery.trim() === "";
+  const showAIAssistant = swifttalkAssistantEnabled && searchQuery.trim() === "";
 
   const filteredChats = [
     ...(showAIAssistant ? [aiChatItem] : []),
@@ -1145,7 +1145,7 @@ const ChatHome = () => {
                       let otherUserId = null;
                       let chatImage = null;
 
-                      if (chat.isAI && convohubAssistantEnabled) {
+                      if (chat.isAI && swifttalkAssistantEnabled) {
                         return (
                           <div
                             key={chat.chat_id}

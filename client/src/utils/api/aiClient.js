@@ -1,5 +1,5 @@
 /**
- * AI Client for ConvoHub
+ * AI Client for SwiftTalk
  * Handles all AI-related API calls: smart replies, translation, summarization, etc.
  */
 

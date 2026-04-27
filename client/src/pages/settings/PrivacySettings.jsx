@@ -15,17 +15,17 @@ const PrivacySettings = ({ isEmbedded = false }) => {
         }
     }, [isWideScreen, isEmbedded, navigate]);
 
-    const [convohubAssistantEnabled, SeConvohubAssistantEnabled] = useState(() => {
-        const stored = localStorage.getItem('convhub_assistant');
+    const [swifttalkAssistantEnabled, setSwifttalkAssistantEnabled] = useState(() => {
+        const stored = localStorage.getItem('swifttalk_assistant');
         return stored === null ? true : stored === 'true';
     });
 
     const handleAIAssistantToggle = async (e) => {
         setError(null);
-        const newValue = !convohubAssistantEnabled;
-        localStorage.setItem('convhub_assistant', newValue);
-        SeConvohubAssistantEnabled(newValue);
-        window.dispatchEvent(new Event('convhub_assistant_changed'));
+        const newValue = !swifttalkAssistantEnabled;
+        localStorage.setItem('swifttalk_assistant', newValue);
+        setSwifttalkAssistantEnabled(newValue);
+        window.dispatchEvent(new Event('swifttalk_assistant_changed'));
     };
 
     return (
@@ -46,10 +46,10 @@ const PrivacySettings = ({ isEmbedded = false }) => {
                     <div className="privacy-toggle">
                         <div className="toggle-label">
                             <span className="toggle-status">
-                                {convohubAssistantEnabled ? "Enabled" : "Disabled"}
+                                {swifttalkAssistantEnabled ? "Enabled" : "Disabled"}
                             </span>
                             <span className="toggle-description">
-                                {convohubAssistantEnabled
+                                {swifttalkAssistantEnabled
                                     ? "AI Assistant is visible in your chat list"
                                     : "AI Assistant is hidden from your chat list"}
                             </span>
@@ -57,7 +57,7 @@ const PrivacySettings = ({ isEmbedded = false }) => {
                         <label className="toggle-switch">
                             <input
                                 type="checkbox"
-                                checked={convohubAssistantEnabled}
+                                checked={swifttalkAssistantEnabled}
                                 onChange={handleAIAssistantToggle}
                             />
                             <span className="toggle-slider"></span>

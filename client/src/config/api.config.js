@@ -2,7 +2,7 @@
 const isDevelopment = process.env.NODE_ENV === "development";
 
 // Production API URL - used as fallback when env var is not set
-const PRODUCTION_API_URL = "https://convohub-api.me";
+const PRODUCTION_API_URL = "https://swifttalk-api.me";
 
 // You can set these via environment variables
 const config = {

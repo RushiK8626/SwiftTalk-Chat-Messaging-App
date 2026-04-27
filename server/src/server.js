@@ -30,11 +30,11 @@ const io = new Server(server, {
                 "https://localhost:3002",
                 "https://127.0.0.1:3002",
                 "https://switftalk.vercel.app",
-                "https://convohub-api.me"
+                "https://swifttalk-api.me"
             ];
             
             if (!origin || allowedOrigins.includes(origin) || 
-                (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('convohub-api.me') || origin.includes('vercel.app')))) {
+                (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
                 callback(null, true);
             } else {
                 callback(new Error('Not allowed by CORS'));
@@ -59,12 +59,12 @@ app.use(cors({
             "https://localhost:3002",
             "https://127.0.0.1:3002",
             "https://rushik8626.github.io",
-            "https://convohub-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
-            "https://convohub-api.me"
+            "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
+            "https://swifttalk-api.me"
         ];
         
         if (!origin || allowedOrigins.includes(origin) || 
-            (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('convohub-api.me') || origin.includes('vercel.app')))) {
+            (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -82,7 +82,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.get('/', (req, res) => {
     res.json({
-        message: 'ConvoHub Chat Server is running!',
+        message: 'SwiftTalk Chat Server is running!',
         version: '1.0.0',
         endpoints: {
             auth: '/api/auth',

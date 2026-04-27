@@ -95,7 +95,7 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>Login | ConvoHub</title>
+        <title>Login | SwiftTalk</title>
         <meta name="description" content="Sign in to your SwiftTalk account to chat and connect." />
         <meta property="og:title" content="Login | SwiftTalk" />
         <meta property="og:description" content="Sign in to your SwiftTalk account to chat and connect." />

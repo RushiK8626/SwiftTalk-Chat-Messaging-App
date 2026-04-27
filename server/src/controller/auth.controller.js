@@ -159,7 +159,7 @@ exports.verifyRegistrationOTP = async (req, res) => {
           email: userData.email,
           phone: userData.phone,
           full_name: userData.full_name,
-          status_message: 'Hey there! I am using ConvoHub',
+          status_message: 'Hey there! I am using SwiftTalk',
           verified: true,
           auth: { create: { password_hash: userData.password } },
         },

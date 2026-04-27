@@ -4,7 +4,7 @@ const path = require('path');
 function createWindow () {
   // Create the browser window.
   const win = new BrowserWindow({
-    title: 'ConvoHub',
+    title: 'SwiftTalk',
     frame:true,
     icon: path.join(__dirname,'..','assets','logo.ico'),
     
@@ -56,7 +56,7 @@ app.whenReady().then(() => {
 ipcMain.on('show-notification', (event, { title, body, icon }) => {
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: title || 'ConvoHub',
+      title: title || 'SwiftTalk',
       body: body || 'New message',
       icon: icon || path.join(__dirname, 'logo192.png')
     });

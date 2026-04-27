@@ -108,7 +108,7 @@ const Register = () => {
         <title>Create Account | SwiftTalk</title>
         <meta name="description" content="Register to SwiftTalk to chat and connect." />
         <meta property="og:title" content="Register | SwiftTalk" />
-        <meta property="og:description" content="Sign in to your ConvoHub account to chat and connect." />
+        <meta property="og:description" content="Sign in to your SwiftTalk account to chat and connect." />
       </Helmet>
       <div className="register-container">
         <div className="register-card fade-in">
