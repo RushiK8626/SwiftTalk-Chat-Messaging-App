@@ -1,183 +1,327 @@
-# <img src="/client/public/logo192.png" width="32" height="32" align="center"> SwiftTalk
 
-A lightweight, real-time chat application with AI-powered helpers (smart replies, translations, chat summaries), file sharing, push notifications and group/private chats.
+<span align="center">
+  <img src="client/public/logo192.png" alt="SwiftTalk Logo" width="120" height="120">
+</span>
 
-[![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white&style=flat)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB&style=flat)](https://react.dev/)
-[![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?logo=socket.io&logoColor=white&style=flat)](https://socket.io/)
-[![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white&style=flat)](https://expressjs.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white&style=flat)](https://www.mysql.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white&style=flat)](https://www.prisma.io/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white&style=flat)](https://vercel.com/)
-[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat)]()
-[![Status](https://img.shields.io/badge/status-active-brightgreen)]()
+# SwiftTalk - Real-Time Chat Messaging Application
 
----
+A modern, full-stack messaging application with real-time communication, AI-powered chat assistance, task management, and smart notifications built with React, Node.js, and WebSockets.
 
-## Quick features
-- Real-time messaging and presence (Socket.IO)
-- Private & group chats, message replies, forward and visibility controls
-- File uploads (chunk-friendly) and attachments
-- Push notifications (Web Push / VAPID)
-- AI features: smart replies, translations, summaries (Gemini integration)
-- Auth with OTP, JWT access/refresh, and session management
+## 🚀 Features
 
----
+- **Real-Time Messaging**: Instant message delivery with live read receipts and typing indicators
+- **AI-Powered Chat**: AI assistance for writing suggestions and smart replies
+- **Task Management**: Integrated task management for personal and shared tasks
+- **Smart Notifications**: Web push notifications with optional email alerts
+- **File & Media Sharing**: Send images, documents, and files with instant previews
+- **User Authentication**: Secure JWT-based authentication with OTP verification
+- **Privacy Controls**: Blocked-user management and private/public chat options
 
-## Tech stack 
-- Frontend: React (client/), optional Electron build
-- Backend: Node.js + Express (server/), Socket.IO
-- DB: MySQL via Prisma ORM
-- Cache / presence: Redis (optional — in-memory fallback available)
-- Push: web-push (VAPID)
-- Auth: JWT + OTP
+## 📋 Prerequisites
 
----
+- **Docker** (v20.10+)
+- **Docker Compose** (v2.0+)
+- Modern web browser with JavaScript enabled
 
-## Quick start — development (minimal)
+## 🐳 Quick Start with Docker
 
-Prerequisites:
-- Node 18+
-- MySQL (or a MySQL-compatible server)
-- Redis (optional)
+### 1. Clone and Navigate
 
-1. Clone
 ```bash
-git clone https://github.com/RushiK8626/ConvoHub-Chat-Messaging-App.git
-cd ConvoHub-Chat-Messaging-App
+cd SwitftTalk
 ```
 
-2. Start backend
+### 2. Start All Services
+
 ```bash
+docker-compose up -d
+```
+
+This will start:
+- **MySQL Database** (port 3306) - Database for chat data
+- **Redis Cache** (port 6379) - Session and cache store
+- **Node.js Server** (port 3001) - REST API & WebSocket server
+- **React Client** (port 3000) - Web application
+
+### 3. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **API Server**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+
+### 4. Stop All Services
+
+```bash
+docker-compose down
+```
+
+### 5. Stop and Remove Data (Hard Reset)
+
+```bash
+docker-compose down -v
+```
+
+## 🏗️ Project Structure
+
+```
+SwitftTalk/
+├── client/                      # React frontend
+│   ├── public/                  # Static assets
+│   ├── src/
+│   │   ├── components/          # Reusable React components
+│   │   ├── pages/               # Page components
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── context/             # Context API for state
+│   │   ├── utils/               # Utility functions
+│   │   ├── styles/              # Global styles
+│   │   └── config/              # Configuration files
+│   ├── Dockerfile               # Docker image for React app
+│   ├── nginx.conf               # Nginx configuration for production
+│   └── package.json             # Frontend dependencies
+│
+├── server/                      # Node.js backend
+│   ├── src/
+│   │   ├── controller/          # Route handlers
+│   │   ├── middleware/          # Express middleware
+│   │   ├── routes/              # API endpoints
+│   │   ├── services/            # Business logic
+│   │   ├── socket/              # WebSocket handlers
+│   │   ├── config/              # Database, Redis config
+│   │   └── server.js            # Entry point
+│   ├── prisma/
+│   │   ├── schema.prisma        # Database schema
+│   │   ├── seed.js              # Database seeding
+│   │   └── migrations/          # Database migrations
+│   ├── uploads/                 # User file uploads
+│   ├── Dockerfile               # Docker image for Node.js
+│   └── package.json             # Backend dependencies
+│
+├── docker-compose.yml           # Docker Compose configuration
+├── .env                         # Environment variables
+└── README.md                    # This file
+```
+
+## 🔧 Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```bash
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key
+JWT_REFRESH_SECRET=your_refresh_secret_key
+
+# Web Push Notification (VAPID Keys)
+VAPID_PUBLIC_KEY=your_vapid_public_key
+VAPID_PRIVATE_KEY=your_vapid_private_key
+
+# AI Integration
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+The `.env` file is automatically loaded by Docker Compose. Do not commit this file to version control.
+
+## 🧪 Testing the Setup
+
+### Test Frontend
+```bash
+curl http://localhost:3000
+```
+
+### Test API Health
+```bash
+curl http://localhost:3001/health
+```
+
+### View Service Logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f server
+docker-compose logs -f client
+docker-compose logs -f mysql
+docker-compose logs -f redis
+```
+
+### Check Container Status
+```bash
+docker-compose ps
+```
+
+### Execute Commands in Container
+```bash
+# Run a command in the server container
+docker exec switfttalk-server-1 npm run dev
+
+# Access MySQL shell
+docker exec -it switfttalk-mysql-1 mysql -u root -psecret -D swifttalk
+```
+
+## 📝 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `POST /api/auth/refresh` - Refresh access token
+
+### Users
+- `GET /api/users/profile` - Get current user profile
+- `PUT /api/users/profile` - Update user profile
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users/block/:id` - Block a user
+
+### Chats
+- `GET /api/chats` - List all chats
+- `POST /api/chats` - Create new chat
+- `GET /api/chats/:id` - Get chat details
+- `DELETE /api/chats/:id` - Delete chat
+
+### Messages
+- `GET /api/messages/:chatId` - Get chat messages
+- `POST /api/messages` - Send message
+- `DELETE /api/messages/:id` - Delete message
+
+### Tasks
+- `GET /api/tasks` - List tasks
+- `POST /api/tasks` - Create task
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
+
+### Notifications
+- `GET /api/notifications` - Get notifications
+- `POST /api/notifications/subscribe` - Subscribe to push notifications
+- `POST /api/notifications/send` - Send notification
+
+## 🔌 WebSocket Events
+
+Real-time communication uses Socket.IO:
+
+```javascript
+// Client connects
+io.on('connect', () => { /* handle connection */ })
+
+// Listen for new messages
+socket.on('message:new', (data) => { /* handle new message */ })
+
+// Listen for typing indicators
+socket.on('user:typing', (data) => { /* handle typing */ })
+
+// Listen for read receipts
+socket.on('message:read', (data) => { /* handle read */ })
+
+// Listen for online status
+socket.on('user:online', (data) => { /* handle online status */ })
+```
+
+## 🚨 Troubleshooting
+
+### Client not accessible on port 3000
+- Check if port 3000 is already in use: `netstat -an | findstr :3000`
+- Verify client container is healthy: `docker-compose ps`
+- Check client logs: `docker-compose logs client`
+
+### Server API not responding
+- Check if port 3001 is already in use: `netstat -an | findstr :3001`
+- Verify database is healthy: `docker-compose logs mysql`
+- Check server logs: `docker-compose logs server`
+
+### Database connection errors
+- Ensure MySQL container is healthy: `docker-compose ps`
+- Check database logs: `docker-compose logs mysql`
+- Verify DATABASE_URL in server/.env
+
+### Redis connection errors
+- Verify Redis container is running: `docker-compose ps`
+- Check Redis logs: `docker-compose logs redis`
+- Test Redis connection: `docker exec switfttalk-redis-1 redis-cli ping`
+
+### VAPID key errors
+- Ensure VAPID keys are set in `.env` file at root
+- Keys must be valid and properly formatted
+- Restart services after updating keys: `docker-compose restart server`
+
+## 📦 Technology Stack
+
+### Frontend
+- **React 19** - UI framework
+- **React Router 7** - Client-side routing
+- **Socket.IO Client** - Real-time communication
+- **Axios** - HTTP client
+- **React Helmet** - Document head management
+
+### Backend
+- **Node.js 18** - Runtime
+- **Express.js** - Web framework
+- **Prisma** - Database ORM
+- **Socket.IO** - WebSocket library
+- **JWT** - Authentication
+- **Redis** - Caching & sessions
+- **Gemini API** - AI integration
+
+### Infrastructure
+- **MySQL 8.0** - Primary database
+- **Redis 6.2** - Cache & session store
+- **Nginx** - Reverse proxy & static file server
+- **Docker** - Containerization
+- **Docker Compose** - Service orchestration
+
+## 🔐 Security Features
+
+- ✅ JWT-based authentication with refresh tokens
+- ✅ OTP email verification
+- ✅ Password hashing with bcrypt
+- ✅ CORS protection
+- ✅ Rate limiting on API endpoints
+- ✅ User blocking/privacy controls
+- ✅ Secure WebSocket connections
+- ✅ Environment variable isolation
+
+## 🤝 Development Tips
+
+### Hot Reload Development (Without Docker)
+For local development with hot reload:
+
+```bash
+# Terminal 1 - Start backend
 cd server
 npm install
-# create and edit .env (see env samples below)
-npx prisma generate
-npx prisma migrate dev      # applies migrations (interactive)
-npm run dev                 # nodemon - development
-# or `npm start` for production node server
-```
+npm run dev
 
-3. Start frontend
-```bash
-cd ../client
+# Terminal 2 - Start frontend
+cd client
 npm install
-# (optional) create .env with REACT_APP_API_URL
-npm start                   # launches dev server (default: http://localhost:3000)
+npm start
 ```
 
-Open the frontend: http://localhost:3000
-Backend default: http://localhost:3001
+### Database Migrations
+```bash
+# Create new migration
+docker exec switfttalk-server-1 npx prisma migrate dev --name your_migration_name
 
----
-
-## Environment (examples)
-
-Server (.env) — either DATABASE_URL or DB_* vars are supported
-```env
-# Database (either single URL or components)
-DATABASE_URL="mysql://user:password@localhost:3306/convohub"
-# OR
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=secret
-DB_NAME=convohub
-DB_PORT=3306
-
-# JWT
-JWT_SECRET="your-access-secret"
-JWT_REFRESH_SECRET="your-refresh-secret"
-
-# Redis (optional)
-# Use either REDIS_URL or REDIS_HOST/REDIS_PORT/REDIS_PASSWORD/REDIS_TLS
-REDIS_URL="redis://localhost:6379"
-# OR
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_TLS=false
-
-# AI & Push
-GEMINI_API_KEY="your-gemini-api-key"
-VAPID_PUBLIC_KEY="your-vapid-public-key"
-VAPID_PRIVATE_KEY="your-vapid-private-key"
-
-# Server port (optional)
-PORT=3001
+# View database schema
+docker exec switfttalk-server-1 npx prisma studio
 ```
 
-Client (.env)
-```env
-REACT_APP_API_URL=http://localhost:3001
+### View Database
+```bash
+docker exec -it switfttalk-mysql-1 mysql -u root -psecret -D swifttalk
 ```
 
-Notes:
-- Redis is optional — server has an in-memory fallback but some features (presence, scalable session data) work best with Redis.
-- VAPID keys are required for web-push notifications to work.
+## 📄 License
+
+See [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+Created by Rushikesh
+
+## 🐛 Known Issues
+
+- Prisma 6.x is deprecated. Plan upgrade to Prisma 7.x
+- Some WebSocket events may retry on connection loss
 
 ---
 
-## Database & migrations
-- Prisma schema: server/prisma/schema.prisma
-- Apply migrations (development):
-  - npx prisma migrate dev
-- For non-destructive sync (not recommended for prod): npx prisma db push
-- Open Prisma Studio: npx prisma studio
-
----
-
-## Useful scripts
-
-Server (server/package.json)
-- npm run dev — start with nodemon (development)
-- npm start — run node server (production)
-- npm test — run Jest tests
-- npm run db:generate / db:push / db:studio — Prisma helpers
-
-Client (client/package.json)
-- npm start — start dev server (CRA + craco)
-- npm run build — production build (build/)
-- npm test — run tests
-
----
-
-## API & socket
-Primary API roots (see server/src/routes):
-- /api/auth       — login, register, OTP, refresh token, logout
-- /api/users      — user profiles
-- /api/chats      — create/update/delete chats and members
-- /api/messages   — send/read/forward/upload attachments
-- /api/notifications — push subscription endpoints
-- /api/ai         — AI helpers (smart replies, summaries, translate)
-- /uploads        — static uploads served
-
-Health:
-- GET /health — reports DB and Redis availability
-
-Real-time:
-- Socket.IO path: /socket.io/ (use socket.io-client on frontend)
-- Max buffer set to support large file transfers (100MB in server config)
-
----
-
-## Push notifications
-- Uses web-push with VAPID keys (set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY).
-- Server stores push subscriptions in the database (PushSubscription model).
-- If a subscription becomes invalid (410/404), server removes it.
-
----
-
-## Common troubleshooting
-- DB connection failed: check DATABASE_URL or DB_* env vars and ensure MySQL is reachable from server.
-- Redis not connecting: server will continue in-memory, but presence/scale features may be limited. Verify REDIS_URL or REDIS_HOST and REDIS_TLS if using cloud services.
-- Port conflicts: default client port 3000, server 3001 — change PORT or REACT_APP_API_URL as needed.
-- Auth issues: client stores accessToken/refreshToken in localStorage. Use /api/auth endpoints to obtain tokens.
-- 
----
-
-## License & author
-- MIT License — see LICENSE file
-- Author: Rushikesh Kadepurkar — GitHub: @RushiK8626
-
----
+**Last Updated**: April 28, 2026

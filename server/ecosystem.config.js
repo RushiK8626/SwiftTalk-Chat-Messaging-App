@@ -1,10 +1,10 @@
 // PM2 Configuration for Production
 module.exports = {
   apps: [{
-    name: 'convohub-server',
+    name: 'swifttalk-server',
     script: './src/server.js',
-    instances: 1, // Use 'max' for cluster mode based on CPU cores
-    exec_mode: 'fork', // Use 'cluster' for multiple instances
+    instances: 1, 
+    exec_mode: 'fork', 
     watch: false,
     max_memory_restart: '500M',
     env: {

@@ -20,8 +20,9 @@ jobs:
           username: convohub
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd ../../var/www/convohub/ConvoHub-Chat-Messaging-App/
+            cd ../../var/www/swifttalk/SwiftTalk-Chat-Messaging-App/
+            git config --global --add safe.directory /var/www/swifttalk/SwiftTalk-Chat-Messaging-App
             git pull
             cd server
             npm install
-            pm2 restart convohub
+            pm2 restart swifttalk-server
