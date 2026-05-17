@@ -61,7 +61,7 @@
     ]
   },
   "devDependencies": {
-    "@craco/craco": "^5.9.0",
+    "@craco/craco": "^7.1.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "wait-on": "^9.0.3"
