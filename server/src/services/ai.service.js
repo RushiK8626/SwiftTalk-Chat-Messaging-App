@@ -1,5 +1,5 @@
+const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const AI_CONFIG = {
@@ -7,43 +7,6 @@ const AI_CONFIG = {
   maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS) || 150,
   temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
 };
-
-const functionDeclarations = [
-  {
-    name: "searchMessages",
-    description: "Search for messages in the user's chats. Use this when user asks to find, search, or look for specific messages, conversations, or content. Returns matching messages with sender info and timestamps.",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        query: {
-          type: "STRING",
-          description: "The search query/keywords to look for in messages"
-        },
-        chatId: {
-          type: "NUMBER",
-          description: "Optional: Specific chat ID to search in. If not provided, searches all user's chats"
-        },
-        senderUsername: {
-          type: "STRING",
-          description: "Optional: Filter messages by sender's username"
-        },
-        startDate: {
-          type: "STRING",
-          description: "Optional: Start date for search range (ISO format, e.g., '2024-01-01')"
-        },
-        endDate: {
-          type: "STRING",
-          description: "Optional: End date for search range (ISO format, e.g., '2024-12-31')"
-        },
-        limit: {
-          type: "NUMBER",
-          description: "Maximum number of results to return (default: 10, max: 50)"
-        }
-      },
-      required: ["query"]
-    }
-  }
-];
 
 const generateSmartReplies = async (messageHistory, count = 3) => {
   try {
@@ -258,172 +221,6 @@ const generateConversationStarters = async (context) => {
 
 const isConfigured = () => !!process.env.GEMINI_API_KEY;
 
-const generateChatResponse = async (userMessage, conversationHistory = []) => {
-  try {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
-    }
-
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.8,
-      },
-    });
-
-    const historyText = conversationHistory
-      .slice(-20) 
-      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n');
-
-    const prompt = `You are a helpful, friendly AI assistant in a chat application called SwiftTalk. 
-Be conversational, helpful, and concise in your responses. You can use emojis when appropriate to make the conversation feel natural.
-If asked about yourself, mention you're a SwiftTalk AI assistant, here to help users.
-If asked who developed you, mention about SwiftTalk Developers.
-Keep responses focused and avoid being overly verbose unless the user asks for detailed explanations.
-
-IMPORTANT: Format your responses using Markdown for better readability:
-- Use **bold** for emphasis on important points
-- Use *italic* for subtle emphasis
-- Use \`code\` for inline code and \`\`\` for code blocks with language specification
-- Use bullet points (- or *) for lists
-- Use numbered lists (1. 2. 3.) when order matters
-- Use > for blockquotes
-- Use ### for section headers when organizing longer responses
-
-${historyText ? `Previous conversation:\n${historyText}\n\n` : ''}User: ${userMessage}
-
-Respond naturally as a helpful assistant using Markdown formatting:`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text().trim();
-  } catch (error) {
-    throw error;
-  }
-};
-
-const generateChatResponseWithFunctions = async (userMessage, conversationHistory = [], context = {}) => {
-  try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.7,
-      },
-      tools: [{ functionDeclarations }],
-    });
-
-    const chatHistory = conversationHistory.slice(-20).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    const systemInstructionText = `You are a helpful, friendly AI assistant in a chat application called SwiftTalk.
-You have access to functions that can help users interact with the app.
-
-AVAILABLE FUNCTIONS:
-1. searchMessages - Search for messages in user's chats. Use this when user asks to find, search, or look for messages.
-
-WHEN TO USE FUNCTIONS:
-- User says "find messages about...", "search for...", "look for messages...", "what did X say about..."
-- User wants to locate specific conversations or content
-- User asks about past messages or discussions
-
-Be conversational and helpful. Use emojis when appropriate. 
-Format responses using Markdown for readability.
-When you use a function, explain what you're doing to the user.`;
-
-    const chat = model.startChat({
-      history: chatHistory,
-      systemInstruction: {
-        role: "user",
-        parts: [{ text: systemInstructionText }]
-      }
-    });
-
-    const result = await chat.sendMessage(userMessage);
-    const response = result.response;
-
-    const functionCalls = response.functionCalls();
-    
-    if (functionCalls && functionCalls.length > 0) {
-      const functionCall = functionCalls[0]; 
-      return {
-        response: null,
-        functionCall: {
-          name: functionCall.name,
-          args: functionCall.args
-        },
-        requiresFunctionExecution: true
-      };
-    }
-
-    return {
-      response: response.text().trim(),
-      functionCall: null,
-      requiresFunctionExecution: false
-    };
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-const continueChatWithFunctionResult = async (functionCall, functionResult, conversationHistory = [], originalMessage) => {
-  try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.7,
-      },
-      tools: [{ functionDeclarations }],
-    });
-
-    const chatHistory = conversationHistory.slice(-20).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    const systemInstructionText = `You are a helpful AI assistant in SwiftTalk chat app.
-You just executed a function and received results. Present the results in a helpful, readable format.
-Use Markdown formatting. Be concise but informative.
-If no results found, be helpful and suggest alternatives.`;
-
-    const chat = model.startChat({
-      history: chatHistory,
-      systemInstruction: {
-        role: "user",
-        parts: [{ text: systemInstructionText }]
-      }
-    });
-
-    await chat.sendMessage(originalMessage);
-
-    const result = await chat.sendMessage([
-      {
-        functionResponse: {
-          name: functionCall.name,
-          response: functionResult
-        }
-      }
-    ]);
-
-    return result.response.text().trim();
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getFunctionDeclarations = () => functionDeclarations;
-
 module.exports = {
   generateSmartReplies,
   translateMessage,
@@ -431,8 +228,4 @@ module.exports = {
   detectLanguage,
   generateConversationStarters,
   isConfigured,
-  generateChatResponse,
-  generateChatResponseWithFunctions,
-  continueChatWithFunctionResult,
-  getFunctionDeclarations,
 };
