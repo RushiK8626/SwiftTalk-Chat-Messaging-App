@@ -1,98 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const aiService = require('../services/ai.service');
-
-const executeSearchMessages = async (args, userId) => {
-  try {
-    const { query, chatId, senderUsername, startDate, endDate, limit = 10 } = args;
-
-    const whereClause = {
-      message_text: {
-        contains: query
-      },
-      message_type: 'text',
-      chat: {
-        members: {
-          some: {
-            user_id: userId
-          }
-        }
-      }
-    };
-
-    if (chatId) {
-      whereClause.chat_id = parseInt(chatId);
-    }
-
-    if (senderUsername) {
-      whereClause.sender = {
-        username: {
-          contains: senderUsername
-        }
-      };
-    }
-
-    if (startDate) {
-      whereClause.created_at = {
-        ...whereClause.created_at,
-        gte: new Date(startDate)
-      };
-    }
-
-    if (endDate) {
-      whereClause.created_at = {
-        ...whereClause.created_at,
-        lte: new Date(endDate)
-      };
-    }
-
-    const messages = await prisma.message.findMany({
-      where: whereClause,
-      include: {
-        sender: {
-          select: {
-            username: true,
-            full_name: true,
-            profile_pic: true
-          }
-        },
-        chat: {
-          select: {
-            chat_id: true,
-            chat_name: true,
-            chat_type: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: Math.min(parseInt(limit), 50)
-    });
-
-    const formattedResults = messages.map(msg => ({
-      messageId: msg.message_id,
-      text: msg.message_text,
-      sender: msg.sender.full_name || msg.sender.username,
-      senderUsername: msg.sender.username,
-      chatName: msg.chat.chat_name || (msg.chat.chat_type === 'personal' ? 'Direct Message' : 'Group'),
-      chatId: msg.chat.chat_id,
-      chatType: msg.chat.chat_type,
-      timestamp: msg.created_at.toISOString(),
-      relativeTime: getRelativeTime(msg.created_at)
-    }));
-
-    return {
-      success: true,
-      query: query,
-      totalResults: formattedResults.length,
-      messages: formattedResults
-    };
-
-  } catch (error) {
-    return { success: false, error: error.message, messages: [] };
-  }
-};
+const aiChatStream = require('../services/aiChatStream.service')
 
 const getRelativeTime = (date) => {
   const now = new Date();
@@ -106,10 +15,6 @@ const getRelativeTime = (date) => {
   if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
   if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
   return date.toLocaleDateString();
-};
-
-const functionExecutors = {
-  searchMessages: executeSearchMessages
 };
 
 exports.generateSmartReplies = async (req, res) => {
@@ -154,7 +59,7 @@ exports.generateSmartReplies = async (req, res) => {
     });
 
     if (messages.length === 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No messages found in this chat',
         suggestions: [],
       });
@@ -279,7 +184,7 @@ exports.summarizeConversation = async (req, res) => {
     });
 
     if (messages.length === 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No messages found to summarize',
       });
     }
@@ -390,7 +295,7 @@ exports.checkStatus = async (req, res) => {
         'conversation_starters',
         'ai_chat',
       ] : [],
-      message: isConfigured 
+      message: isConfigured
         ? 'AI service is configured and ready (powered by Google Gemini)'
         : 'AI service is not configured. Please add GEMINI_API_KEY to environment variables.',
     });
@@ -399,94 +304,228 @@ exports.checkStatus = async (req, res) => {
   }
 };
 
-exports.aiChat = async (req, res) => {
-  try {
-    const { message, conversation_history = [], enable_functions = true } = req.body;
-    const userId = req.user.user_id;
+exports.streamChatController = async (req, res) => {
+  const user_id = req.user.user_id;
+  let { message, session_id } = req.body;
+  let streamEnded = false;
+  let accumulatedResponse = '';
 
+  try {
     if (!message || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    if (!enable_functions) {
-      const response = await aiService.generateChatResponse(message.trim(), conversation_history);
-      return res.status(200).json({
-        success: true,
-        response,
-        timestamp: new Date().toISOString(),
-      });
+    if (!session_id || session_id === 'null' || session_id === 'undefined') {
+      return res.status(400).json({ error: 'Session ID is required' });
     }
 
-    const result = await aiService.generateChatResponseWithFunctions(
-      message.trim(), 
-      conversation_history,
-      { userId }
-    );
+    // validate session
+    session_id = await aiChatStream.getOrCreateSession(user_id, session_id);
 
-    if (result.requiresFunctionExecution && result.functionCall) {
-      const { name, args } = result.functionCall;
-      
-      const executor = functionExecutors[name];
-      if (!executor) {
-        return res.status(500).json({
-          error: `Unknown function: ${name}`,
-        });
+    
+    // SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders?.();
+    
+    // Handle client disconnect
+    res.on('close', () => {
+      streamEnded = true;
+      console.log('Client disconnected from chat stream');
+    });
+
+    // Create and iterate through stream
+    const stream = aiChatStream.createChatStream(message, session_id);
+    
+    for await (const event of stream) {
+      // Check if client disconnected
+      if (streamEnded) {
+        console.log('Stream aborted due to client disconnect');
+        break;
       }
 
-      const functionResult = await executor(args, userId);
-
-      const finalResponse = await aiService.continueChatWithFunctionResult(
-        result.functionCall,
-        functionResult,
-        conversation_history,
-        message.trim()
-      );
-
-      return res.status(200).json({
-        success: true,
-        response: finalResponse,
-        timestamp: new Date().toISOString(),
-        functionExecuted: {
-          name: name,
-          args: args,
-          resultSummary: {
-            success: functionResult.success,
-            totalResults: functionResult.totalResults || 0
-          }
+      try {
+        if (event.type === 'error') {
+          console.error('Stream error:', event.error);
+          res.write(`event: error\ndata: ${JSON.stringify({
+            error: event.data,
+            details: event.error,
+          })}\n\n`);
+          break;
+        } else if (event.type === 'end') {
+          // Send end event
+          res.write(`event: end\ndata: ${JSON.stringify({
+            message: 'Stream completed',
+          })}\n\n`);
+          streamEnded = true;
+          await aiChatStream.saveMessage(session_id, 'user', message.trim());
+          await aiChatStream.saveMessage(session_id, 'assistant', accumulatedResponse.trim());
+        } else if (event.type === 'chunk') {
+          // Send data chunk (already a string)
+          accumulatedResponse += event.data; 
+          res.write(`event: chunk\ndata: ${JSON.stringify({
+            chunk: event.data,
+          })}\n\n`);
         }
+      } catch (writeError) {
+        console.error('Error writing to response:', writeError);
+        streamEnded = true;
+        break;
+      }
+    }
+
+    if (!streamEnded) {
+      res.end();
+    }
+  } catch (error) {
+    if (error.message === 'Session ID is required') {
+      return res.status(400).json({ error: error.message });
+    }
+
+    if (error.message === 'Session not found') {
+      return res.status(404).json({ error: error.message });
+    }
+
+    if (error.message === 'Unauthorized' || error.message === 'Session not found or unauthorized') {
+      return res.status(403).json({ error: 'Session unauthorized' });
+    }
+
+    console.error('Stream controller error:', error);
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to create chat stream',
+        details: error.message,
       });
+    } else {
+      // Headers already sent, write error event
+      try {
+        res.write(`event: error\ndata: ${JSON.stringify({
+          error: 'Stream error',
+          details: error.message,
+        })}\n\n`);
+        res.end();
+      } catch (writeErr) {
+        console.error('Failed to send error event:', writeErr);
+      }
+    }
+  }
+}
+
+exports.createSession = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const result = await aiChatStream.createSession(userId);
+
+    res.status(201).json({
+      success: true,
+      ...result,
+      message: 'New chat session created',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.listSessions = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const sessions = await prisma.aISession.findMany({
+      where: { user_id: userId },
+      select: {
+        session_id: true,
+        title: true,
+        created_at: true,
+        last_activity: true,
+      },
+      orderBy: { last_activity: 'desc' },
+    });
+
+    res.status(200).json({ success: true, sessions });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteSession = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { session_id } = req.params;
+
+    await aiChatStream.deleteSession(userId, session_id);
+
+    res.status(200).json({ success: true, message: 'Session deleted' });
+  } catch (error) {
+    res.status(error.message === 'Unauthorized' ? 403 : 500)
+      .json({ error: error.message });
+  }
+};
+
+exports.getUserSessions = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const userSession = await prisma.aISession.findMany({
+      where: {
+        user_id: userId
+      },
+      select: {
+        session_id: true,
+        title: true,
+        created_at: true,
+        last_activity: true
+      },
+      orderBy: {
+        last_activity: 'desc'
+      }
+    });
+
+    const sessionsWithRelativeTime = userSession.map(session => ({
+      ...session,
+      relative_time: getRelativeTime(session.last_activity)
+    }));
+    res.status(200).json({ success: true, sessions: sessionsWithRelativeTime });
+  } catch (err) {
+    res.status(err.message === 'Unauthorized' ? 403 : 500)
+      .json({ error: err.message });
+  }
+};
+
+exports.getSession = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { session_id } = req.params;
+
+    if (!session_id) {
+      return res.status(400).json({ error: 'session_id is required' });
+    }
+
+    const session = await prisma.aISession.findUnique({
+      where: {
+        session_id: session_id
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Verify ownership
+    if (session.user_id !== userId) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
     }
 
     res.status(200).json({
       success: true,
-      response: result.response,
-      timestamp: new Date().toISOString(),
+      session_id: session.session_id,
+      title: session.title,
+      conversation: session.conversation || [],
+      created_at: session.created_at,
+      last_activity: session.last_activity
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to generate AI response', details: error.message });
+  } catch (err) {
+    res.status(err.message === 'Unauthorized' ? 403 : 500)
+      .json({ error: err.message });
   }
-};
-
-exports.searchMessages = async (req, res) => {
-  try {
-    const { query, chat_id, sender_username, start_date, end_date, limit = 20 } = req.body;
-    const userId = req.user.user_id;
-
-    if (!query || !query.trim()) {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-
-    const result = await executeSearchMessages({
-      query: query.trim(),
-      chatId: chat_id,
-      senderUsername: sender_username,
-      startDate: start_date,
-      endDate: end_date,
-      limit
-    }, userId);
-
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to search messages', details: error.message });
-  }
-};
+}

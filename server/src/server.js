@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const { initializeSocket } = require('./socket/socketHandler');
 const { testConnection } = require('./config/database');
 const { initRedis, closeRedis, isAvailable: isRedisAvailable } = require('./config/redis');
+const { initSessionCleanupCron } = require("./cron/sessionCleanup")
 
 const dotenv = require('dotenv');
 const envFile = '.env';
@@ -166,6 +167,8 @@ async function startServer() {
   
   server.listen(PORT, () => {
   });
+
+  initSessionCleanupCron();
 }
 
 if (require.main === module) {
