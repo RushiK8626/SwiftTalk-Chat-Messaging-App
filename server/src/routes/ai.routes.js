@@ -13,7 +13,9 @@ router.post('/summarize', aiController.summarizeConversation);
 router.post('/detect-language', aiController.detectLanguage);
 router.post('/conversation-starters', aiController.generateConversationStarters);
 router.get('/status', aiController.checkStatus);
-router.post('/chat', aiController.aiChat);
-router.post('/search-messages', aiController.searchMessages);
-
+router.post('/chat-stream', aiController.streamChatController);
+router.post('/sessions', aiController.createSession);
+router.get('/sessions', aiController.getUserSessions);
+router.get('/sessions/:session_id', aiController.getSession);
+router.delete('/sessions/:session_id', aiController.deleteSession);
 module.exports = router;

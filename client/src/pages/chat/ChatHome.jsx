@@ -29,6 +29,7 @@ import { NotificationCenter } from "../../components/features/NotificationCenter
 import useContextMenu from "../../hooks/useContextMenu";
 import { useToast } from "../../hooks/useToast";
 import useResponsive from "../../hooks/useResponsive";
+import useSplitPane from "../../hooks/useSplitPane";
 import ChatWindow from "./ChatWindow";
 import { formatChatPreviewTime } from "../../utils/date";
 import socketService from "../../utils/socket";
@@ -91,12 +92,15 @@ const ChatHome = () => {
   const [selectedChatId, setSelectedChatId] = useState(
     () => location.state?.selectedChatId || null
   );
-
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    return getSidebarWidth();
-  });
   const containerRef = useRef(null);
-  const isResizingRef = useRef(false);
+  const { paneWidth: leftPanelWidth, startDragging, isDragging } = useSplitPane(
+    getSidebarWidth(),
+    {
+      minWidth: SIDEBAR_CONFIG.MIN_WIDTH,
+      maxWidth: SIDEBAR_CONFIG.MAX_WIDTH,
+      edge: "left",
+    }
+  );
   const headerRef = useRef(null);
   const bottomTabBarRef = useRef(null);
   const [chatListHeight, setChatListHeight] = useState("calc(100vh - 200px)");
@@ -528,48 +532,11 @@ const ChatHome = () => {
   }, []);
 
   useEffect(() => {
-    const handleMouseDown = (e) => {
-      if (!containerRef.current) return;
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
-      const rightEdge = rect.left + leftPanelWidth;
+      setSidebarWidth(leftPanelWidth);
+    }, [leftPanelWidth]);
 
-      if (Math.abs(e.clientX - rightEdge) < 5) {
-        isResizingRef.current = true;
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      if (!isResizingRef.current || !containerRef.current) return;
-
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
-      let newWidth = e.clientX - rect.left;
-
-      newWidth = Math.max(
-        SIDEBAR_CONFIG.MIN_WIDTH,
-        Math.min(newWidth, SIDEBAR_CONFIG.MAX_WIDTH)
-      );
-      setLeftPanelWidth(newWidth);
-      setSidebarWidth(newWidth);
-    };
-
-    const handleMouseUp = () => {
-      isResizingRef.current = false;
-    };
-
-    if (typeof window !== "undefined" && window.innerWidth >= 900) {
-      document.addEventListener("mousedown", handleMouseDown);
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-
-      return () => {
-        document.removeEventListener("mousedown", handleMouseDown);
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [leftPanelWidth]);
+  const showDesktopSplit = typeof window !== "undefined" && window.innerWidth >= 900;
+  
 
   const handleChatClick = (chatOrId) => {
     const chat = typeof chatOrId === 'object' ? chatOrId : filteredChats.find(c => c.chat_id === chatOrId);
@@ -1050,9 +1017,9 @@ const ChatHome = () => {
           className="chat-home-container"
           ref={containerRef}
           style={
-            typeof window !== "undefined" && window.innerWidth >= 900
+            showDesktopSplit
               ? {
-                gridTemplateColumns: `${leftPanelWidth}px 1fr`,
+                gridTemplateColumns: `${leftPanelWidth}px 10px 1fr`,
               }
               : {}
           }
@@ -1318,6 +1285,16 @@ const ChatHome = () => {
               <BottomTabBar activeTab="chats" />
             </div>
           </div>
+
+          {showDesktopSplit && (
+            <div
+              className={`chat-split-divider ${isDragging ? "active" : ""}`}
+              onMouseDown={startDragging}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize chat list panel"
+            />
+          )}
 
           <div className="right-panel">
             {showAIChat ? (
