@@ -314,7 +314,7 @@
 
 /* Responsive Design */
 /* Mobile: Full screen modal */
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
   .sessions-list-container {
     position: fixed;
     top: 0;

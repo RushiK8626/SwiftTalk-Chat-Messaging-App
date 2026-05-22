@@ -108,7 +108,7 @@ const ChatHome = () => {
   const chatContextMenu = useContextMenu();
   const newChatContextMenu = useContextMenu();
   const [selectedChatForMenu, setSelectedChatForMenu] = useState(null);
-  const [showAIChat, setShowAIChat] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(() => location.state?.showAIChat || false);
 
   const [swifttalkAssistantEnabled, setSwifttalkAssistantEnabled] = useState(() => {
     const stored = localStorage.getItem('swifttalk_assistant');

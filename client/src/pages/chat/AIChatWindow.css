@@ -127,7 +127,7 @@
   width: 100%;
 }
 
-@media (min-width: 1025px) {
+@media (min-width: 900px) {
   .ai-chat-main-container {
     display: grid;
     flex: 1;
@@ -172,7 +172,7 @@
 }
 
 /* Mobile/Tablet: Sessions list as overlay modal */
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
   .ai-header .history-btn {
     display: flex !important;
   }

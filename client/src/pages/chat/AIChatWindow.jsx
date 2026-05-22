@@ -12,12 +12,14 @@ import { translateText } from "../../utils/api";
 import MessageTranslator from "../../components/modals/MessageTranslator";
 import SessionsList from "../../components/modals/SessionsList";
 import { useToast } from "../../hooks/useToast";
+import useResponsive from '../../hooks/useResponsive';
 import useSplitPane from "../../hooks/useSplitPane";
 import './ChatWindow.css';
 import './AIChatWindow.css';
 
 const AIChatWindow = ({ onClose, isEmbedded = false }) => {
   const navigate = useNavigate();
+  const isWideScreen = useResponsive();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -532,7 +534,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
       }
 
       // Close sessions list on mobile after selection
-      if (window.innerWidth < 1024) {
+      if (!isWideScreen) {
         setShowSessionsList(false);
       }
     } catch (error) {
@@ -550,7 +552,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
       setMessages([]);
       setNewChatSessionInList();
 
-      if (window.innerWidth < 1024) {
+      if (!isWideScreen) {
         setShowSessionsList(false);
       }
     } catch (error) {
@@ -584,6 +586,18 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
       showError('Failed to delete session');
     }
   };
+
+  // Redirect standalone AI chat to ChatHome's 2-column layout when screen becomes wide
+  useEffect(() => {
+    if (
+      !isEmbedded &&
+      isWideScreen &&
+      typeof window !== "undefined" &&
+      window.innerWidth >= 900
+    ) {
+      navigate("/chats", { state: { showAIChat: true } });
+    }
+  }, [isWideScreen, isEmbedded, navigate]);
 
   const handleBack = () => {
     if (isEmbedded && onClose) {
@@ -676,7 +690,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
         className="ai-chat-main-container"
         ref={containerRef}
         style={
-          typeof window !== 'undefined' && window.innerWidth >= 900
+          isWideScreen
             ? { gridTemplateColumns: `minmax(0, 1fr) 10px ${rightPanelWidth}px` }
             : {}
         }
@@ -864,7 +878,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
           </div>
         </div>
 
-        {typeof window !== 'undefined' && window.innerWidth >= 900 && (
+        {isWideScreen && (
           <div
             className={`ai-chat-divider ${isDragging ? "active" : ""}`}
             onMouseDown={startDragging}
@@ -877,7 +891,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
         <div
           className={`sessions-list-wrapper ${showSessionsList ? 'active' : ''}`}
           style={
-            typeof window !== 'undefined' && window.innerWidth >= 900
+            isWideScreen
               ? { width: `${rightPanelWidth}px` }
               : {}
           }
