@@ -1,21 +1,16 @@
 // API Configuration for different environments
-const isDevelopment = process.env.NODE_ENV === "development";
-
-// Production API URL - used as fallback when env var is not set
-const PRODUCTION_API_URL = "https://swifttalk-api.me";
+const LOCAL_API_URL = "http://localhost:3001";
 
 // You can set these via environment variables
 const config = {
   // API Base URL - prioritize environment variables (remove trailing slashes)
   API_BASE_URL: (
-    process.env.REACT_APP_API_URL ||
-    (isDevelopment ? "http://localhost:3001" : PRODUCTION_API_URL)
+    process.env.REACT_APP_API_URL || LOCAL_API_URL
   ).replace(/\/+$/, ""),
 
   // Socket URL - prioritize environment variables (remove trailing slashes)
   SOCKET_URL: (
-    process.env.REACT_APP_SOCKET_URL ||
-    (isDevelopment ? "http://localhost:3001" : PRODUCTION_API_URL)
+    process.env.REACT_APP_SOCKET_URL || LOCAL_API_URL
   ).replace(/\/+$/, ""),
 
   // Upload URLs

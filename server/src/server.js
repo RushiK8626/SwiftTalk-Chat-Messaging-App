@@ -29,6 +29,7 @@ const io = new Server(server, {
                 "http://127.0.0.1:3002",
                 "https://localhost:3002",
                 "https://127.0.0.1:3002",
+                "https://swiftalk.vercel.app",
                 "https://switftalk.vercel.app",
                 "https://swifttalk-api.me"
             ];
@@ -59,6 +60,8 @@ app.use(cors({
             "https://localhost:3002",
             "https://127.0.0.1:3002",
             "https://rushik8626.github.io",
+            "https://swiftalk.vercel.app",
+            "https://switftalk.vercel.app",
             "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
             "https://swifttalk-api.me"
         ];
