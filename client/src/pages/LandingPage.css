@@ -1,16 +1,14 @@
 .lp-root {
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #05080f;
-  color: #eaf6ff;
+  background: var(--background-color, #f4f8ff);
+  color: var(--text-primary, #181c24);
   overflow-x: hidden;
 }
 
 .lp-gradient-text {
-  background: linear-gradient(135deg, #007aff 0%, #a855f7 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary-dark, #005ecb);
+  font-weight: 800;
 }
 
 .lp-section-inner {
@@ -27,8 +25,12 @@
   z-index: 100;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  background: rgba(5, 8, 15, 0.75);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid var(--border-color, #c8d6e5);
+}
+
+[data-theme="dark"] .lp-nav {
+  background: rgba(10, 14, 23, 0.85);
 }
 
 .lp-nav-inner {
@@ -60,10 +62,7 @@
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #007aff, #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary-dark, #005ecb);
 }
 
 .lp-nav-cta {
@@ -88,31 +87,31 @@
 
 .lp-btn-ghost {
   background: transparent;
-  color: #8fa3b8;
+  color: var(--text-secondary, #2e3135);
 }
 .lp-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #eaf6ff;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+  color: var(--text-primary, #181c24);
 }
 
 .lp-btn-primary {
-  background: linear-gradient(135deg, #007aff, #5856d6);
+  background: var(--primary-dark, #005ecb);
   color: #fff;
-  box-shadow: 0 2px 14px rgba(0, 122, 255, 0.3);
+  box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.08));
 }
 .lp-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(0, 122, 255, 0.45);
+  background: #004ba3;
+  box-shadow: 0 4px 12px var(--shadow, rgba(0, 0, 0, 0.12));
 }
 
 .lp-btn-outline {
   background: transparent;
-  color: #eaf6ff;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  color: var(--primary-dark, #005ecb);
+  border: 1.5px solid var(--primary-dark, #005ecb);
 }
 .lp-btn-outline:hover {
-  border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--primary-light, rgba(0, 122, 255, 0.1));
 }
 
 .lp-btn-lg {
@@ -146,7 +145,7 @@
   top: 60px;
   left: 50%;
   transform: translateX(-50%);
-  background: radial-gradient(ellipse, rgba(0, 122, 255, 0.13) 0%, transparent 70%);
+  background: radial-gradient(ellipse, var(--primary-light, rgba(0, 122, 255, 0.1)) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -159,9 +158,9 @@
 
 .lp-badge {
   display: inline-block;
-  background: rgba(0, 122, 255, 0.08);
-  border: 1px solid rgba(0, 122, 255, 0.25);
-  color: #60a5fa;
+  background: var(--primary-light, rgba(0, 122, 255, 0.1));
+  border: 1px solid var(--border-color, #c8d6e5);
+  color: var(--primary-dark, #005ecb);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -176,11 +175,12 @@
   line-height: 1.12;
   letter-spacing: -0.03em;
   margin: 0 0 18px;
+  color: var(--text-primary, #181c24);
 }
 
 .lp-hero-sub {
   font-size: 1.05rem;
-  color: #7a93ab;
+  color: var(--text-secondary, #2e3135);
   line-height: 1.7;
   margin: 0 0 36px;
 }
@@ -204,7 +204,7 @@
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #007aff;
+  color: var(--primary-dark, #005ecb);
   margin: 0 0 10px;
 }
 
@@ -215,7 +215,7 @@
   letter-spacing: -0.025em;
   line-height: 1.15;
   margin: 0 0 52px;
-  color: #dce9f8;
+  color: var(--text-primary, #181c24);
 }
 
 .lp-features-grid {
@@ -225,28 +225,29 @@
 }
 
 .lp-feature-card {
-  background: #0c1422;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-background, #ffffff);
+  border: 1px solid var(--border-color, #c8d6e5);
   border-radius: 16px;
   padding: 24px;
-  transition: border-color 0.2s, transform 0.2s;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .lp-feature-card:hover {
-  border-color: rgba(0, 122, 255, 0.28);
+  border-color: var(--primary-dark, #005ecb);
   transform: translateY(-3px);
+  box-shadow: 0 8px 24px var(--shadow, rgba(0, 0, 0, 0.08));
 }
 
 .lp-feature-icon {
   width: 42px;
   height: 42px;
-  background: rgba(0, 122, 255, 0.09);
+  background: var(--primary-light, rgba(0, 122, 255, 0.1));
   border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  color: #007aff;
+  color: var(--primary-dark, #005ecb);
 }
 
 .lp-feature-icon svg { width: 20px; height: 20px; }
@@ -255,12 +256,12 @@
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 8px;
-  color: #dce9f8;
+  color: var(--text-primary, #181c24);
 }
 
 .lp-feature-card p {
   font-size: 0.88rem;
-  color: #7a93ab;
+  color: var(--text-secondary, #2e3135);
   line-height: 1.6;
   margin: 0;
 }
@@ -268,12 +269,13 @@
 /* ── FOOTER ── */
 .lp-footer {
   padding: 28px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-color, #c8d6e5);
+  background: var(--header-background, #eaf2ff);
 }
 
 .lp-footer-copy {
   font-size: 0.82rem;
-  color: #3a4a5a;
+  color: var(--text-secondary, #2e3135);
   margin: 0;
 }
 
