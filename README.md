@@ -1,13 +1,11 @@
-
-<span align="center">
-  <img src="client/public/logo192.png" alt="SwiftTalk Logo" width="120" height="120">
-</span>
-
-# SwiftTalk - Real-Time Chat Messaging Application
+<div align="center">
+  <img src="client/public/logo192.png" alt="SwiftTalk Logo" width="60" height="60">
+  <h1>SwiftTalk - Real-Time Chat Messaging Application</h1>
+</div>
 
 A modern, full-stack messaging application with real-time communication, AI-powered chat assistance, task management, and smart notifications built with React, Node.js, and WebSockets.
 
-## 🚀 Features
+## Features
 
 - **Real-Time Messaging**: Instant message delivery with live read receipts and typing indicators
 - **AI-Powered Chat**: AI assistance for writing suggestions and smart replies
@@ -17,51 +15,9 @@ A modern, full-stack messaging application with real-time communication, AI-powe
 - **User Authentication**: Secure JWT-based authentication with OTP verification
 - **Privacy Controls**: Blocked-user management and private/public chat options
 
-## 📋 Prerequisites
+---
 
-- **Docker** (v20.10+)
-- **Docker Compose** (v2.0+)
-- Modern web browser with JavaScript enabled
-
-## 🐳 Quick Start with Docker
-
-### 1. Clone and Navigate
-
-```bash
-cd SwitftTalk
-```
-
-### 2. Start All Services
-
-```bash
-docker-compose up -d
-```
-
-This will start:
-- **MySQL Database** (port 3306) - Database for chat data
-- **Redis Cache** (port 6379) - Session and cache store
-- **Node.js Server** (port 3001) - REST API & WebSocket server
-- **React Client** (port 3000) - Web application
-
-### 3. Access the Application
-
-- **Frontend**: http://localhost:3000
-- **API Server**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
-
-### 4. Stop All Services
-
-```bash
-docker-compose down
-```
-
-### 5. Stop and Remove Data (Hard Reset)
-
-```bash
-docker-compose down -v
-```
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 SwitftTalk/
@@ -101,7 +57,9 @@ SwitftTalk/
 └── README.md                    # This file
 ```
 
-## 🔧 Environment Configuration
+---
+
+## Environment Configuration
 
 Create a `.env` file in the root directory with the following variables:
 
@@ -118,47 +76,166 @@ VAPID_PRIVATE_KEY=your_vapid_private_key
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-The `.env` file is automatically loaded by Docker Compose. Do not commit this file to version control.
+---
 
-## 🧪 Testing the Setup
+## Setup: Docker (Recommended)
 
-### Test Frontend
+### Prerequisites
+
+- **Docker** (v20.10+)
+- **Docker Compose** (v2.0+)
+- Modern web browser with JavaScript enabled
+
+### 1. Clone and Navigate
+
 ```bash
-curl http://localhost:3000
+cd SwitftTalk
 ```
 
-### Test API Health
+### 2. Configure Environment
+
+Create the `.env` file in the root directory as described in [Environment Configuration](#environment-configuration).
+
+The `.env` file is automatically loaded by Docker Compose.
+
+### 3. Start All Services
+
 ```bash
+docker-compose up -d
+```
+
+This starts the following services:
+
+| Service         | Port | Description                   |
+|-----------------|------|-------------------------------|
+| MySQL Database  | 3306 | Primary database              |
+| Redis Cache     | 6379 | Session and cache store       |
+| Node.js Server  | 3001 | REST API & WebSocket server   |
+| React Client    | 3000 | Web application               |
+
+### 4. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **API Server**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+
+### 5. Manage Services
+
+```bash
+# Stop all services (keeps data volumes)
+docker-compose down
+
+# Stop and remove all data (hard reset)
+docker-compose down -v
+```
+
+### Database Migrations (Docker)
+
+```bash
+# Create a new migration
+docker exec switfttalk-server-1 npx prisma migrate dev --name your_migration_name
+
+# Open Prisma Studio (GUI for database)
+docker exec switfttalk-server-1 npx prisma studio
+```
+
+### Testing the Docker Setup
+
+```bash
+# Test frontend
+curl http://localhost:3000
+
+# Test API health
 curl http://localhost:3001/health
 ```
+---
 
-### View Service Logs
+## Setup: Local Development (Without Docker)
+
+### Prerequisites
+
+- **Node.js** (v18+)
+- **MySQL** (v8.0+) — running locally or remotely
+- **Redis** (v6.2+) — running locally or remotely
+- **npm** or **yarn**
+
+### 1. Clone and Navigate
+
 ```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f server
-docker-compose logs -f client
-docker-compose logs -f mysql
-docker-compose logs -f redis
+cd SwitftTalk
 ```
 
-### Check Container Status
+### 2. Configure Environment
+
+Create the `.env` file in the root directory as described in [Environment Configuration](#environment-configuration).
+
+Additionally, configure database and Redis connections in `server/.env`:
+
 ```bash
-docker-compose ps
+# Database
+DATABASE_URL="mysql://root:your_password@localhost:3306/swifttalk"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
 ```
 
-### Execute Commands in Container
-```bash
-# Run a command in the server container
-docker exec switfttalk-server-1 npm run dev
+### 3. Install Dependencies
 
-# Access MySQL shell
-docker exec -it switfttalk-mysql-1 mysql -u root -psecret -D swifttalk
+```bash
+# Install backend dependencies
+cd server
+npm install
+
+# Install frontend dependencies
+cd ../client
+npm install
 ```
 
-## 📝 API Endpoints
+### 4. Set Up the Database
+
+```bash
+cd server
+
+# Run migrations to create schema
+npx prisma migrate dev
+
+# (Optional) Seed initial data
+npx prisma db seed
+```
+
+### 5. Start the Application
+
+Open two terminal windows:
+
+```bash
+# Terminal 1 — Start backend server (from /server)
+cd server
+npm run dev
+
+# Terminal 2 — Start frontend (from /client)
+cd client
+npm start
+```
+
+### 6. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **API Server**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+
+### Database Migrations (Local)
+
+```bash
+# Create a new migration
+cd server
+npx prisma migrate dev --name your_migration_name
+
+# Open Prisma Studio (GUI for database)
+npx prisma studio
+```
+---
+
+## API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -194,6 +271,17 @@ docker exec -it switfttalk-mysql-1 mysql -u root -psecret -D swifttalk
 - `POST /api/notifications/subscribe` - Subscribe to push notifications
 - `POST /api/notifications/send` - Send notification
 
+### AI
+- `POST /api/ai/smart-replies` - Get AI generated smart replies
+- `POST /api/ai/translate` - Get translation for message in target language
+- `POST /api/ai/summarize` - Summarize the current chat
+- `POST /api/ai/sessions` - Create new user session
+- `GET /api/ai/sessions` - Get all sessions of current user
+- `GET /api/ai/sessions/:id` - Get session with specified session_id
+- `DELETE /api/ai/sessions/:id` - Delete session with specified session_id
+
+---
+
 ## 🔌 WebSocket Events
 
 Real-time communication uses Socket.IO:
@@ -215,34 +303,9 @@ socket.on('message:read', (data) => { /* handle read */ })
 socket.on('user:online', (data) => { /* handle online status */ })
 ```
 
-## 🚨 Troubleshooting
+---
 
-### Client not accessible on port 3000
-- Check if port 3000 is already in use: `netstat -an | findstr :3000`
-- Verify client container is healthy: `docker-compose ps`
-- Check client logs: `docker-compose logs client`
-
-### Server API not responding
-- Check if port 3001 is already in use: `netstat -an | findstr :3001`
-- Verify database is healthy: `docker-compose logs mysql`
-- Check server logs: `docker-compose logs server`
-
-### Database connection errors
-- Ensure MySQL container is healthy: `docker-compose ps`
-- Check database logs: `docker-compose logs mysql`
-- Verify DATABASE_URL in server/.env
-
-### Redis connection errors
-- Verify Redis container is running: `docker-compose ps`
-- Check Redis logs: `docker-compose logs redis`
-- Test Redis connection: `docker exec switfttalk-redis-1 redis-cli ping`
-
-### VAPID key errors
-- Ensure VAPID keys are set in `.env` file at root
-- Keys must be valid and properly formatted
-- Restart services after updating keys: `docker-compose restart server`
-
-## 📦 Technology Stack
+## Technology Stack
 
 ### Frontend
 - **React 19** - UI framework
@@ -258,6 +321,7 @@ socket.on('user:online', (data) => { /* handle online status */ })
 - **Socket.IO** - WebSocket library
 - **JWT** - Authentication
 - **Redis** - Caching & sessions
+- **Langchain** - AI pipeline
 - **Gemini API** - AI integration
 
 ### Infrastructure
@@ -267,7 +331,9 @@ socket.on('user:online', (data) => { /* handle online status */ })
 - **Docker** - Containerization
 - **Docker Compose** - Service orchestration
 
-## 🔐 Security Features
+---
+
+## Security Features
 
 - ✅ JWT-based authentication with refresh tokens
 - ✅ OTP email verification
@@ -278,50 +344,16 @@ socket.on('user:online', (data) => { /* handle online status */ })
 - ✅ Secure WebSocket connections
 - ✅ Environment variable isolation
 
-## 🤝 Development Tips
+---
 
-### Hot Reload Development (Without Docker)
-For local development with hot reload:
-
-```bash
-# Terminal 1 - Start backend
-cd server
-npm install
-npm run dev
-
-# Terminal 2 - Start frontend
-cd client
-npm install
-npm start
-```
-
-### Database Migrations
-```bash
-# Create new migration
-docker exec switfttalk-server-1 npx prisma migrate dev --name your_migration_name
-
-# View database schema
-docker exec switfttalk-server-1 npx prisma studio
-```
-
-### View Database
-```bash
-docker exec -it switfttalk-mysql-1 mysql -u root -psecret -D swifttalk
-```
-
-## 📄 License
+## License
 
 See [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Author
+## Author
 
 Created by Rushikesh
 
-## 🐛 Known Issues
-
-- Prisma 6.x is deprecated. Plan upgrade to Prisma 7.x
-- Some WebSocket events may retry on connection loss
-
 ---
 
-**Last Updated**: April 28, 2026
+**Last Updated**: May 26, 2026
