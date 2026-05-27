@@ -587,7 +587,6 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     }
   };
 
-  // Redirect standalone AI chat to ChatHome's 2-column layout when screen becomes wide
   useEffect(() => {
     if (
       !isEmbedded &&
