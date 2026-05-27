@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import SimpleBar from "simplebar-react";
+import { useQuery } from '@tanstack/react-query';
+import { chatInfoQueryOptions, chatMessagesQueryOptions } from '../../utils/api/chatQueries';
 import "simplebar-react/dist/simplebar.min.css";
 import {
   ArrowLeft,
@@ -55,8 +57,6 @@ import {
   blockUser,
   unblockUser,
   checkBlockStatus,
-  fetchChatInfo,
-  fetchChatMessages,
   fetchUserProfileById,
   fetchChatImage as fetchChatImageApi,
   deleteMessage,
@@ -91,7 +91,7 @@ const ChatWindow = ({
   const headerRef = useRef(null);
   const inputContainerRef = useRef(null);
   const smartRepliesRef = useRef(null);
-  const observerTimeoutRef = useRef(null); 
+  const observerTimeoutRef = useRef(null);
   const [messageText, setMessageText] = useState("");
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -108,13 +108,13 @@ const ChatWindow = ({
   const userId = user.user_id;
   const [currentChatId, setCurrentChatId] = useState(chatId);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
-  
+
   useEffect(() => {
     if (chatId !== undefined && chatId !== null) {
       setCurrentChatId(chatId);
     }
   }, [chatId]);
-  
+
   const [chatInfo, setChatInfo] = useState({
     id: chatId,
     name: "",
@@ -128,8 +128,6 @@ const ChatWindow = ({
     chat_image: null,
   });
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(!isNewChat);
-  const [error, setError] = useState("");
   const [userProfiles, setUserProfiles] = useState({});
   const [isBlocked, setIsBlocked] = useState(false);
   const [isBlockedByOther, setIsBlockedByOther] = useState(false);
@@ -178,6 +176,136 @@ const ChatWindow = ({
   const [messageEditing, setMessageEditing] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingMessage, setEditingMessage] = useState('');
+
+  const chatIdToFetch = currentChatId || chatId;
+
+  const {
+    data: chatData,
+    isLoading: chatInfoLoading,
+    error: chatInfoError,
+  } = useQuery({
+    ...chatInfoQueryOptions(chatIdToFetch),
+    enabled: !!chatIdToFetch && !isNewChat,
+  });
+
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    error: messagesError,
+  } = useQuery({
+    ...chatMessagesQueryOptions(chatIdToFetch, userId),
+    enabled: !!chatIdToFetch && !isNewChat,
+  });
+
+  // Derive loading / error directly from queries
+  const loading = (chatInfoLoading || messagesLoading) && !isNewChat;
+  const error = chatInfoError?.message || messagesError?.message || '';
+
+  const fetchUserProfile = useCallback(async (senderId) => {
+    if (senderId === userId) return;
+    try {
+      const userData = await fetchUserProfileById(senderId);
+      if (userData) {
+        setUserProfiles((prev) => {
+          if (prev[senderId]) return prev;
+          return { ...prev, [senderId]: userData };
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  }, [userId]);
+
+  const fetchChatImage = async (imagePath) => {
+    if (!imagePath) return;
+    try {
+      const blobUrl = await fetchChatImageApi(imagePath);
+      if (blobUrl) {
+        setChatImageUrl(blobUrl);
+      }
+    } catch (err) {
+      console.error("Error fetching chat image:", err);
+    }
+  };
+
+  // Process chatData into chatInfo state when it arrives
+  useEffect(() => {
+    if (!chatData) return;
+    const chat = chatData.chat;
+    const chatType = chat.chat_type;
+    const members = chat.members || [];
+    let chatName = '';
+    let otherUserId = null;
+
+    if (chatType === 'private' && Array.isArray(members)) {
+      const other = members.find((m) => m.user_id !== userId);
+      if (other) {
+        otherUserId = other.user_id;
+        chatName = other.user?.full_name || other.user?.username || '';
+      }
+    } else if (chatType === 'group') {
+      chatName = chat.chat_name;
+      if (chat.chat_image) fetchChatImage(chat.chat_image);
+    }
+
+    if (otherUserId) fetchUserProfile(otherUserId);
+
+    let isOnline = false;
+    let lastSeen = null;
+    if (chatType === 'private' && otherUserId) {
+      const otherMember = members.find((m) => m.user_id === otherUserId);
+      if (otherMember?.user) {
+        isOnline = otherMember.user.is_online || false;
+        lastSeen = otherMember.user.last_seen || null;
+      }
+    }
+
+    setChatInfo({
+      name: chatName,
+      avatar: '💬',
+      online: isOnline,
+      is_online: isOnline,
+      last_seen: lastSeen,
+      chat_type: chatType,
+      members,
+      otherUserId,
+      admins: chat.admins || [],
+      description: chat.chat_description || chat.description || '',
+      chat_image: chat.chat_image || null,
+      is_admin: Array.isArray(chat.admins) && chat.admins.some((a) => a.user_id === userId),
+    });
+
+    // Check block status for private chats
+    if (chatType === 'private' && otherUserId) {
+      checkBlockStatus(userId, otherUserId).then((status) => {
+        if (status?.isBlocked) {
+          setIsBlocked(true);
+          if (status.otherUserBlockedCurrent) setIsBlockedByOther(true);
+        }
+      }).catch(console.error);
+    }
+  }, [chatData, userId, fetchUserProfile]);
+
+  // Process messagesData into messages state when it arrives
+  useEffect(() => {
+    if (!messagesData?.messages) return;
+    setMessages(messagesData.messages);
+
+    const statusMap = {};
+    messagesData.messages.forEach((message) => {
+      if (message.status && Array.isArray(message.status)) {
+        statusMap[message.message_id] = {};
+        message.status.forEach((s) => {
+          statusMap[message.message_id][s.user_id] = s.status;
+        });
+      }
+    });
+    setMessageStatuses(statusMap);
+
+    setSelectedMessages(
+      Object.fromEntries(messagesData.messages.map((m) => [m.message_id, false]))
+    );
+  }, [messagesData]);
 
   useEffect(() => {
     const calculateHeight = () => {
@@ -304,33 +432,6 @@ const ChatWindow = ({
     );
   };
 
-  const fetchUserProfile = useCallback(async (senderId) => {
-    if (userProfiles[senderId] || senderId === userId) return;
-    try {
-      const userData = await fetchUserProfileById(senderId);
-      if (userData) {
-        setUserProfiles((prev) => ({
-          ...prev,
-          [senderId]: userData,
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching user profile:", err);
-    }
-  }, [userProfiles, userId]);
-
-  const fetchChatImage = async (imagePath) => {
-    if (!imagePath) return;
-    try {
-      const blobUrl = await fetchChatImageApi(imagePath);
-      if (blobUrl) {
-        setChatImageUrl(blobUrl);
-      }
-    } catch (err) {
-      console.error("Error fetching chat image:", err);
-    }
-  };
-
   const handleShowChatInfo = () => {
     setShowChatInfoModal(true);
   };
@@ -364,7 +465,7 @@ const ChatWindow = ({
       const recipientName = recipient.full_name || recipient.username || '';
       const isOnline = recipient.is_online || false;
       const lastSeen = recipient.last_seen || null;
-      
+
       setChatInfo({
         id: null,
         name: recipientName,
@@ -380,137 +481,14 @@ const ChatWindow = ({
         description: "",
         chat_image: null,
       });
-      
+
+
       setUserProfiles(prev => ({
         ...prev,
         [recipient.user_id]: recipient,
       }));
-      
-      setLoading(false);
     }
   }, [isNewChat, recipient]);
-
-  useEffect(() => {
-    const fetchChatAndMessages = async () => {
-      if (isNewChat) {
-        return;
-      }
-      
-      const chatIdToFetch = currentChatId || chatId;
-      if (!chatIdToFetch) {
-        return;
-      }
-
-      if (!userId) {
-        console.error("[ERROR] userId is not available");
-        setError("User not authenticated");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-      try {
-        const chatData = await fetchChatInfo(chatIdToFetch);
-        const chat = chatData.chat;
-        let chatType = chat.chat_type;
-        let members = chat.members || [];
-        let chatName = "";
-        let otherUserId = null;
-        if (chatType === "private" && Array.isArray(members)) {
-          const other = members.find((m) => m.user_id !== userId);
-          if (other) {
-            otherUserId = other.user_id;
-            if (other.user && other.user.full_name) {
-              chatName = other.user.full_name;
-            } else if (other.user && other.user.username) {
-              chatName = other.user.username;
-            }
-
-            try {
-              const blockStatus = await checkBlockStatus(userId, other.user_id);
-              if (blockStatus && blockStatus.isBlocked) {
-                setIsBlocked(true);
-                if (blockStatus.otherUserBlockedCurrent) {
-                  setIsBlockedByOther(true);
-                }
-              }
-            } catch (error) {
-              console.error("Error checking block status:", error);
-            }
-          }
-        } else if (chatType === "group") {
-          chatName = chat.chat_name;
-          if (chat.chat_image) {
-            fetchChatImage(chat.chat_image);
-          }
-        }
-
-        if (otherUserId) {
-          fetchUserProfile(otherUserId);
-        }
-
-        let isOnline = false;
-        let lastSeen = null;
-        if (chatType === "private" && otherUserId) {
-          const otherMember = members.find((m) => m.user_id === otherUserId);
-          if (otherMember && otherMember.user) {
-            isOnline = otherMember.user.is_online || false;
-            lastSeen = otherMember.user.last_seen || null;
-          }
-        }
-
-        setChatInfo((info) => ({
-          ...info,
-          name: chatName,
-          avatar: "💬",
-          online: isOnline,
-          is_online: isOnline,
-          last_seen: lastSeen,
-          chat_type: chatType,
-          members: members,
-          otherUserId: otherUserId,
-          admins: chat.admins || [],
-          description: chat.chat_description || chat.description || "",
-          chat_image: chat.chat_image || null,
-          is_admin:
-            Array.isArray(chat.admins) &&
-            chat.admins.some((a) => a.user_id === userId),
-        }));
-
-        const data = await fetchChatMessages(chatIdToFetch, userId);
-
-        setMessages(data.messages || []);
-
-        if (data.messages && Array.isArray(data.messages)) {
-          const statusMap = {};
-          data.messages.forEach((message) => {
-            if (message.status && Array.isArray(message.status)) {
-              statusMap[message.message_id] = {};
-              message.status.forEach((statusItem) => {
-                statusMap[message.message_id][statusItem.user_id] =
-                  statusItem.status;
-              });
-            }
-          });
-          setMessageStatuses(statusMap);
-
-          setSelectedMessages((prev) => ({
-            ...prev,
-            ...Object.fromEntries(
-              data.messages.map((item) => [item.message_id, false])
-            ),
-          }));
-        }
-      } catch (err) {
-        setError(err.message || "Error fetching messages");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchChatAndMessages();
-  }, [chatId, currentChatId, userId, fetchUserProfile, isNewChat]);
-  
 
   useEffect(() => {
     messages.forEach((message) => {
@@ -549,7 +527,7 @@ const ChatWindow = ({
     if (!activeChatId) {
       return;
     }
-    
+
     const socket = socketService.connect(userId);
 
     const joinChatWhenReady = () => {
@@ -599,7 +577,7 @@ const ChatWindow = ({
             if (!m.isOptimistic) return true;
 
             if (m.tempId === message.tempId) {
-              return false; 
+              return false;
             }
 
             return true;
@@ -883,7 +861,7 @@ const ChatWindow = ({
         });
       } else if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({
-          behavior: "smooth",  
+          behavior: "smooth",
           block: "end"
         });
       }
@@ -914,28 +892,28 @@ const ChatWindow = ({
     if (!recipient) {
       throw new Error("No recipient specified for new chat");
     }
-    
+
     setIsCreatingChat(true);
     try {
       const chatData = await createChat("private", [userId, recipient.user_id]);
       const newChatId = chatData.chat?.chat_id || chatData.chatId || chatData.chat_id;
-      
+
       if (!newChatId) {
         throw new Error("Failed to get chat ID from response");
       }
-      
+
       setCurrentChatId(newChatId);
-      
+
       socketService.joinChat(newChatId);
-      
+
       if (onChatCreated) {
         onChatCreated(newChatId);
       }
-      
+
       if (!isEmbedded) {
         navigate(`/chat/${newChatId}`, { replace: true });
       }
-      
+
       return newChatId;
     } finally {
       setIsCreatingChat(false);
@@ -951,14 +929,14 @@ const ChatWindow = ({
     setMessageText("");
 
     let activeChatId = currentChatId || chatId;
-    
+
     if (isNewChat && !currentChatId) {
       try {
         activeChatId = await createNewChat();
       } catch (err) {
         console.error("Error creating new chat:", err);
         showError("Failed to create chat. Please try again.");
-        setMessageText(messageToSend); 
+        setMessageText(messageToSend);
         return;
       }
     }
@@ -976,14 +954,14 @@ const ChatWindow = ({
       sender_id: userId,
       message_text: messageToSend,
       message_type: "text",
-      tempId: tempId, 
-      reply_to_id: replyToMessage?.message_id || null, 
+      tempId: tempId,
+      reply_to_id: replyToMessage?.message_id || null,
     };
 
     socketService.sendMessage(messageData);
 
     const optimisticMessage = {
-      message_id: tempId, 
+      message_id: tempId,
       tempId: tempId,
       ...messageData,
       created_at: new Date().toISOString(),
@@ -994,8 +972,8 @@ const ChatWindow = ({
         profile_pic: user.profile_pic,
       },
       status: [{ status: "sending" }],
-      isOptimistic: true, 
-      reply_to_message: replyToMessage, 
+      isOptimistic: true,
+      reply_to_message: replyToMessage,
     };
 
     setMessages((prevMessages) => [...prevMessages, optimisticMessage]);
@@ -1035,7 +1013,7 @@ const ChatWindow = ({
   const handleTyping = useCallback(() => {
     const activeChatId = currentChatId || chatId;
     if (!activeChatId) return;
-    
+
     if (!socketService.isSocketConnected()) {
       return;
     }
@@ -1267,11 +1245,11 @@ const ChatWindow = ({
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
-    messageContextMenu.setMenu({ 
-      isOpen: true, 
-      x: rect.right, 
-      y: rect.top, 
-      position: 'top-left', 
+    messageContextMenu.setMenu({
+      isOpen: true,
+      x: rect.right,
+      y: rect.top,
+      position: 'top-left',
     });
   };
 
@@ -1279,11 +1257,11 @@ const ChatWindow = ({
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
-    messageContextMenu.setMenu({ 
-      isOpen: true, 
-      x: rect.left,  
-      y: rect.top, 
-      position: 'top-right',  
+    messageContextMenu.setMenu({
+      isOpen: true,
+      x: rect.left,
+      y: rect.top,
+      position: 'top-right',
     });
   };
 
@@ -1369,7 +1347,7 @@ const ChatWindow = ({
 
       try {
         const users = await searchUsers(query, 1, 10);
-        
+
         const existingMemberIds =
           chatInfo.members?.map((m) => m.user_id) || [];
 
@@ -1378,7 +1356,7 @@ const ChatWindow = ({
             user.user_id !== userId &&
             !existingMemberIds.includes(user.user_id)
         );
-        
+
         setAddMemberResults(filteredUsers);
       } catch (err) {
         console.error("Error searching users:", err);
@@ -1400,7 +1378,7 @@ const ChatWindow = ({
     setAddMemberLoading(true);
     const debounceTimer = setTimeout(() => {
       searchUsersForAddMember(searchAddMember);
-    }, 300); 
+    }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [searchAddMember, searchUsersForAddMember]);
@@ -1423,9 +1401,9 @@ const ChatWindow = ({
 
     try {
       setIsAddingMember(true);
-      
+
       await addMemberToGroup(chatId, selectedUserToAdd.user_id);
-      
+
       showSuccess(
         `${selectedUserToAdd.full_name || selectedUserToAdd.username
         } added to group`
@@ -1618,7 +1596,7 @@ const ChatWindow = ({
 
     // Determine the chat ID to use
     let activeChatId = currentChatId || chatId;
-    
+
     // If this is a new chat (no chatId), create it first
     if (isNewChat && !currentChatId) {
       try {
@@ -1645,7 +1623,7 @@ const ChatWindow = ({
 
       const reader = new FileReader();
       reader.onload = () => {
-        const base64File = reader.result.split(",")[1]; 
+        const base64File = reader.result.split(",")[1];
 
         setUploadingMessages(prev => ({
           ...prev,
@@ -1823,7 +1801,7 @@ const ChatWindow = ({
   };
 
   const isWithinTwoHours = (timestamp) => {
-    const now = Date.now();             
+    const now = Date.now();
     const past = new Date(timestamp).getTime();
 
     const diffMs = now - past;

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from '@tanstack/react-query';
+import { chatInfoQueryOptions, chatMessagesQueryOptions } from '../../utils/api/chatQueries';
 import {
   MessageCircle,
   X,
@@ -59,6 +61,7 @@ import "./ChatHome.css";
 const ChatHome = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
   const isWideScreen = useResponsive();
 
@@ -532,11 +535,11 @@ const ChatHome = () => {
   }, []);
 
   useEffect(() => {
-      setSidebarWidth(leftPanelWidth);
-    }, [leftPanelWidth]);
+    setSidebarWidth(leftPanelWidth);
+  }, [leftPanelWidth]);
 
   const showDesktopSplit = typeof window !== "undefined" && window.innerWidth >= 900;
-  
+
 
   const handleChatClick = (chatOrId) => {
     const chat = typeof chatOrId === 'object' ? chatOrId : filteredChats.find(c => c.chat_id === chatOrId);
@@ -580,8 +583,7 @@ const ChatHome = () => {
     }
   }, [isWideScreen, selectedChatId, showAIChat, navigate]);
 
-  useEffect(() => {
-  }, [selectedChatId, userId]);
+
 
   const handleChatAvatarClick = (e, chat) => {
     e.stopPropagation();
@@ -1004,6 +1006,183 @@ const ChatHome = () => {
     }
   };
 
+  const ChatItem = ({ chat }) => {
+    let displayName = chat.chat_name;
+    let otherUserId = null;
+    let chatImage = null;
+
+
+
+    const handleMouseEnter = () => {
+      if (chat.isAI || chatSelection) return;
+      const chatId = chat.chat_id;
+
+      // prefetchQuery respects staleTime — won't fire a duplicate request
+      // if the data is already fresh in cache
+      queryClient.prefetchQuery(chatInfoQueryOptions(chatId));
+      queryClient.prefetchQuery(chatMessagesQueryOptions(chatId, userId));
+    };
+
+
+    if (chat.isAI && swifttalkAssistantEnabled) {
+      return (
+        <div
+          key={chat.chat_id}
+          className={`chat-item ${showAIChat ? "selected" : ""}`}
+          onClick={() => handleChatClick(chat)}
+        >
+          <div className="chat-avatar ai-chat-avatar">
+            <Sparkles size={24} color="white" />
+          </div>
+          <div className="chat-info">
+            <div className="chat-header-info">
+              <h3 className="chat-name">{displayName}</h3>
+              <span className="ai-badge">AI</span>
+            </div>
+            <div className="chat-last-message">
+              <p className="last-message">
+                {chat.last_message?.preview_text || "Ask me anything!"}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (
+      chat.chat_type === "private" &&
+      Array.isArray(chat.members)
+    ) {
+      const currentUserId = Number(userId);
+      const other = chat.members.find(
+        (m) => Number(m.user_id) !== currentUserId
+      );
+
+      if (other) {
+        otherUserId = other.user_id;
+        if (other.user && other.user.full_name) {
+          displayName = other.user.full_name;
+        } else if (other.user && other.user.username) {
+          displayName = other.user.username;
+        } else if (userProfiles[other.user_id]?.full_name) {
+          displayName = userProfiles[other.user_id].full_name;
+        } else if (userProfiles[other.user_id]?.username) {
+          displayName = userProfiles[other.user_id].username;
+        }
+      }
+    } else if (chat.chat_type === "group") {
+      chatImage = chatImages[chat.chat_id];
+    }
+    const profilePic =
+      otherUserId && userProfiles[otherUserId]?.profile_pic;
+
+    const getInitials = (name) => {
+      if (!name) return "💬";
+      const words = name.trim().split(" ");
+      if (words.length >= 2) {
+        return (
+          words[0][0] + words[words.length - 1][0]
+        ).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    };
+
+    return (
+      <div
+        key={chat.chat_id}
+        className={`chat-item ${parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
+          } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
+        onMouseEnter={handleMouseEnter}
+        onClick={(e) => {
+          if (chatSelection) {
+            e.stopPropagation();
+            handleChatsSelection(chat.chat_id);
+          } else handleChatClick(chat.chat_id);
+        }}
+        onContextMenu={(e) => handleChatContextMenu(e, chat)}
+      >
+        <div
+          className="chat-avatar"
+          onClick={(e) => handleChatAvatarClick(e, chat)}
+          style={{ cursor: "pointer" }}
+        >
+          {profilePic || chatImage ? (
+            <img
+              src={profilePic || chatImage}
+              alt={
+                chat.chat_type === "group" ? "group" : "profile"
+              }
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <span className="avatar-emoji">
+              {chat.chat_type === "private"
+                ? getInitials(displayName)
+                : "💬"}
+            </span>
+          )}
+        </div>
+        <div className="chat-info">
+          <div className="chat-header-info">
+            <h3 className="chat-name">{displayName}</h3>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              {chat.unread_count > 0 && (
+                <span
+                  style={{
+                    backgroundColor: "var(--accent-color)",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "24px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    flexShrink: 0,
+                  }}
+                >
+                  {chat.unread_count > 99
+                    ? "99+"
+                    : chat.unread_count}
+                </span>
+              )}
+              {chat.pinned && (
+                <Pin
+                  color="var(--accent-color)"
+                  size={16}
+                  strokeWidth={2}
+                />
+              )}
+              <span className="chat-time">
+                {formatChatPreviewTime(
+                  chat.last_message?.created_at
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="chat-last-message">
+            <p className="last-message">
+              {chat.last_message?.preview_text ||
+                "No messages yet"}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Helmet>
@@ -1108,166 +1287,7 @@ const ChatHome = () => {
                     </div>
                   ) : filteredChats.length > 0 ? (
                     filteredChats.map((chat) => {
-                      let displayName = chat.chat_name;
-                      let otherUserId = null;
-                      let chatImage = null;
-
-                      if (chat.isAI && swifttalkAssistantEnabled) {
-                        return (
-                          <div
-                            key={chat.chat_id}
-                            className={`chat-item ${showAIChat ? "selected" : ""}`}
-                            onClick={() => handleChatClick(chat)}
-                          >
-                            <div className="chat-avatar ai-chat-avatar">
-                              <Sparkles size={24} color="white" />
-                            </div>
-                            <div className="chat-info">
-                              <div className="chat-header-info">
-                                <h3 className="chat-name">{displayName}</h3>
-                                <span className="ai-badge">AI</span>
-                              </div>
-                              <div className="chat-last-message">
-                                <p className="last-message">
-                                  {chat.last_message?.preview_text || "Ask me anything!"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (
-                        chat.chat_type === "private" &&
-                        Array.isArray(chat.members)
-                      ) {
-                        const currentUserId = Number(userId);
-                        const other = chat.members.find(
-                          (m) => Number(m.user_id) !== currentUserId
-                        );
-
-                        if (other) {
-                          otherUserId = other.user_id;
-                          if (other.user && other.user.full_name) {
-                            displayName = other.user.full_name;
-                          } else if (other.user && other.user.username) {
-                            displayName = other.user.username;
-                          } else if (userProfiles[other.user_id]?.full_name) {
-                            displayName = userProfiles[other.user_id].full_name;
-                          } else if (userProfiles[other.user_id]?.username) {
-                            displayName = userProfiles[other.user_id].username;
-                          }
-                        }
-                      } else if (chat.chat_type === "group") {
-                        chatImage = chatImages[chat.chat_id];
-                      }
-                      const profilePic =
-                        otherUserId && userProfiles[otherUserId]?.profile_pic;
-
-                      const getInitials = (name) => {
-                        if (!name) return "💬";
-                        const words = name.trim().split(" ");
-                        if (words.length >= 2) {
-                          return (
-                            words[0][0] + words[words.length - 1][0]
-                          ).toUpperCase();
-                        }
-                        return name.substring(0, 2).toUpperCase();
-                      };
-
-                      return (
-                        <div
-                          key={chat.chat_id}
-                          className={`chat-item ${parseInt(selectedChatId) === parseInt(chat.chat_id) ? "selected" : ""
-                            } ${selectedChats[chat.chat_id] ? "selection" : ""}`}
-                          onClick={(e) => {
-                            if (chatSelection) {
-                              e.stopPropagation();
-                              handleChatsSelection(chat.chat_id);
-                            } else handleChatClick(chat.chat_id);
-                          }}
-                          onContextMenu={(e) => handleChatContextMenu(e, chat)}
-                        >
-                          <div
-                            className="chat-avatar"
-                            onClick={(e) => handleChatAvatarClick(e, chat)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {profilePic || chatImage ? (
-                              <img
-                                src={profilePic || chatImage}
-                                alt={
-                                  chat.chat_type === "group" ? "group" : "profile"
-                                }
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  borderRadius: "50%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            ) : (
-                              <span className="avatar-emoji">
-                                {chat.chat_type === "private"
-                                  ? getInitials(displayName)
-                                  : "💬"}
-                              </span>
-                            )}
-                          </div>
-                          <div className="chat-info">
-                            <div className="chat-header-info">
-                              <h3 className="chat-name">{displayName}</h3>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                {chat.unread_count > 0 && (
-                                  <span
-                                    style={{
-                                      backgroundColor: "var(--accent-color)",
-                                      color: "white",
-                                      borderRadius: "50%",
-                                      width: "24px",
-                                      height: "24px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: "12px",
-                                      fontWeight: "600",
-                                      flexShrink: 0,
-                                    }}
-                                  >
-                                    {chat.unread_count > 99
-                                      ? "99+"
-                                      : chat.unread_count}
-                                  </span>
-                                )}
-                                {chat.pinned && (
-                                  <Pin
-                                    color="var(--accent-color)"
-                                    size={16}
-                                    strokeWidth={2}
-                                  />
-                                )}
-                                <span className="chat-time">
-                                  {formatChatPreviewTime(
-                                    chat.last_message?.created_at
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="chat-last-message">
-                              <p className="last-message">
-                                {chat.last_message?.preview_text ||
-                                  "No messages yet"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
+                      return <ChatItem key={chat.chat_id} chat={chat} />;
                     })
                   ) : (
                     <div className="no-chats">
