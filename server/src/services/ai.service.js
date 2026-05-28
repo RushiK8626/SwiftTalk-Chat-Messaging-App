@@ -86,7 +86,7 @@ const translateMessage = async (text, targetLanguage, sourceLanguage = 'auto') =
     const model = genAI.getGenerativeModel({ 
       model: AI_CONFIG.model,
       generationConfig: {
-        maxOutputTokens: Math.max(AI_CONFIG.maxTokens, text.length * 2),
+        maxOutputTokens: AI_CONFIG.maxTokens,
         temperature: 0.3, // Lower temperature for more consistent translations
       },
     });

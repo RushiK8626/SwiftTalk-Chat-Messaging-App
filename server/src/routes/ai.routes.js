@@ -3,8 +3,6 @@ const router = express.Router();
 const aiController = require('../controller/ai.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 
-router.get('/test', (req, res) => res.json({ message: 'AI routes are working' }));
-
 router.use(verifyToken);
 
 router.post('/smart-replies', aiController.generateSmartReplies);
