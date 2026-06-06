@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
-import { chatInfoQueryOptions, chatMessagesQueryOptions } from '../../utils/api/chatQueries';
+import { chatInfoQueryOptions, chatMessagesQueryOptions, aiSessionQueryOptions, aiSessionListQueryOptions } from '../../utils/api/chatQueries';
 import {
   MessageCircle,
   X,
@@ -1025,11 +1025,20 @@ const ChatHome = () => {
 
 
     if (chat.isAI && swifttalkAssistantEnabled) {
+      const handleAIMouseEnter = () => {
+        const sessionId = localStorage.getItem('ai_session_id');
+        if (sessionId) {
+          queryClient.prefetchQuery(aiSessionQueryOptions(sessionId));
+        }
+        queryClient.prefetchQuery(aiSessionListQueryOptions());
+      };
+
       return (
         <div
           key={chat.chat_id}
           className={`chat-item ${showAIChat ? "selected" : ""}`}
           onClick={() => handleChatClick(chat)}
+          onMouseEnter={handleAIMouseEnter}
         >
           <div className="chat-avatar ai-chat-avatar">
             <Sparkles size={24} color="white" />

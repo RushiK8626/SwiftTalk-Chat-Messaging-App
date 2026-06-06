@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, Sparkles, Copy, Edit, Trash2, Redo2, Languages, X, History } from 'lucide-react';
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
 import MessageRenderer from '../../components/messages/messageRenderer';
 import { streamAIMessage, AI_ASSISTANT, loadSession, createNewSession, deleteSession as deleteAISession, getSessionList } from '../../utils/api/aiClient';
+import { aiSessionQueryOptions, aiSessionListQueryOptions, aiKeys } from '../../utils/api/chatQueries';
 import { getSidebarWidth, setSidebarWidth, SIDEBAR_CONFIG } from '../../utils/storage';
 import useContextMenu from "../../hooks/useContextMenu";
 import ContextMenu from "../../components/common/ContextMenu";
@@ -19,6 +21,7 @@ import './AIChatWindow.css';
 
 const AIChatWindow = ({ onClose, isEmbedded = false }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isWideScreen = useResponsive();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -190,7 +193,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     return sessionId;
   };
 
-  // Load sessions on component mount
+  // Load sessions on component mount — reads from React Query cache if prefetched
   useEffect(() => {
     const initializeSession = async () => {
       try {
@@ -200,9 +203,16 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
 
         if (sessionId) {
           try {
-            const sessionData = await loadSession(sessionId);
-            if (sessionData) {
-              setMessages(sessionData.conversation || []);
+            // Try React Query cache first (populated by prefetch on hover)
+            const cachedSession = queryClient.getQueryData(aiKeys.session(sessionId));
+            if (cachedSession) {
+              setMessages(cachedSession.conversation || []);
+            } else {
+              // Cache miss — fetch via query and populate cache
+              const sessionData = await queryClient.fetchQuery(aiSessionQueryOptions(sessionId));
+              if (sessionData) {
+                setMessages(sessionData.conversation || []);
+              }
             }
           } catch (loadError) {
             console.warn('Could not load existing session messages:', loadError);
@@ -210,11 +220,12 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
           }
         }
 
-        // Get all sessions of current user
+        // Get all sessions — try cache first
         try {
-          const userSessions = await getSessionList();
-          if (userSessions && Array.isArray(userSessions)) {
-            setUserSessions(sessionId ? userSessions : [buildNewChatSession(), ...userSessions]);
+          const cachedSessions = queryClient.getQueryData(aiKeys.sessionList);
+          const userSessionsData = cachedSessions || await queryClient.fetchQuery(aiSessionListQueryOptions());
+          if (userSessionsData && Array.isArray(userSessionsData)) {
+            setUserSessions(sessionId ? userSessionsData : [buildNewChatSession(), ...userSessionsData]);
           }
         } catch (sessionsError) {
           console.warn('Could not load sessions list:', sessionsError);
@@ -227,7 +238,7 @@ const AIChatWindow = ({ onClose, isEmbedded = false }) => {
     };
 
     initializeSession();
-  }, [showError]);
+  }, [showError, queryClient]);
 
   useEffect(() => {
     if (messages.length > 0) {
