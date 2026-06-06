@@ -179,64 +179,7 @@ exports.deleteChat = async (req, res) => {
   }
 };
 
-exports.getArchivedChats = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const archivedChatIds = await prisma.chatVisibility.findMany({
-      where: {
-        user_id: parseInt(userId),
-        is_archived: true,
-        is_visible: false
-      },
-      select: { chat_id: true }
-    });
-
-    const chatIds = archivedChatIds.map(v => v.chat_id);
-
-    const archivedChats = await prisma.chat.findMany({
-      where: {
-        chat_id: { in: chatIds }
-      },
-      skip,
-      take: parseInt(limit),
-      include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                user_id: true,
-                username: true,
-                full_name: true,
-                profile_pic: true
-              }
-            }
-          }
-        },
-        messages: {
-          take: 1,
-          orderBy: { created_at: 'desc' },
-          select: {
-            message_text: true,
-            created_at: true,
-            sender: {
-              select: { full_name: true }
-            }
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
-
-    const total = chatIds.length;
-
-    res.json({ chats: archivedChats, total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.getActiveChats = async (req, res) => {
   try {
@@ -244,24 +187,6 @@ exports.getActiveChats = async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const userIdInt = parseInt(userId);
-
-    const unreadCountsPerChat = await prisma.message.groupBy({
-      by: ['chat_id'],
-      where: {
-        status: {
-          some: {
-            user_id: userIdInt,
-            status: 'delivered'
-          }
-        }
-      },
-      _count: {
-        message_id: true 
-      }
-    });
-
-    const unreadMap = {};
-    unreadCountsPerChat.forEach(item => { unreadMap[item.chat_id] = item._count.message_id; });
 
     const visibleChatIds = await prisma.chatVisibility.findMany({
       where: {
@@ -272,6 +197,26 @@ exports.getActiveChats = async (req, res) => {
     });
 
     const chatIds = visibleChatIds.map(v => v.chat_id);
+
+    const unreadCountsPerChat = await prisma.message.groupBy({
+      by: ['chat_id'],
+      where: {
+        chat_id: { in: chatIds },
+        status: {
+          some: {
+            user_id: userIdInt,
+            status: 'delivered'
+          }
+        }
+      },
+      _count: {
+        message_id: true
+      }
+    });
+
+    const unreadMap = {};
+    unreadCountsPerChat.forEach(item => { unreadMap[item.chat_id] = item._count.message_id; });
+
 
     const activeChats = await prisma.chat.findMany({
       where: {
@@ -339,19 +284,19 @@ exports.getActiveChats = async (req, res) => {
         created_at: chat.created_at,
         members: chat.members,
         admins: chat.admins,
-        pinned: chat.chatVisibility[0].pinned,
+        pinned: chat.chatVisibility[0]?.pinned,
         last_message: null,
         last_message_timestamp: null,
-        unread_count: unreadMap[chat.chat_id] || 0 
+        unread_count: unreadMap[chat.chat_id] || 0
       };
 
       if (lastMessage) {
         let previewText = lastMessage.message_text;
-        
+
         if (lastMessage.attachments && lastMessage.attachments.length > 0 && !lastMessage.message_text) {
           const attachment = lastMessage.attachments[0];
           const fileType = attachment.file_type;
-          
+
           if (fileType) {
             if (fileType.startsWith('image/')) {
               previewText = 'Image';
@@ -439,52 +384,7 @@ exports.unpinChat = async (req, res) => {
   }
 };
 
-exports.getChatStatus = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-    const userId = req.user?.user_id || parseInt(req.body.user_id);
 
-    const visibility = await prisma.chatVisibility.findUnique({
-      where: {
-        chat_id_user_id: {
-          chat_id: parseInt(chatId),
-          user_id: userId
-        }
-      }
-    });
-
-    if (!visibility) {
-      return res.json({
-        chat_id: parseInt(chatId),
-        user_id: userId,
-        status: 'active',
-        is_visible: true,
-        is_archived: false
-      });
-    }
-
-    let status = 'active';
-    if (!visibility.is_visible && visibility.is_archived) {
-      status = 'archived';
-    } else if (!visibility.is_visible && !visibility.is_archived) {
-      status = 'deleted';
-    }
-
-    res.json({
-      chat_id: parseInt(chatId),
-      user_id: userId,
-      status,
-      is_visible: visibility.is_visible,
-      is_archived: visibility.is_archived,
-      archived_at: visibility.archived_at,
-      hidden_at: visibility.hidden_at
-    });
-
-  } catch (err) {
-    console.error('Get chat status error:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.batchDeleteChats = async (req, res) => {
   try {
@@ -598,113 +498,3 @@ exports.batchMarkReadChats = async (req, res) => {
   }
 };
 
-exports.batchUnpinChats = async (req, res) => {
-  try {
-    const { chatIds } = req.body;
-    const userId = req.user?.user_id || parseInt(req.body.user_id);
-    if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
-      return res.status(400).json({ error: 'chatIds array is required' });
-    }
-    if (!userId) return res.status(400).json({ error: 'user_id is required' });
-
-    const parsedChatIds = chatIds.map(id => parseInt(id));
-    const memberShips = await prisma.chatMember.findMany({ where: { chat_id: { in: parsedChatIds }, user_id: userId } });
-    if (memberShips.length !== parsedChatIds.length) {
-      return res.status(403).json({ error: 'Not a member of all specified chats' });
-    }
-
-    const unpinUpdates = await Promise.all(
-      parsedChatIds.map(chatId =>
-        prisma.chatVisibility.update({
-          where: { chat_id_user_id: { chat_id: chatId, user_id: userId } },
-          data: { pinned: false }
-        })
-      )
-    );
-
-    res.json({ message: `${parsedChatIds.length} chats unpinned successfully`, unpinned_count: unpinUpdates.length, chat_ids: parsedChatIds });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.batchArchiveChats = async (req, res) => {
-  try {
-    const { chatIds } = req.body;
-    const userId = req.user?.user_id || parseInt(req.body.user_id);
-    if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
-      return res.status(400).json({ error: 'chatIds array is required' });
-    }
-    if (!userId) return res.status(400).json({ error: 'user_id is required' });
-
-    const parsedChatIds = chatIds.map(id => parseInt(id));
-    const memberShips = await prisma.chatMember.findMany({ where: { chat_id: { in: parsedChatIds }, user_id: userId } });
-    if (memberShips.length !== parsedChatIds.length) {
-      return res.status(403).json({ error: 'Not a member of all specified chats' });
-    }
-
-    const messagesInChats = await prisma.message.findMany({ where: { chat_id: { in: parsedChatIds } }, select: { message_id: true } });
-    const messageIds = messagesInChats.map(m => m.message_id);
-
-    if (messageIds.length > 0) {
-      await prisma.messageVisibility.updateMany({
-        where: { message_id: { in: messageIds }, user_id: userId },
-        data: { is_visible: false, hidden_at: new Date() }
-      });
-    }
-
-    const archiveUpdates = await Promise.all(
-      parsedChatIds.map(chatId =>
-        prisma.chatVisibility.upsert({
-          where: { chat_id_user_id: { chat_id: chatId, user_id: userId } },
-          update: { is_visible: false, is_archived: true, archived_at: new Date() },
-          create: { chat_id: chatId, user_id: userId, is_visible: false, is_archived: true, archived_at: new Date() }
-        })
-      )
-    );
-
-    res.json({ message: `${parsedChatIds.length} chats archived successfully`, archived_count: archiveUpdates.length, chat_ids: parsedChatIds });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.batchUnarchiveChats = async (req, res) => {
-  try {
-    const { chatIds } = req.body;
-    const userId = req.user?.user_id || parseInt(req.body.user_id);
-    if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
-      return res.status(400).json({ error: 'chatIds array is required' });
-    }
-    if (!userId) return res.status(400).json({ error: 'user_id is required' });
-
-    const parsedChatIds = chatIds.map(id => parseInt(id));
-    const memberShips = await prisma.chatMember.findMany({ where: { chat_id: { in: parsedChatIds }, user_id: userId } });
-    if (memberShips.length !== parsedChatIds.length) {
-      return res.status(403).json({ error: 'Not a member of all specified chats' });
-    }
-
-    const messagesInChats = await prisma.message.findMany({ where: { chat_id: { in: parsedChatIds } }, select: { message_id: true } });
-    const messageIds = messagesInChats.map(m => m.message_id);
-
-    if (messageIds.length > 0) {
-      await prisma.messageVisibility.updateMany({
-        where: { message_id: { in: messageIds }, user_id: userId, is_visible: false },
-        data: { is_visible: true, hidden_at: null }
-      });
-    }
-
-    const unarchiveUpdates = await Promise.all(
-      parsedChatIds.map(chatId =>
-        prisma.chatVisibility.update({
-          where: { chat_id_user_id: { chat_id: chatId, user_id: userId } },
-          data: { is_visible: true, is_archived: false, archived_at: null }
-        })
-      )
-    );
-
-    res.json({ message: `${parsedChatIds.length} chats unarchived successfully`, unarchived_count: unarchiveUpdates.length, chat_ids: parsedChatIds });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};

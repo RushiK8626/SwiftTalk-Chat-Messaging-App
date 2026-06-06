@@ -136,21 +136,3 @@ exports.getUnreadCount = async (req, res) => {
   }
 };
 
-exports.sendTestNotification = async (req, res) => {
-  try {
-    const { user_id, title, body } = req.body;
-    if (!user_id || !title || !body) return res.status(400).json({ error: 'user_id, title, and body are required' });
-
-    const user = await prisma.user.findUnique({ where: { user_id } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const subscription = await prisma.pushSubscription.findUnique({ where: { user_id } });
-    if (!subscription) return res.status(400).json({ error: 'User has no active push subscription' });
-
-    await notificationService.sendPushNotificationToUser(user_id, title, body, { notification_type: 'test', action_url: '/notifications' });
-
-    res.status(200).json({ message: 'Test notification sent successfully', data: { user_id, title, body } });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to send test notification' });
-  }
-};

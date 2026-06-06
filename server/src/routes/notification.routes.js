@@ -11,6 +11,5 @@ router.get('/unread-count', verifyToken, notificationController.getUnreadCount);
 router.put('/:notification_id/read', verifyToken, notificationController.markNotificationAsRead);
 router.put('/read-all', verifyToken, notificationController.markAllNotificationsAsRead);
 router.delete('/:notification_id', verifyToken, notificationController.deleteNotification);
-router.post('/send-test', verifyToken, notificationController.sendTestNotification);
 
 module.exports = router;

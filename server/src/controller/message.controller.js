@@ -364,27 +364,7 @@ exports.forwardMessage = async (req, res) => {
   }
 };
 
-exports.getRecentMessages = async (req, res) => {
-  try {
-    const chatId = parseInt(req.params.chatId);
-    const userId = parseInt(req.query.userId);
-    const limit = parseInt(req.query.limit) || 50;
 
-    if (isNaN(chatId)) return res.status(400).json({ error: 'Invalid chat_id', params: req.params });
-    if (isNaN(userId)) return res.status(400).json({ error: 'Invalid user_id' });
-
-    const chatMember = await prisma.chatMember.findUnique({
-      where: { chat_id_user_id: { chat_id: chatId, user_id: userId } }
-    });
-    if (!chatMember) return res.status(403).json({ error: 'User is not a member of this chat' });
-
-    const messages = await cacheService.getMessages(chatId, userId, limit);
-
-    res.json({ messages: messages.reverse(), count: messages.length, cached: true, limit });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch messages' });
-  }
-};
 
 exports.getMessagesByChat = async (req, res) => {
   try {
@@ -462,53 +442,6 @@ exports.getMessagesByChat = async (req, res) => {
   }
 };
 
-exports.deleteMessageForAll = async (req, res) => {
-  try {
-    const messageId = parseInt(req.params.id);
-    const userId = parseInt(req.body.user_id || req.user.user_id);
-
-    const existingMessage = await prisma.message.findUnique({
-      where: { message_id: messageId },
-      include: {
-        attachments: true
-      }
-    });
-
-    if (!existingMessage) return res.status(404).json({ error: 'Message not found' });
-
-    const isSender = existingMessage.sender_id === userId;
-    const isAdmin = await prisma.groupAdmin.findUnique({
-      where: { chat_id_user_id: { chat_id: existingMessage.chat_id, user_id: userId } }
-    });
-
-    if (!isSender && !isAdmin) {
-      return res.status(403).json({ error: 'Only message sender or group admin can delete this message for all' });
-    }
-
-    if (existingMessage.attachments && existingMessage.attachments.length > 0) {
-      existingMessage.attachments.forEach(attachment => {
-        const filePath = path.join(__dirname, '../../', attachment.file_url);
-        if (fs.existsSync(filePath)) {
-          try { fs.unlinkSync(filePath); } catch (err) {}
-        }
-      });
-    }
-
-    await prisma.messageVisibility.deleteMany({ where: { message_id: messageId } });
-    await prisma.messageStatus.deleteMany({ where: { message_id: messageId } });
-    await prisma.attachment.deleteMany({ where: { message_id: messageId } });
-    await prisma.message.delete({ where: { message_id: messageId } });
-
-    res.json({ 
-      message: 'Message deleted successfully for all members',
-      messageId,
-      deletedBy: isSender ? 'sender' : 'admin'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 exports.deleteMessageForUser = async (req, res) => {
   try {
     const messageId = parseInt(req.params.id);
@@ -552,29 +485,6 @@ exports.deleteMessageForUser = async (req, res) => {
   }
 };
 
-exports.getUnreadMessageCount = async (req, res) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    const chatId = req.query.chatId ? parseInt(req.query.chatId) : undefined;
-
-    let whereClause = { user_id: userId, status: { not: 'read' } };
-
-    if (chatId) {
-      const messages = await prisma.message.findMany({ where: { chat_id: chatId }, select: { message_id: true } });
-      const messageIds = messages.map(msg => msg.message_id);
-      whereClause.message_id = { in: messageIds };
-    }
-
-    const unreadCount = await prisma.messageStatus.count({
-      where: whereClause
-    });
-
-    res.json({ unreadCount, chatId: chatId || 'all' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 exports.markAllMessagesAsRead = async (req, res) => {
   try {
     const chatId = parseInt(req.params.chatId);
@@ -592,34 +502,6 @@ exports.markAllMessagesAsRead = async (req, res) => {
       message: `Marked ${result.count} messages as read`,
       count: result.count
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.getMessageAttachments = async (req, res) => {
-  try {
-    const messageId = parseInt(req.params.messageId);
-    const attachments = await prisma.attachment.findMany({ where: { message_id: messageId }, orderBy: { uploaded_at: 'asc' } });
-    res.json(attachments);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.deleteAttachment = async (req, res) => {
-  try {
-    const attachmentId = parseInt(req.params.attachmentId);
-    const attachment = await prisma.attachment.findUnique({ where: { attachment_id: attachmentId } });
-    if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
-
-    const filePath = path.join(__dirname, '../../', attachment.file_url);
-    if (fs.existsSync(filePath)) {
-      try { fs.unlinkSync(filePath); } catch (err) {}
-    }
-
-    await prisma.attachment.delete({ where: { attachment_id: attachmentId } });
-    res.json({ message: 'Attachment deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

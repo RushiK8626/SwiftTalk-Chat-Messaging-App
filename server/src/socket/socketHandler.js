@@ -7,7 +7,6 @@ const prisma = new PrismaClient();
 const path = require('path');
 const fs = require('fs');
 const redis = require("../config/redis");
-const { secureHeapUsed } = require('crypto');
 
 let ioInstance = null;
 
@@ -26,9 +25,9 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     });
 
     if (!chatMember) {
-      socket.emit('file_upload_error', { 
+      socket.emit('file_upload_error', {
         error: 'You are not a member of this chat',
-        tempId 
+        tempId
       });
       return;
     }
@@ -52,10 +51,10 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     try {
       fs.writeFileSync(filePath, buffer);
     } catch (writeErr) {
-      socket.emit('file_upload_error', { 
+      socket.emit('file_upload_error', {
         error: 'Failed to save file to disk',
         details: writeErr.message,
-        tempId: tempId 
+        tempId: tempId
       });
       return;
     }
@@ -164,7 +163,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
 
     io.to(`chat_${chat_id}`).emit('new_message', {
       ...completeMessage,
-      tempId 
+      tempId
     });
 
     chatMembers.forEach(member => {
@@ -176,7 +175,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       }
     });
 
-    cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => {});
+    cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
 
     const fileMessageRecipientIds = chatMembers
       .map(m => m.user_id)
@@ -212,10 +211,10 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     });
 
   } catch (error) {
-    socket.emit('file_upload_error', { 
+    socket.emit('file_upload_error', {
       error: 'Failed to process file',
       details: error.message,
-      tempId: fileData.tempId 
+      tempId: fileData.tempId
     });
   }
 };
@@ -224,14 +223,14 @@ const initializeSocket = (io) => {
   ioInstance = io;
 
   const registrationNamespace = io.of('/registration');
-  
+
   registrationNamespace.on('connection', (socket) => {
 
     socket.on('monitor_registration', async (data) => {
       const { username } = data;
       if (username) {
         await redis.set(`registration:socket:${username}`, String(socket.id), { EX: 300 });
-        
+
         socket.emit('monitoring_started', { username });
       }
     });
@@ -241,15 +240,15 @@ const initializeSocket = (io) => {
       if (username) {
         const authController = require('../controller/auth.controller');
         const pendingRegistrations = authController.getPendingRegistrations();
-        
+
         const registrationData = pendingRegistrations.get(username);
         if (registrationData) {
           clearTimeout(registrationData.timeoutId);
           pendingRegistrations.delete(username);
-          
+
           socket.emit('registration_cancelled', { username });
         }
-        
+
         await redis.del(`registration:socket:${username}`);
       }
     });
@@ -260,14 +259,14 @@ const initializeSocket = (io) => {
   });
 
   const loginNamespace = io.of('/login');
-  
+
   loginNamespace.on('connection', (socket) => {
-  
+
     socket.on('monitor_login', async (data) => {
       const { userId } = data;
       if (userId) {
         await redis.set(`login:socket:${userId}`, String(socket.id), { EX: 300 });
-        
+
         socket.emit('monitoring_started', { userId });
       }
     });
@@ -277,15 +276,15 @@ const initializeSocket = (io) => {
       if (userId) {
         const authController = require('../controller/auth.controller');
         const pendingLogins = authController.getPendingLogins();
-        
+
         const loginData = pendingLogins.get(parseInt(userId));
         if (loginData) {
           clearTimeout(loginData.timeoutId);
           pendingLogins.delete(parseInt(userId));
-          
+
           socket.emit('login_cancelled', { userId });
         }
-        
+
         await redis.del(`login:socket:${userId}`);
       }
     });
@@ -298,13 +297,13 @@ const initializeSocket = (io) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
+
       if (!token) {
         return next(new Error('Authentication token required'));
       }
 
       const decoded = jwtService.verifyAccessToken(token);
-      
+
       const user = await prisma.user.findUnique({
         where: { user_id: decoded.user_id },
         select: {
@@ -340,7 +339,7 @@ const initializeSocket = (io) => {
       status: "online",
       lastSeen: new Date().toISOString()
     });
-    
+
     await redis.expire(`active:user:${userId}`, 86400);
 
     await redis.set(`socket:user:${socket.id}`, String(userId), { EX: 86400 });
@@ -405,7 +404,7 @@ const initializeSocket = (io) => {
         const sender_id = userId;
 
         if (!chat_id) {
-          const errorData = { 
+          const errorData = {
             error: 'chat_id is required',
             tempId
           };
@@ -415,7 +414,7 @@ const initializeSocket = (io) => {
         }
 
         if (!message_text || message_text.trim() === '') {
-          const errorData = { 
+          const errorData = {
             error: 'message_text cannot be empty',
             tempId
           };
@@ -434,7 +433,7 @@ const initializeSocket = (io) => {
         });
 
         if (!chatMember) {
-          const errorData = { 
+          const errorData = {
             error: 'You are not a member of this chat',
             tempId
           };
@@ -451,24 +450,24 @@ const initializeSocket = (io) => {
             members: true
           }
         });
-      
+
         if (chat && chat.chat_type === 'private') {
           if (chat.members.length < 2) {
-            return; 
+            return;
           }
           firstMember = chat.members[0];
           secondMember = chat.members[1];
           blockedUsers = await prisma.blockedUser.findMany({
             where: {
               OR: [
-                {user_id: firstMember.user_id, blocked_user_id: secondMember.user_id},
-                {user_id: secondMember.user_id, blocked_user_id: firstMember.user_id}
+                { user_id: firstMember.user_id, blocked_user_id: secondMember.user_id },
+                { user_id: secondMember.user_id, blocked_user_id: firstMember.user_id }
               ]
             }
           })
 
-          if(blockedUsers.length > 0) {
-            const errorData = { 
+          if (blockedUsers.length > 0) {
+            const errorData = {
               error: 'User is blocked',
               tempId
             };
@@ -489,13 +488,13 @@ const initializeSocket = (io) => {
         if (reply_to_id) {
           messageDataToCreate.is_reply = true;
           messageDataToCreate.referenced_message_id = parseInt(reply_to_id);
-          
+
           const referencedMsg = await prisma.message.findUnique({
             where: { message_id: parseInt(reply_to_id) }
           });
 
           if (!referencedMsg || referencedMsg.chat_id !== parseInt(chat_id)) {
-            const errorData = { 
+            const errorData = {
               error: 'Referenced message not found or not in this chat',
               tempId
             };
@@ -547,7 +546,7 @@ const initializeSocket = (io) => {
           where: {
             chat_id: parseInt(chat_id),
             is_visible: false,
-            is_archived: false  
+            is_archived: false
           },
           data: {
             is_visible: true,
@@ -623,7 +622,7 @@ const initializeSocket = (io) => {
 
         io.to(`chat_${chat_id}`).emit('new_message', {
           ...completeMessage,
-          tempId: messageData.tempId 
+          tempId: messageData.tempId
         });
 
         chatMembers.forEach(member => {
@@ -635,7 +634,7 @@ const initializeSocket = (io) => {
           }
         });
 
-        cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => {});
+        cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
 
         const recipientIds = chatMembers
           .map(m => m.user_id)
@@ -677,10 +676,10 @@ const initializeSocket = (io) => {
         }
 
       } catch (error) {
-        socket.emit('message_error', { 
+        socket.emit('message_error', {
           error: 'Failed to send message',
           details: error.message,
-          tempId: messageData.tempId 
+          tempId: messageData.tempId
         });
         if (typeof ack === 'function') ack({ success: false, error: error.message });
       }
@@ -701,7 +700,7 @@ const initializeSocket = (io) => {
         }
 
         const parsedMessageId = parseInt(message_id);
-        
+
         if (isNaN(parsedMessageId)) {
           socket.emit('status_error', { error: 'Invalid message_id format' });
           return;
@@ -752,9 +751,9 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
-        socket.emit('status_error', { 
+        socket.emit('status_error', {
           error: 'Failed to update message status',
-          details: error.message 
+          details: error.message
         });
       }
     });
@@ -809,7 +808,7 @@ const initializeSocket = (io) => {
         const timeDiffInHours = (now - createdAt) / (1000 * 60 * 60);
 
         if (timeDiffInHours > 2) {
-          socket.emit('update_error', { 
+          socket.emit('update_error', {
             error: 'Messages can only be edited within 2 hours of sending',
             messageSentAt: createdAt,
             editWindowExpiredAt: new Date(createdAt.getTime() + 2 * 60 * 60 * 1000),
@@ -868,15 +867,17 @@ const initializeSocket = (io) => {
           sender: updatedMessage.sender
         });
 
+        cacheService.updateMessageInCache(messageId, message.chat_id, message_text.trim()).catch(() => { });
+
         socket.emit('message_update_success', {
           message_id: updatedMessage.message_id,
           data: updatedMessage
         });
 
       } catch (error) {
-        socket.emit('update_error', { 
+        socket.emit('update_error', {
           error: 'Failed to update message',
-          details: error.message 
+          details: error.message
         });
       }
     });
@@ -906,7 +907,7 @@ const initializeSocket = (io) => {
         }
 
         const isSender = message.sender_id === userId;
-        
+
         const isAdmin = await prisma.groupAdmin.findUnique({
           where: {
             chat_id_user_id: {
@@ -917,7 +918,7 @@ const initializeSocket = (io) => {
         });
 
         if (!isSender && !isAdmin) {
-          return socket.emit('delete_error', { 
+          return socket.emit('delete_error', {
             error: 'Only message sender or group admin can delete this message'
           });
         }
@@ -950,7 +951,7 @@ const initializeSocket = (io) => {
           where: { message_id: messageIdInt }
         });
 
-        cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => {});
+        cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
 
         io.to(`chat_${message.chat_id}`).emit('message_deleted_for_all', {
           message_id: messageIdInt,
@@ -967,9 +968,9 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
-        socket.emit('delete_error', { 
+        socket.emit('delete_error', {
           error: 'Failed to delete message',
-          details: error.message 
+          details: error.message
         });
       }
     });
@@ -991,7 +992,7 @@ const initializeSocket = (io) => {
 
         const message = await prisma.message.findUnique({
           where: { message_id: messageIdInt },
-          select: { 
+          select: {
             message_id: true,
             chat_id: true,
             sender_id: true
@@ -1052,7 +1053,7 @@ const initializeSocket = (io) => {
             where: { message_id: messageIdInt }
           });
 
-          cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => {});
+          cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
 
           io.to(`chat_${message.chat_id}`).emit('message_deleted_for_all', {
             message_id: messageIdInt,
@@ -1077,9 +1078,9 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
-        socket.emit('delete_error', { 
+        socket.emit('delete_error', {
           error: 'Failed to delete message for user',
-          details: error.message 
+          details: error.message
         });
       }
     });
@@ -1128,7 +1129,7 @@ const initializeSocket = (io) => {
         if (chatMember) {
           socket.join(`chat_${chatIdInt}`);
           socket.emit('chat_joined', { chat_id: chatIdInt });
-          
+
           socket.to(`chat_${chatIdInt}`).emit('user_joined_chat', {
             user_id: userId,
             chat_id: chatIdInt
@@ -1154,7 +1155,7 @@ const initializeSocket = (io) => {
     socket.on('update_status', async (data) => {
       try {
         const { status_message } = data;
-        
+
         await prisma.user.update({
           where: { user_id: userId },
           data: { status_message }
@@ -1195,18 +1196,18 @@ const initializeSocket = (io) => {
         const { chat_id, message_text, fileBuffer, fileName, fileType, fileSize, tempId } = fileData;
 
         if (!chat_id) {
-          socket.emit('file_upload_error', { 
+          socket.emit('file_upload_error', {
             error: 'chat_id is required',
-            tempId 
+            tempId
           });
           if (typeof ack === 'function') ack({ success: false, error: 'chat_id is required' });
           return;
         }
 
         if (!fileBuffer || !fileName) {
-          socket.emit('file_upload_error', { 
+          socket.emit('file_upload_error', {
             error: 'File buffer and fileName are required',
-            tempId 
+            tempId
           });
           if (typeof ack === 'function') ack({ success: false, error: 'File buffer and fileName are required' });
           return;
@@ -1214,16 +1215,16 @@ const initializeSocket = (io) => {
 
         const MAX_FILE_SIZE = 50 * 1024 * 1024;
         if (fileSize > MAX_FILE_SIZE) {
-          socket.emit('file_upload_error', { 
+          socket.emit('file_upload_error', {
             error: `File size exceeds 50MB limit (${(fileSize / 1024 / 1024).toFixed(2)}MB)`,
-            tempId 
+            tempId
           });
           if (typeof ack === 'function') ack({ success: false, error: 'File size exceeds limit' });
           return;
         }
 
         await _processCompleteFileMessage(fileData, socket, io, userId);
-        
+
         if (typeof ack === 'function') {
           ack({
             success: true,
@@ -1232,23 +1233,23 @@ const initializeSocket = (io) => {
         }
 
       } catch (error) {
-        socket.emit('file_upload_error', { 
+        socket.emit('file_upload_error', {
           error: 'Failed to upload file',
           details: error.message,
-          tempId: fileData.tempId 
+          tempId: fileData.tempId
         });
         if (typeof ack === 'function') ack({ success: false, error: error.message });
       }
     });
 
-    
+
     socket.on('send_file_message_chunk', async (chunkData, ack) => {
       try {
-        const { 
-          tempId, 
-          chunk, 
-          chunkIndex, 
-          totalChunks, 
+        const {
+          tempId,
+          chunk,
+          chunkIndex,
+          totalChunks,
           isFirstChunk,
           isLastChunk,
           chat_id,
@@ -1269,14 +1270,14 @@ const initializeSocket = (io) => {
             totalChunks: String(totalChunks),
             receivedChunks: '0'
           });
-          await redis.expire(`file:meta:${tempId}`, 600); 
+          await redis.expire(`file:meta:${tempId}`, 600);
         }
 
         await redis.rPush(`file:chunks:${tempId}`, JSON.stringify({
           index: chunkIndex,
           data: chunk
         }));
-        await redis.expire(`file:chunks:${tempId}`, 600); 
+        await redis.expire(`file:chunks:${tempId}`, 600);
 
         const received = await redis.hIncrBy(`file:meta:${tempId}`, 'receivedChunks', 1);
 
@@ -1287,14 +1288,14 @@ const initializeSocket = (io) => {
         if (isLastChunk && received === totalChunks) {
           const meta = await redis.hGetAll(`file:meta:${tempId}`);
           const chunksData = await redis.lRange(`file:chunks:${tempId}`, 0, -1);
-          
+
           const chunks = chunksData
             .map(c => JSON.parse(c))
             .sort((a, b) => a.index - b.index)
             .map(c => c.data);
-          
+
           const completeBase64 = chunks.join('');
-          
+
           await _processCompleteFileMessage({
             chat_id: parseInt(meta.chat_id),
             fileName: meta.fileName,
@@ -1304,7 +1305,7 @@ const initializeSocket = (io) => {
             fileBuffer: completeBase64,
             tempId
           }, socket, io, parseInt(meta.userId));
-          
+
           await redis.del(`file:meta:${tempId}`);
           await redis.del(`file:chunks:${tempId}`);
         }
@@ -1327,7 +1328,7 @@ const initializeSocket = (io) => {
       try {
         const userIdStr = await redis.get(`socket:user:${socket.id}`);
         const userId = userIdStr ? parseInt(userIdStr) : null;
-        
+
         if (userId) {
           const userData = await redis.hGetAll(`active:user:${userId}`);
           if (userData) {
@@ -1348,7 +1349,7 @@ const initializeSocket = (io) => {
               prisma.session.updateMany({
                 where: { user_id: userId },
                 data: { last_active: new Date() }
-              }).catch(() => {});
+              }).catch(() => { });
 
               socket.broadcast.emit('user_offline', {
                 user_id: userId,
@@ -1356,7 +1357,7 @@ const initializeSocket = (io) => {
                 lastSeen: new Date()
               });
 
-              
+
             } catch (dbError) {
               // Ignore DB update errors during disconnect
             }
@@ -1369,15 +1370,15 @@ const initializeSocket = (io) => {
       } catch (error) {
       }
 
-      
+
     });
 
-    socket.on('error', (/* error */) => {});
+    socket.on('error', (/* error */) => { });
   });
 };
 
 const getOnlineUsers = async () => {
-  let cursor = '0'; 
+  let cursor = '0';
   const result = [];
 
   do {
@@ -1404,7 +1405,7 @@ const getOnlineUsers = async () => {
         lastSeen: userData.lastSeen
       });
     }
-  } while (cursor !== '0'); 
+  } while (cursor !== '0');
 
   return result;
 };
@@ -1441,17 +1442,17 @@ const cleanupRegistrationBySocket = async (socket) => {
 
         await redis.del(key);
 
-        return; 
+        return;
       }
     }
-  } while (cursor !== '0'); 
+  } while (cursor !== '0');
 };
 
 const cleanupLoginBySocket = async (socket) => {
   const authController = require('../controller/auth.controller');
   const pendingLogins = authController.getPendingLogins();
 
-  let cursor = '0';  
+  let cursor = '0';
 
   do {
     const reply = await redis.scan(cursor, {
@@ -1478,10 +1479,10 @@ const cleanupLoginBySocket = async (socket) => {
 
         await redis.del(key);
 
-        return; 
+        return;
       }
     }
-  } while (cursor !== '0');  
+  } while (cursor !== '0');
 };
 
 const isUserOnline = async (userId) => {
@@ -1514,10 +1515,10 @@ const emitFileMessage = async (chatId, messageData) => {
   return false;
 };
 
-module.exports = { 
-  initializeSocket, 
-  getOnlineUsers, 
-  isUserOnline, 
+module.exports = {
+  initializeSocket,
+  getOnlineUsers,
+  isUserOnline,
   sendNotificationToUser,
   sendNotificationToChat,
   emitFileMessage

@@ -7,12 +7,9 @@ const { upload } = require('../config/upload');
 router.use(verifyToken);
 
 router.get('/:id/info', chatController.getChatInfo);
-router.get('/search', chatController.searchChats);
 router.post('/', upload.single('group_image'), chatController.createChat);
 router.get('/:id', chatController.getChatById);
 router.put('/:id', upload.single('group_image'), chatController.updateChat);
-router.delete('/:id', chatController.deleteChat);
-router.get('/user/:userId', chatController.getUserChats);
 router.get('/user/:userId/preview', chatController.getUserChatsPreview);
 
 router.post('/:chatId/members', (req, res) => chatController.addChatMember(req, res, req.io));

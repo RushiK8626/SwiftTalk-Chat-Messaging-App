@@ -2,67 +2,7 @@ const userCacheService = require('../services/user-cache.service');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-exports.searchChats = async (req, res) => {
-  try {
-    const { query, page = 1, limit = 10 } = req.query;
-    if (!query || query.trim() === '') {
-      return res.status(400).json({ error: 'Query parameter is required' });
-    }
-    const pageNum = parseInt(page) > 0 ? parseInt(page) : 1;
-    const limitNum = parseInt(limit) > 0 ? parseInt(limit) : 10;
 
-    const privateChatsRaw = await prisma.chat.findMany({
-      where: { chat_type: 'private' },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                user_id: true,
-                username: true,
-                full_name: true,
-                profile_pic: true
-              }
-            }
-          }
-        }
-      }
-    });
-    const q = query.toLowerCase();
-    let privateChats = privateChatsRaw.filter(chat =>
-      chat.members.some(m =>
-        (m.user.username && m.user.username.toLowerCase().includes(q)) ||
-        (m.user.full_name && m.user.full_name.toLowerCase().includes(q))
-      )
-    );
-    const privateTotal = privateChats.length;
-    privateChats = privateChats.slice((pageNum - 1) * limitNum, pageNum * limitNum);
-
-    const groupChatsRaw = await prisma.chat.findMany({
-      where: { chat_type: 'group' },
-      select: { chat_id: true, chat_name: true }
-    });
-    let groupChats = groupChatsRaw.filter(chat =>
-      chat.chat_name && chat.chat_name.toLowerCase().includes(q)
-    );
-    const groupTotal = groupChats.length;
-    groupChats = groupChats.slice((pageNum - 1) * limitNum, pageNum * limitNum);
-
-    res.json({
-      privateChats: privateChats.map(chat => ({
-        chat_id: chat.chat_id,
-        members: chat.members.map(m => m.user)
-      })),
-      privateTotal,
-      groupChats,
-      groupTotal,
-      page: pageNum,
-      limit: limitNum
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to search chats' });
-  }
-};
 
 const notificationService = require('../services/notification.service');
 
@@ -276,94 +216,7 @@ exports.getChatById = async (req, res) => {
   }
 };
 
-exports.getUserChats = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    if (parseInt(page) === 1) {
-      const cachedChats = await userCacheService.getCachedChatMemberships(parseInt(userId));
-      if (cachedChats) return res.json({ chats: cachedChats });
-    }
-
-    const chats = await prisma.chat.findMany({
-      where: {
-        AND: [
-          {
-            members: {
-              some: {
-                user_id: parseInt(userId)
-              }
-            }
-          },
-          {
-            chatVisibility: {
-              some: {
-                user_id: parseInt(userId),
-                is_visible: true
-              }
-            }
-          }
-        ]
-      },
-      skip,
-      take: parseInt(limit),
-      include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                user_id: true,
-                username: true,
-                full_name: true,
-                profile_pic: true
-              }
-            }
-          }
-        },
-        admins: {
-          include: {
-            user: {
-              select: {
-                user_id: true,
-                username: true
-              }
-            }
-          }
-        },
-        messages: {
-          take: 1,
-          where: {
-            messageVisibility: {
-              some: {
-                user_id: userId,
-                is_visible: true
-              }
-            }
-          },
-          orderBy: { created_at: 'desc' },
-          include: {
-            sender: {
-              select: {
-                user_id: true,
-                username: true,
-                full_name: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
-
-    res.json({ chats, count: chats.length });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get chats' });
-  }
-};
 
 exports.getUserChatsPreview = async (req, res) => {
   try {
@@ -383,7 +236,7 @@ exports.getUserChatsPreview = async (req, res) => {
         }
       },
       _count: {
-        message_id: true 
+        message_id: true
       }
     });
 
@@ -469,16 +322,16 @@ exports.getUserChatsPreview = async (req, res) => {
         admins: chat.admins,
         last_message: null,
         last_message_timestamp: null,
-        unread_count: unreadMap[chat.chat_id] || 0 
+        unread_count: unreadMap[chat.chat_id] || 0
       };
 
       if (lastMessage) {
         let previewText = lastMessage.message_text;
-        
+
         if (lastMessage.attachments && lastMessage.attachments.length > 0 && !lastMessage.message_text) {
           const attachment = lastMessage.attachments[0];
           const fileType = attachment.file_type;
-          
+
           if (fileType) {
             if (fileType.startsWith('image/')) {
               previewText = 'Image';
@@ -643,7 +496,7 @@ exports.addChatMember = async (req, res, io) => {
           chat_name: chat.chat_name,
           added_by_username: currentUser?.username || 'Admin'
         });
-      } catch (pushError) {}
+      } catch (pushError) { }
     }
 
     res.status(201).json({
@@ -784,7 +637,7 @@ exports.updateChat = async (req, res) => {
         change_type: changeType,
         changed_by_username: currentUser?.username || 'Admin'
       });
-    } catch (pushError) {}
+    } catch (pushError) { }
 
     res.json({ message: 'Chat updated successfully', chat });
   } catch (error) {
@@ -865,7 +718,7 @@ exports.exitGroupChat = async (req, res, io) => {
 
     const chat = await prisma.chat.findUnique({
       where: { chat_id: chatIdInt },
-      include: { 
+      include: {
         members: { select: { user_id: true } },
         admins: { select: { user_id: true } }
       }
@@ -917,13 +770,4 @@ exports.exitGroupChat = async (req, res, io) => {
     res.status(500).json({ error: 'Failed to exit group chat' });
   }
 };
-
-exports.deleteChat = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.chat.delete({ where: { chat_id: parseInt(id) } });
-    res.json({ message: 'Chat deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete chat' });
-  }
-};
+

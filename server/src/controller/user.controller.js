@@ -23,7 +23,6 @@ exports.searchUsersPublic = async (req, res) => {
   }
 };
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 exports.getUserById = async (req, res) => {
@@ -63,47 +62,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-exports.deleteUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const existingUser = await prisma.user.findUnique({ where: { user_id: parseInt(id) } });
-    if (!existingUser) return res.status(404).json({ error: 'User not found' });
 
-    await prisma.user.delete({ where: { user_id: parseInt(id) } });
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete user' });
-  }
-};
-
-exports.getUserByUsername = async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { username: req.params.username },
-      select: { user_id: true, username: true, full_name: true, email: true, phone: true, profile_pic: true, status_message: true, created_at: true }
-    });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.searchUsersByName = async (req, res) => {
-  try {
-    const { query } = req.query;
-    if (!query) return res.status(400).json({ error: 'Search query is required' });
-    
-    const users = await prisma.user.findMany({
-      where: { OR: [{ full_name: { contains: query, mode: 'insensitive' } }, { username: { contains: query, mode: 'insensitive' } }] },
-      select: { user_id: true, username: true, full_name: true, profile_pic: true, status_message: true },
-      take: 20
-    });
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.blockUser = async (req, res) => {
   try {
@@ -158,81 +117,9 @@ exports.checkBlockStatus = async (req, res) => {
   }
 };
 
-exports.getUserNotifications = async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
 
-    const notifications = await prisma.notification.findMany({ where: { user_id: userId }, orderBy: { created_at: 'desc' }, skip, take: limit });
-    const unreadCount = await prisma.notification.count({ where: { user_id: userId, is_read: false } });
 
-    res.json({ notifications, unreadCount });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
-exports.markNotificationRead = async (req, res) => {
-  try {
-    const notificationId = parseInt(req.params.notificationId);
-    await prisma.notification.update({ where: { notification_id: notificationId }, data: { is_read: true } });
-    res.json({ message: 'Notification marked as read' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.updateUserStatus = async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { status_message } = req.body;
-    const updatedUser = await prisma.user.update({
-      where: { user_id: userId },
-      data: { status_message },
-      select: { user_id: true, username: true, full_name: true, status_message: true }
-    });
-    res.json(updatedUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.updateUserProfilePic = async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { profile_pic } = req.body;
-    const updatedUser = await prisma.user.update({
-      where: { user_id: userId },
-      data: { profile_pic },
-      select: { user_id: true, username: true, full_name: true, profile_pic: true }
-    });
-    res.json(updatedUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.checkUsernameAvailability = async (req, res) => {
-  try {
-    const { username } = req.params;
-    const existingUser = await prisma.user.findUnique({ where: { username }, select: { user_id: true } });
-    res.json({ username, available: !existingUser });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.checkEmailAvailability = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const existingUser = await prisma.user.findUnique({ where: { email }, select: { user_id: true } });
-    res.json({ email, available: !existingUser });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.getPublicUserProfile = async (req, res) => {
   try {
