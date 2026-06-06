@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const { Server } = require('socket.io'); 
+const { Server } = require('socket.io');
 const { initializeSocket } = require('./socket/socketHandler');
 const { testConnection } = require('./config/database');
 const { initRedis, closeRedis, isAvailable: isRedisAvailable } = require('./config/redis');
@@ -16,89 +16,89 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    path: '/socket.io/',
-    transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 100 * 1024 * 1024, 
-    cors: {
-        origin: function (origin, callback) {
-            const allowedOrigins = [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "https://localhost:3000",
-                "https://127.0.0.1:3000",
-                "http://localhost:3002",
-                "http://127.0.0.1:3002",
-                "https://localhost:3002",
-                "https://127.0.0.1:3002",
-                "https://swiftalk.vercel.app",
-                "https://switftalk.vercel.app",
-                "https://swifttalk-api.me"
-            ];
-            
-            if (!origin || allowedOrigins.includes(origin) || 
-                (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true
-    }
+  path: '/socket.io/',
+  transports: ['websocket', 'polling'],
+  maxHttpBufferSize: 100 * 1024 * 1024,
+  cors: {
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        "http://localhost:3002",
+        "http://127.0.0.1:3002",
+        "https://localhost:3002",
+        "https://127.0.0.1:3002",
+        "https://swiftalk.vercel.app",
+        "https://switftalk.vercel.app",
+        "https://swifttalk-api.me"
+      ];
+
+      if (!origin || allowedOrigins.includes(origin) ||
+        (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  }
 });
 
 const cors = require('cors');
 app.use(cors({
-    origin: function (origin, callback) {
-        const allowedOrigins = [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "https://localhost:3000",
-            "https://127.0.0.1:3000",
-            "http://localhost:3002",
-            "http://127.0.0.1:3002",
-            "https://localhost:3002",
-            "https://127.0.0.1:3002",
-            "https://rushik8626.github.io",
-            "https://swiftalk.vercel.app",
-            "https://switftalk.vercel.app",
-            "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
-            "https://swifttalk-api.me"
-        ];
-        
-        if (!origin || allowedOrigins.includes(origin) || 
-            (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cache-Control", "Pragma", "Expires"],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
-    maxAge: 86400 
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://localhost:3000",
+      "https://127.0.0.1:3000",
+      "http://localhost:3002",
+      "http://127.0.0.1:3002",
+      "https://localhost:3002",
+      "https://127.0.0.1:3002",
+      "https://rushik8626.github.io",
+      "https://swiftalk.vercel.app",
+      "https://switftalk.vercel.app",
+      "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
+      "https://swifttalk-api.me"
+    ];
+
+    if (!origin || allowedOrigins.includes(origin) ||
+      (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cache-Control", "Pragma", "Expires"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  maxAge: 86400
 }));
 
-app.use(express.json({ limit: '50mb' })); 
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); 
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.get('/', (req, res) => {
-    res.json({
-        message: 'SwiftTalk Chat Server is running!',
-        version: '1.0.0',
-        endpoints: {
-            auth: '/api/auth',
-            users: '/api/users',
-            messages: '/api/messages',
-            chats: '/api/chats',
-            notifications: '/api/notifications',
-            ai: '/api/ai',
-            health: '/health',
-            socket: '/socket.io/ (WebSocket only - use browser or Socket.IO client)'
-        }
-    });
+  res.json({
+    message: 'SwiftTalk Chat Server is running!',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      users: '/api/users',
+      messages: '/api/messages',
+      chats: '/api/chats',
+      notifications: '/api/notifications',
+      ai: '/api/ai',
+      health: '/health',
+      socket: '/socket.io/ (WebSocket only - use browser or Socket.IO client)'
+    }
+  });
 });
 
 const userRoutes = require('./routes/user.routes');
@@ -106,7 +106,6 @@ const messageRoutes = require('./routes/message.routes');
 const chatRoutes = require('./routes/chat.routes');
 const authRoutes = require('./routes/auth.routes');
 const uploadRoutes = require('./routes/upload.routes');
-const chatVisibilityRoutes = require('./routes/chatVisibility.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const aiRoutes = require('./routes/ai.routes');
 const userCacheRoutes = require('./routes/user-cache.routes');
@@ -118,13 +117,12 @@ app.use('/api/chats', (req, res, next) => {
   req.io = io;
   next();
 }, chatRoutes);
-app.use('/api/chat-visibility', chatVisibilityRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/uploads', uploadRoutes); 
-app.use('/api/ai', aiRoutes); 
-app.use('/api/cache', userCacheRoutes); 
-app.use('/api/tasks', taskRoutes); 
+app.use('/uploads', uploadRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/cache', userCacheRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.use(express.static('.'));
 
@@ -155,16 +153,16 @@ const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   const dbConnected = await testConnection();
-  
+
   if (!dbConnected) {
     process.exit(1);
   }
-  
+
   try {
     await initRedis();
   } catch (error) {
   }
-  
+
   server.listen(PORT, () => {
   });
 

@@ -214,7 +214,7 @@ export const createChat = async (chatType, memberIds, chatName = null) => {
  * @returns {Promise<Object>} Chats data with array of chats
  */
 export const fetchActiveChats = async (userId) => {
-  const response = await axiosInstance.get(`/api/chat-visibility/active/${userId}`);
+  const response = await axiosInstance.get(`/api/chats/active`);
   return response.data;
 };
 
@@ -237,7 +237,7 @@ export const markChatAsRead = async (chatId, userId) => {
  */
 export const toggleChatPin = async (chatId, pin) => {
   const action = pin ? 'pin' : 'unpin';
-  const response = await axiosInstance.put(`/api/chat-visibility/${chatId}/${action}`);
+  const response = await axiosInstance.put(`/api/chats/${chatId}/${action}`);
   return response.data;
 };
 
@@ -247,7 +247,7 @@ export const toggleChatPin = async (chatId, pin) => {
  * @returns {Promise<Object>} Response data
  */
 export const deleteChat = async (chatId) => {
-  const response = await axiosInstance.delete(`/api/chat-visibility/${chatId}`);
+  const response = await axiosInstance.delete(`/api/chats/${chatId}/delete`);
   return response.data;
 };
 
@@ -257,7 +257,7 @@ export const deleteChat = async (chatId) => {
  * @returns {Promise<Object>} Response data
  */
 export const batchDeleteChats = async (chatIds) => {
-  const response = await axiosInstance.post(`/api/chat-visibility/batch/delete`, {
+  const response = await axiosInstance.post(`/api/chats/batch/delete`, {
     chatIds,
   });
   return response.data;
@@ -269,7 +269,7 @@ export const batchDeleteChats = async (chatIds) => {
  * @returns {Promise<Object>} Response data
  */
 export const batchMarkChatsAsRead = async (chatIds) => {
-  const response = await axiosInstance.post(`/api/chat-visibility/batch/mark-read`, {
+  const response = await axiosInstance.post(`/api/chats/batch/mark-read`, {
     chatIds,
   });
   return response.data;
@@ -281,7 +281,7 @@ export const batchMarkChatsAsRead = async (chatIds) => {
  * @returns {Promise<Object>} Response data
  */
 export const batchPinChats = async (chatIds) => {
-  const response = await axiosInstance.post(`/api/chat-visibility/batch/pin`, {
+  const response = await axiosInstance.post(`/api/chats/batch/pin`, {
     chatIds,
   });
   return response.data;

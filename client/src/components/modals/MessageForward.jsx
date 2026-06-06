@@ -107,7 +107,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
                 ).replace(/\/+$/, "");
                 const token = localStorage.getItem("accessToken");
                 const res = await fetch(
-                    `${API_URL}/api/chat-visibility/active/${userId}`,
+                    `${API_URL}/api/chats/active`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -197,7 +197,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
         if (currentChatId && chat.chat_id === parseInt(currentChatId)) {
             return false;
         }
-        
+
         const searchLower = searchQuery.toLowerCase();
         // If no search query, include the chat
         if (!searchLower) {
@@ -213,7 +213,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
             if (other && other.user) {
                 const fullName = other.user.full_name || "";
                 const username = other.user.username || "";
-                if (fullName.toLowerCase().includes(searchLower) || 
+                if (fullName.toLowerCase().includes(searchLower) ||
                     username.toLowerCase().includes(searchLower)) {
                     return true;
                 }
@@ -232,7 +232,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
 
     const handleForward = async () => {
         if (selectedChatIds.length === 0) return;
-        
+
         setForwarding(true);
         setError(null);
         try {
@@ -240,7 +240,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
                 process.env.REACT_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
-            
+
             const res = await fetch(`${API_URL}/api/messages/forward`, {
                 method: "POST",
                 headers: {
