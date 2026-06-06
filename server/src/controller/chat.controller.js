@@ -1,4 +1,5 @@
 const userCacheService = require('../services/user-cache.service');
+const messageCacheService = require('../services/message-cache.service');
 const notificationService = require('../services/notification.service');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -1073,7 +1074,7 @@ exports.batchDeleteChats = async (req, res) => {
       )
     );
 
-    await Promise.all(parsedChatIds.map(chatId => cacheService.invalidateUserChatCache(chatId, userId)));
+    await Promise.all(parsedChatIds.map(chatId => messageCacheService.invalidateUserChatCache(chatId, userId)));
 
     res.json({ message: `${parsedChatIds.length} chats deleted successfully`, deleted_count: visibilityUpdates.length, chat_ids: parsedChatIds });
   } catch (err) {
@@ -1139,7 +1140,7 @@ exports.deleteChat = async (req, res) => {
       }
     });
 
-    await cacheService.invalidateUserChatCache(parseInt(chatId), userId);
+    await messageCacheService.invalidateUserChatCache(parseInt(chatId), userId);
 
     res.json({ message: 'Chat deleted successfully', chat_id: parseInt(chatId), status: 'deleted' });
   } catch (err) {

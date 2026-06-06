@@ -1,8 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const jwtService = require('../services/jwt.service');
 const notificationService = require('../services/notification.service');
-const cacheService = require('../services/cache.service');
-const userCacheService = require('../services/user-cache.service');
+const messageCacheService = require('../services/message-cache.service');
+const { deleteCache } = require('../services/cache.service');
 const prisma = new PrismaClient();
 const path = require('path');
 const fs = require('fs');
@@ -175,7 +175,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
       }
     });
 
-    cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
+    messageCacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
 
     const fileMessageRecipientIds = chatMembers
       .map(m => m.user_id)
@@ -238,16 +238,8 @@ const initializeSocket = (io) => {
     socket.on('cancel_registration', async (data) => {
       const { username } = data;
       if (username) {
-        const authController = require('../controller/auth.controller');
-        const pendingRegistrations = authController.getPendingRegistrations();
-
-        const registrationData = pendingRegistrations.get(username);
-        if (registrationData) {
-          clearTimeout(registrationData.timeoutId);
-          pendingRegistrations.delete(username);
-
-          socket.emit('registration_cancelled', { username });
-        }
+        await deleteCache(`auth:pending-reg:${username}`);
+        socket.emit('registration_cancelled', { username });
 
         await redis.del(`registration:socket:${username}`);
       }
@@ -274,16 +266,8 @@ const initializeSocket = (io) => {
     socket.on('cancel_login', async (data) => {
       const { userId } = data;
       if (userId) {
-        const authController = require('../controller/auth.controller');
-        const pendingLogins = authController.getPendingLogins();
-
-        const loginData = pendingLogins.get(parseInt(userId));
-        if (loginData) {
-          clearTimeout(loginData.timeoutId);
-          pendingLogins.delete(parseInt(userId));
-
-          socket.emit('login_cancelled', { userId });
-        }
+        await deleteCache(`auth:pending-login:${userId}`);
+        socket.emit('login_cancelled', { userId });
 
         await redis.del(`login:socket:${userId}`);
       }
@@ -634,7 +618,7 @@ const initializeSocket = (io) => {
           }
         });
 
-        cacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
+        messageCacheService.addMessageToCache(parseInt(chat_id), completeMessage).catch(() => { });
 
         const recipientIds = chatMembers
           .map(m => m.user_id)
@@ -867,7 +851,7 @@ const initializeSocket = (io) => {
           sender: updatedMessage.sender
         });
 
-        cacheService.updateMessageInCache(messageId, message.chat_id, message_text.trim()).catch(() => { });
+        messageCacheService.updateMessageInCache(messageId, message.chat_id, message_text.trim()).catch(() => { });
 
         socket.emit('message_update_success', {
           message_id: updatedMessage.message_id,
@@ -951,7 +935,7 @@ const initializeSocket = (io) => {
           where: { message_id: messageIdInt }
         });
 
-        cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
+        messageCacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
 
         io.to(`chat_${message.chat_id}`).emit('message_deleted_for_all', {
           message_id: messageIdInt,
@@ -1053,7 +1037,7 @@ const initializeSocket = (io) => {
             where: { message_id: messageIdInt }
           });
 
-          cacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
+          messageCacheService.removeMessageFromCache(messageIdInt, message.chat_id).catch(() => { });
 
           io.to(`chat_${message.chat_id}`).emit('message_deleted_for_all', {
             message_id: messageIdInt,

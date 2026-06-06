@@ -108,7 +108,6 @@ const authRoutes = require('./routes/auth.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const aiRoutes = require('./routes/ai.routes');
-const userCacheRoutes = require('./routes/user-cache.routes');
 const taskRoutes = require('./routes/task.router');
 
 app.use('/api/users', userRoutes);
@@ -121,7 +120,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/uploads', uploadRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/cache', userCacheRoutes);
 app.use('/api/tasks', taskRoutes);
 
 app.use(express.static('.'));

@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const path = require('path');
 const fs = require('fs');
-const cacheService = require('../services/cache.service');
+const messageCacheService = require('../services/message-cache.service');
 const { emitFileMessage } = require('../socket/socketHandler');
 
 exports.createMessage = async (req, res) => {

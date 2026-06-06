@@ -1,4 +1,15 @@
-const pendingPasswordResets = new Map();
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const prisma = new PrismaClient();
+const otpService = require('../services/otp.service');
+const jwtService = require('../services/jwt.service');
+const userCacheService = require('../services/user-cache.service');
+const { getCache, setCache, deleteCache } = require('../services/cache.service');
+
+// TTL for all pending auth state (5 minutes)
+const AUTH_PENDING_TTL = 300;
+
+// --- Password Reset ---
 
 exports.requestPasswordReset = async (req, res) => {
   try {
@@ -11,11 +22,12 @@ exports.requestPasswordReset = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     const otpCode = otpService.generateOTP();
-    const expiresAt = Date.now() + 5 * 60 * 1000;
-    const timeoutId = setTimeout(() => {
-      pendingPasswordResets.delete(user.user_id);
-    }, 5 * 60 * 1000);
-    pendingPasswordResets.set(user.user_id, { otpCode, expiresAt, timeoutId });
+    const expiresAt = Date.now() + AUTH_PENDING_TTL * 1000;
+
+    await setCache(`auth:pending-reset:${user.user_id}`, {
+      otpCode,
+      expiresAt
+    }, AUTH_PENDING_TTL);
     
     await otpService.sendOTP({ email }, otpCode, 'forgot-password');
 
@@ -34,13 +46,12 @@ exports.resetPassword = async (req, res) => {
     if (!userId || !otpCode || !newPassword) {
       return res.status(400).json({ error: 'userId, otpCode, and newPassword are required' });
     }
-    const resetData = pendingPasswordResets.get(userId);
+    const resetData = await getCache(`auth:pending-reset:${userId}`);
     if (!resetData) {
       return res.status(400).json({ error: 'OTP expired or invalid' });
     }
     if (resetData.expiresAt < Date.now()) {
-      pendingPasswordResets.delete(userId);
-      clearTimeout(resetData.timeoutId);
+      await deleteCache(`auth:pending-reset:${userId}`);
       return res.status(400).json({ error: 'OTP expired' });
     }
     if (String(resetData.otpCode) !== String(otpCode)) {
@@ -51,33 +62,14 @@ exports.resetPassword = async (req, res) => {
       where: { user_id: userId },
       data: { password_hash: hashedPassword }
     });
-    clearTimeout(resetData.timeoutId);
-    pendingPasswordResets.delete(userId);
+    await deleteCache(`auth:pending-reset:${userId}`);
     res.json({ message: 'Password reset successful' });
   } catch (error) {
     res.status(500).json({ error: 'Password reset failed' });
   }
 };
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
-const prisma = new PrismaClient();
-const otpService = require('../services/otp.service');
-const jwtService = require('../services/jwt.service');
-const userCacheService = require('../services/user-cache.service');
 
-const pendingRegistrations = new Map();
-
-const pendingLogins = new Map();
-
-const cleanupInterval = setInterval(() => {
-  const now = Date.now();
-  for (const [username, data] of pendingRegistrations.entries()) {
-    if (data.expiresAt < now) pendingRegistrations.delete(username);
-  }
-  for (const [userId, data] of pendingLogins.entries()) {
-    if (data.expiresAt < now) pendingLogins.delete(userId);
-  }
-}, 60000);
+// --- Registration ---
 
 exports.register = async (req, res) => {
   try {
@@ -108,20 +100,17 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otpCode = otpService.generateOTP();
-    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const expiresAt = Date.now() + AUTH_PENDING_TTL * 1000;
 
-    const timeoutId = setTimeout(() => {
-      pendingRegistrations.delete(username);
-    }, 5 * 60 * 1000);
-
-    pendingRegistrations.set(username, {
+    await setCache(`auth:pending-reg:${username}`, {
       userData: { full_name, username, email, phone, password: hashedPassword },
-      otpCode, expiresAt, timeoutId
-    });
+      otpCode,
+      expiresAt
+    }, AUTH_PENDING_TTL);
 
     await otpService.sendOTP({ email, phone }, otpCode, 'register');
 
-    res.status(200).json({ message: 'OTP sent. Please verify to complete registration.', expiresIn: 300 });
+    res.status(200).json({ message: 'OTP sent. Please verify to complete registration.', expiresIn: AUTH_PENDING_TTL });
   } catch (error) {
     res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
@@ -135,15 +124,14 @@ exports.verifyRegistrationOTP = async (req, res) => {
       return res.status(400).json({ error: 'Username and OTP code are required' });
     }
 
-    const registrationData = pendingRegistrations.get(username);
+    const registrationData = await getCache(`auth:pending-reg:${username}`);
 
     if (!registrationData) {
       return res.status(400).json({ error: 'OTP expired or invalid. Please register again.' });
     }
 
     if (registrationData.expiresAt < Date.now()) {
-      pendingRegistrations.delete(username);
-      clearTimeout(registrationData.timeoutId);
+      await deleteCache(`auth:pending-reg:${username}`);
       return res.status(400).json({ error: 'OTP expired. Please register again.' });
     }
 
@@ -165,8 +153,7 @@ exports.verifyRegistrationOTP = async (req, res) => {
         },
       });
 
-      clearTimeout(registrationData.timeoutId);
-      pendingRegistrations.delete(username);
+      await deleteCache(`auth:pending-reg:${username}`);
 
       res.status(201).json({ 
         message: 'Registration successful.', 
@@ -193,11 +180,10 @@ exports.cancelRegistration = async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const registrationData = pendingRegistrations.get(username);
+    const registrationData = await getCache(`auth:pending-reg:${username}`);
 
     if (registrationData) {
-      clearTimeout(registrationData.timeoutId);
-      pendingRegistrations.delete(username);
+      await deleteCache(`auth:pending-reg:${username}`);
       res.status(200).json({ message: 'Registration canceled successfully. You can register again.' });
     } else {
       res.status(404).json({ error: 'No pending registration found' });
@@ -215,7 +201,7 @@ exports.resendRegistrationOTP = async (req, res) => {
       return res.status(400).json({ error: 'Username is required' });
     }
 
-    const registrationData = pendingRegistrations.get(username);
+    const registrationData = await getCache(`auth:pending-reg:${username}`);
 
     if (!registrationData) {
       return res.status(400).json({ 
@@ -224,16 +210,12 @@ exports.resendRegistrationOTP = async (req, res) => {
     }
 
     const newOtpCode = otpService.generateOTP();
-    const newExpiresAt = Date.now() + 5 * 60 * 1000;
-
-    clearTimeout(registrationData.timeoutId);
-    const newTimeoutId = setTimeout(() => {
-      pendingRegistrations.delete(username);
-    }, 5 * 60 * 1000);
+    const newExpiresAt = Date.now() + AUTH_PENDING_TTL * 1000;
 
     registrationData.otpCode = newOtpCode;
     registrationData.expiresAt = newExpiresAt;
-    registrationData.timeoutId = newTimeoutId;
+
+    await setCache(`auth:pending-reg:${username}`, registrationData, AUTH_PENDING_TTL);
 
     try {
       await otpService.sendOTP(
@@ -247,7 +229,7 @@ exports.resendRegistrationOTP = async (req, res) => {
 
       res.status(200).json({ 
         message: 'OTP resent successfully. Please check your email/phone.',
-        expiresIn: 300,
+        expiresIn: AUTH_PENDING_TTL,
         ...(process.env.NODE_ENV !== 'production' && { devOTP: newOtpCode })
       });
     } catch (sendError) {
@@ -261,8 +243,7 @@ exports.resendRegistrationOTP = async (req, res) => {
   }
 };
 
-exports.getPendingRegistrations = () => pendingRegistrations;
-exports.getPendingLogins = () => pendingLogins;
+// --- Login ---
 
 exports.login = async (req, res) => {
   try {
@@ -295,16 +276,13 @@ exports.login = async (req, res) => {
     }
 
     const otpCode = otpService.generateOTP();
-    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const expiresAt = Date.now() + AUTH_PENDING_TTL * 1000;
 
-    const timeoutId = setTimeout(() => {
-      pendingLogins.delete(user.user_id);
-    }, 5 * 60 * 1000);
-
-    pendingLogins.set(user.user_id, {
-      otpCode, expiresAt, timeoutId,
+    await setCache(`auth:pending-login:${user.user_id}`, {
+      otpCode,
+      expiresAt,
       userData: { user_id: user.user_id, username: user.username, email: user.email, phone: user.phone }
-    });
+    }, AUTH_PENDING_TTL);
 
     try {
       const sendResult = await otpService.sendOTP(user, otpCode, 'login');
@@ -315,7 +293,7 @@ exports.login = async (req, res) => {
         username: user.username,
         otpSentTo: sendResult.method,
         destination: sendResult.method === 'console' ? 'Check terminal logs' : sendResult.destination,
-        expiresIn: 300,
+        expiresIn: AUTH_PENDING_TTL,
         ...(process.env.NODE_ENV !== 'production' && { devOTP: otpCode })
       });
     } catch (otpError) {
@@ -346,14 +324,13 @@ exports.verifyLoginOTP = async (req, res) => {
       userIdToVerify = parseInt(userId);
     }
 
-    const loginData = pendingLogins.get(userIdToVerify);
+    const loginData = await getCache(`auth:pending-login:${userIdToVerify}`);
     if (!loginData) {
       return res.status(400).json({ error: 'OTP expired or invalid. Please login again.' });
     }
 
     if (loginData.expiresAt < Date.now()) {
-      pendingLogins.delete(userIdToVerify);
-      clearTimeout(loginData.timeoutId);
+      await deleteCache(`auth:pending-login:${userIdToVerify}`);
       return res.status(400).json({ error: 'OTP expired. Please login again.' });
     }
 
@@ -373,8 +350,7 @@ exports.verifyLoginOTP = async (req, res) => {
 
     await prisma.auth.update({ where: { user_id: userDetails.user_id }, data: { last_login: new Date() } });
 
-    clearTimeout(loginData.timeoutId);
-    pendingLogins.delete(userIdToVerify);
+    await deleteCache(`auth:pending-login:${userIdToVerify}`);
 
     res.json({ message: 'Login successful', user: userDetails, accessToken, refreshToken });
   } catch (error) {
@@ -491,8 +467,4 @@ exports.getCurrentUser = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to get user' });
   }
-};
-
-exports.cleanup = () => {
-  if (cleanupInterval) clearInterval(cleanupInterval);
 };
