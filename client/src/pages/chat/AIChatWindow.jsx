@@ -5,7 +5,7 @@ import { ArrowLeft, Send, Sparkles, Copy, Edit, Trash2, Redo2, Languages, X, His
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
 import MessageRenderer from '../../components/messages/messageRenderer';
-import { streamAIMessage, AI_ASSISTANT, loadSession, createNewSession, deleteSession as deleteAISession, getSessionList } from '../../utils/api/aiClient';
+import { streamAIMessage, AI_ASSISTANT, loadSession, createNewSession, deleteSession as deleteAISession } from '../../utils/api/aiClient';
 import { aiSessionQueryOptions, aiSessionListQueryOptions, aiKeys } from '../../utils/api/chatQueries';
 import { getSidebarWidth, setSidebarWidth, SIDEBAR_CONFIG } from '../../utils/storage';
 import useContextMenu from "../../hooks/useContextMenu";
