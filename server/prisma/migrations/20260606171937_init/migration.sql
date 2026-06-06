@@ -31,6 +31,18 @@ CREATE TABLE `Auth` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Account` (
+    `id` VARCHAR(191) NOT NULL,
+    `user_id` INTEGER NOT NULL,
+    `provider` VARCHAR(191) NOT NULL,
+    `provider_id` VARCHAR(191) NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `Account_provider_provider_id_key`(`provider`, `provider_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `Otp` (
     `otp_id` INTEGER NOT NULL AUTO_INCREMENT,
     `user_id` INTEGER NOT NULL,
@@ -232,8 +244,26 @@ CREATE TABLE `BlockedUser` (
     PRIMARY KEY (`user_id`, `blocked_user_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `AISession` (
+    `session_id` VARCHAR(191) NOT NULL,
+    `user_id` INTEGER NOT NULL,
+    `title` VARCHAR(191) NULL,
+    `conversation` JSON NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `last_activity` DATETIME(3) NOT NULL,
+    `expires_at` DATETIME(3) NOT NULL,
+
+    INDEX `AISession_user_id_created_at_idx`(`user_id`, `created_at`),
+    INDEX `AISession_expires_at_idx`(`expires_at`),
+    PRIMARY KEY (`session_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Auth` ADD CONSTRAINT `Auth_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `User`(`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Account` ADD CONSTRAINT `Account_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `User`(`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Otp` ADD CONSTRAINT `Otp_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `User`(`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -303,3 +333,6 @@ ALTER TABLE `BlockedUser` ADD CONSTRAINT `BlockedUser_user_id_fkey` FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE `BlockedUser` ADD CONSTRAINT `BlockedUser_blocked_user_id_fkey` FOREIGN KEY (`blocked_user_id`) REFERENCES `User`(`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `AISession` ADD CONSTRAINT `AISession_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `User`(`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;

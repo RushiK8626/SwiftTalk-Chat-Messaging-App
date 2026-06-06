@@ -16,7 +16,7 @@ const OTPVerification = () => {
   const { toasts, showSuccess, showError, showInfo, removeToast } = useToast();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(300);
-  const [isVerified, ] = useState(false);
+  const [isVerified,] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
@@ -46,7 +46,7 @@ const OTPVerification = () => {
     });
 
     socket.on("monitoring_started", (data) => {
-    console.log('Monitoring started for:', data.username);
+      console.log('Monitoring started for:', data.username);
     });
 
     socket.on("registration_cancelled", (data) => {
@@ -57,7 +57,7 @@ const OTPVerification = () => {
     });
 
     socket.on("disconnect", () => {
-    console.log('Registration WebSocket disconnected');
+      console.log('Registration WebSocket disconnected');
     });
 
     socket.on("connect_error", (err) => {
@@ -102,7 +102,7 @@ const OTPVerification = () => {
     });
 
     socket.on("disconnect", () => {
-    console.log('Login WebSocket disconnected');
+      console.log('Login WebSocket disconnected');
     });
 
     socket.on("connect_error", (err) => {
@@ -282,7 +282,7 @@ const OTPVerification = () => {
 
       const { data } = await axios.post(endpoint, requestBody)
 
-      verifiedRef.current = true; 
+      verifiedRef.current = true;
 
       if (type === "register") {
         showSuccess(
@@ -307,7 +307,7 @@ const OTPVerification = () => {
           socketRef.current.disconnect();
         }
 
-        refreshAuth(); 
+        refreshAuth();
 
         if ("serviceWorker" in navigator && "PushManager" in window) {
           const permissionGranted = await Notification.requestPermission();
@@ -319,7 +319,7 @@ const OTPVerification = () => {
             subscribeToPushNotifications(data.user.id, data.accessToken)
               .then((success) => {
                 if (!success) {
-                  // console.log("⚠️ Push notifications subscription skipped");
+                  console.error("Push notifications subscription skipped");
                 }
               })
               .catch((error) => {
@@ -401,9 +401,9 @@ const OTPVerification = () => {
         const data = err.response.data;
 
         showError(data.error ||
-            data.message ||
-            "Failed to resend OTP", 
-            1000
+          data.message ||
+          "Failed to resend OTP",
+          1000
         );
 
         if (

@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { GoogleLoginButton, GithubLoginButton } from 'react-social-login-buttons';
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
 import "./Login.css";
@@ -92,6 +93,13 @@ const Login = () => {
     }
   };
 
+  // OAuth login handler
+  const handleOAuthLogin = (provider) => {
+    const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+    const returnUrl = encodeURIComponent(window.location.origin);
+    window.location.href = `${API_URL}/api/auth/${provider}?returnUrl=${returnUrl}`;
+  };
+
   return (
     <>
       <Helmet>
@@ -168,7 +176,18 @@ const Login = () => {
             >
               {loading ? "Logging in..." : "Log in"}
             </button>
+
           </form>
+
+          {/* OAuth Login buttons */}
+          <div className="divider">
+            <span>or continue with</span>
+          </div>
+          
+          <div className="oauth-buttons">
+            <GoogleLoginButton onClick={() => handleOAuthLogin("google")} align="center" />
+            <GithubLoginButton onClick={() => handleOAuthLogin("github")} align="center" />
+          </div>
 
           <div className="login-footer">
             <p>

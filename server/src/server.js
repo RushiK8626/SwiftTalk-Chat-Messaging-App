@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
@@ -6,6 +7,7 @@ const { initializeSocket } = require('./socket/socketHandler');
 const { testConnection } = require('./config/database');
 const { initRedis, closeRedis, isAvailable: isRedisAvailable } = require('./config/redis');
 const { initSessionCleanupCron } = require("./cron/sessionCleanup")
+const passport = require('./config/passport');
 
 const dotenv = require('dotenv');
 const envFile = '.env';
@@ -81,13 +83,21 @@ app.use(cors({
   maxAge: 86400
 }));
 
+// Minimal session for oauth
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 60_000 },
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.get('/', (req, res) => {
   res.json({
     message: 'SwiftTalk Chat Server is running!',
-    version: '1.0.0',
+    version: '1.1.0',
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
@@ -110,14 +120,17 @@ const notificationRoutes = require('./routes/notification.routes');
 const aiRoutes = require('./routes/ai.routes');
 const taskRoutes = require('./routes/task.router');
 
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/chats', (req, res, next) => {
   req.io = io;
   next();
 }, chatRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/auth', authRoutes);
 app.use('/uploads', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/tasks', taskRoutes);

@@ -22,6 +22,7 @@ model User {
 
   messages           Message[]       @relation("userMessages")
   auth               Auth?
+  accounts           Account[]
   otps               Otp[]
   sessions           Session[]
   chatMemberships    ChatMember[]
@@ -40,10 +41,22 @@ model User {
 model Auth {
   auth_id       Int       @id @default(autoincrement())
   user_id       Int       @unique
-  password_hash String
+  password_hash String?
   last_login    DateTime?
   refresh_token String?   @db.Text
   user User @relation(fields: [user_id], references: [user_id])
+}
+
+model Account {
+  id          String   @id @default(uuid())
+  user_id     Int
+  provider    String   // "google" | "github"
+  provider_id String   // ID from the provider
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [user_id])
+
+  @@unique([provider, provider_id])  // one account per provider per identity
 }
 
 model Otp {

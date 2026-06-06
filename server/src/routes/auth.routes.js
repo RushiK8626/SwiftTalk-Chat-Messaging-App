@@ -2,6 +2,50 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/auth.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
+const passport = require('../config/passport');
+const jwtService = require('../services/jwt.service');
+
+async function oauthCallback(req, res) {
+    if (!req.user) return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+
+    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+
+    // The returnUrl is passed as base64-encoded state param through the OAuth flow
+    const requestedUrl = req.query.returnUrl
+        ? decodeURIComponent(req.query.returnUrl)
+        : (req.query.state ? Buffer.from(req.query.state, 'base64').toString() : null);
+
+    // fallback to default if origin not whitelisted
+    const frontendUrl = requestedUrl && allowedOrigins.includes(requestedUrl)
+        ? requestedUrl
+        : process.env.FRONTEND_URL;
+
+    try {
+        const { accessToken, refreshToken } = await jwtService.generateTokens(req.user);
+        res.redirect(`${frontendUrl}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+    } catch (error) {
+        console.error('OAuth token generation error:', error);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+    }
+}
+
+// Google
+router.get('/google', (req, res, next) => {
+    const state = req.query.returnUrl
+        ? Buffer.from(decodeURIComponent(req.query.returnUrl)).toString('base64')
+        : undefined;
+    passport.authenticate('google', { scope: ['profile', 'email'], state })(req, res, next);
+});
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed` }), oauthCallback);
+
+// GitHub
+router.get('/github', (req, res, next) => {
+    const state = req.query.returnUrl
+        ? Buffer.from(decodeURIComponent(req.query.returnUrl)).toString('base64')
+        : undefined;
+    passport.authenticate('github', { scope: ['user:email'], state })(req, res, next);
+});
+router.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed` }), oauthCallback);
 
 router.post('/login', authController.login);
 router.post('/verify-otp', authController.verifyLoginOTP);

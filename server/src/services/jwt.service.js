@@ -26,12 +26,13 @@ exports.generateRefreshToken = (user) => {
 };
 
 exports.generateTokens = async (user) => {
-  const accessToken = this.generateAccessToken(user);
-  const refreshToken = this.generateRefreshToken(user);
+  const accessToken = exports.generateAccessToken(user);
+  const refreshToken = exports.generateRefreshToken(user);
 
-  await prisma.auth.update({
+  await prisma.auth.upsert({
     where: { user_id: user.user_id },
-    data: { refresh_token: refreshToken }
+    update: { refresh_token: refreshToken },
+    create: { user_id: user.user_id, refresh_token: refreshToken },
   });
 
   return { accessToken, refreshToken };
@@ -55,7 +56,7 @@ exports.verifyRefreshToken = (token) => {
 
 exports.refreshAccessToken = async (refreshToken) => {
   try {
-    const decoded = this.verifyRefreshToken(refreshToken);
+    const decoded = exports.verifyRefreshToken(refreshToken);
 
     const auth = await prisma.auth.findFirst({
       where: {
@@ -78,7 +79,7 @@ exports.refreshAccessToken = async (refreshToken) => {
       throw new Error('Invalid refresh token');
     }
 
-    const accessToken = this.generateAccessToken(auth.user);
+    const accessToken = exports.generateAccessToken(auth.user);
 
     return { accessToken, user: auth.user };
   } catch (error) {

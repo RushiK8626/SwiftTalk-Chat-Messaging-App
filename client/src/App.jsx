@@ -8,6 +8,7 @@ import {
 import { ThemeProvider } from "./context/ThemeContext";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import OAuthCallback from "./pages/auth/OAuthCallback";
 import OTPVerification from "./pages/auth/OTPVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -27,10 +28,10 @@ import LandingPage from "./pages/LandingPage";
 import "./App.css";
 import "./styles/theme.css";
 
-export const AuthContext = createContext({ refreshAuth: () => {} });
+export const AuthContext = createContext({ refreshAuth: () => { } });
 
 function App() {
-  const [, setAuthState] = useState(0); 
+  const [, setAuthState] = useState(0);
 
   const refreshAuth = () => {
     setAuthState((prev) => prev + 1);
@@ -55,6 +56,7 @@ function App() {
               <Route path="/verify-otp" element={<OTPVerification />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/oauth-callback" element={<OAuthCallback />} />
               <Route
                 path="/chats"
                 element={hasToken ? <ChatHome /> : <Navigate to="/login" />}
