@@ -22,6 +22,7 @@ jobs:
           script: |
             cd ../../var/www/swifttalk/SwiftTalk-Chat-Messaging-App/
             git config --global --add safe.directory /var/www/swifttalk/SwiftTalk-Chat-Messaging-App
+            git stash
             git pull
             cd server
             npm install
