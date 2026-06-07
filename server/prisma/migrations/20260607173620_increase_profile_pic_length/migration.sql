@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `user` MODIFY `profile_pic` TEXT NULL;
+ALTER TABLE `User` MODIFY `profile_pic` TEXT NULL;
