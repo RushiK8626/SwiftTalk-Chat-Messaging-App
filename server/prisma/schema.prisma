@@ -13,7 +13,7 @@ model User {
   full_name      String?
   email          String?  @unique
   phone          String?  @unique
-  profile_pic    String?
+  profile_pic    String?  @db.Text
   status_message String?
   verified       Boolean  @default(false)
   is_online      Boolean  @default(false)

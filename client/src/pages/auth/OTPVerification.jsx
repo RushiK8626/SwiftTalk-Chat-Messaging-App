@@ -312,10 +312,7 @@ const OTPVerification = () => {
         if ("serviceWorker" in navigator && "PushManager" in window) {
           const permissionGranted = await Notification.requestPermission();
 
-          if (
-            permissionGranted === "granted" ||
-            permissionGranted === "default"
-          ) {
+          if (permissionGranted === "granted") {
             subscribeToPushNotifications(data.user.id, data.accessToken)
               .then((success) => {
                 if (!success) {
