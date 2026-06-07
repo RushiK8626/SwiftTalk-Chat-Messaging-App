@@ -28,12 +28,12 @@ exports.requestPasswordReset = async (req, res) => {
       otpCode,
       expiresAt
     }, AUTH_PENDING_TTL);
-    
+
     await otpService.sendOTP({ email }, otpCode, 'forgot-password');
 
-    res.json({ 
+    res.json({
       user_id: user.user_id,
-      message: 'OTP sent to email if user exists' 
+      message: 'OTP sent to email if user exists'
     });
   } catch (error) {
     res.status(500).json({ error: 'Password reset request failed' });
@@ -73,9 +73,9 @@ exports.resetPassword = async (req, res) => {
 
 exports.register = async (req, res) => {
   try {
-    const { full_name, username, email, password, phone } = req.body;
+    const { full_name, username, email, password } = req.body;
 
-    if (!username || !password || (!email && !phone)) {
+    if (!username || !password || !email) {
       return res.status(400).json({ error: 'Required fields missing' });
     }
 
@@ -83,32 +83,26 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ error: 'Username exists' });
     }
-    
+
     if (email) {
       const existingEmail = await prisma.user.findUnique({ where: { email } });
       if (existingEmail) {
         return res.status(409).json({ error: 'Email exists' });
       }
     }
-    
-    if (phone) {
-      const existingPhone = await prisma.user.findUnique({ where: { phone } });
-      if (existingPhone) {
-        return res.status(409).json({ error: 'Phone exists' });
-      }
-    }
+
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otpCode = otpService.generateOTP();
     const expiresAt = Date.now() + AUTH_PENDING_TTL * 1000;
 
     await setCache(`auth:pending-reg:${username}`, {
-      userData: { full_name, username, email, phone, password: hashedPassword },
+      userData: { full_name, username, email, password: hashedPassword },
       otpCode,
       expiresAt
     }, AUTH_PENDING_TTL);
 
-    await otpService.sendOTP({ email, phone }, otpCode, 'register');
+    await otpService.sendOTP({ email }, otpCode, 'register');
 
     res.status(200).json({ message: 'OTP sent. Please verify to complete registration.', expiresIn: AUTH_PENDING_TTL });
   } catch (error) {
@@ -145,7 +139,6 @@ exports.verifyRegistrationOTP = async (req, res) => {
         data: {
           username: userData.username,
           email: userData.email,
-          phone: userData.phone,
           full_name: userData.full_name,
           status_message: 'Hey there! I am using SwiftTalk',
           verified: true,
@@ -155,8 +148,8 @@ exports.verifyRegistrationOTP = async (req, res) => {
 
       await deleteCache(`auth:pending-reg:${username}`);
 
-      res.status(201).json({ 
-        message: 'Registration successful.', 
+      res.status(201).json({
+        message: 'Registration successful.',
         user: {
           user_id: newUser.user_id,
           username: newUser.username,
@@ -204,8 +197,8 @@ exports.resendRegistrationOTP = async (req, res) => {
     const registrationData = await getCache(`auth:pending-reg:${username}`);
 
     if (!registrationData) {
-      return res.status(400).json({ 
-        error: 'No pending registration found. Please register again.' 
+      return res.status(400).json({
+        error: 'No pending registration found. Please register again.'
       });
     }
 
@@ -219,21 +212,20 @@ exports.resendRegistrationOTP = async (req, res) => {
 
     try {
       await otpService.sendOTP(
-        { 
-          email: registrationData.userData.email, 
-          phone: registrationData.userData.phone 
-        }, 
-        newOtpCode, 
+        {
+          email: registrationData.userData.email
+        },
+        newOtpCode,
         'register'
       );
 
-      res.status(200).json({ 
-        message: 'OTP resent successfully. Please check your email/phone.',
+      res.status(200).json({
+        message: 'OTP resent successfully. Please check your email.',
         expiresIn: AUTH_PENDING_TTL,
         ...(process.env.NODE_ENV !== 'production' && { devOTP: newOtpCode })
       });
     } catch (sendError) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to send OTP. Please try again.',
         ...(process.env.NODE_ENV !== 'production' && { devOTP: newOtpCode })
       });
@@ -263,7 +255,7 @@ exports.login = async (req, res) => {
     }
 
     if (!user.verified) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Account not verified. Please verify your account first.',
         userId: user.user_id,
         requiresVerification: true
@@ -281,12 +273,12 @@ exports.login = async (req, res) => {
     await setCache(`auth:pending-login:${user.user_id}`, {
       otpCode,
       expiresAt,
-      userData: { user_id: user.user_id, username: user.username, email: user.email, phone: user.phone }
+      userData: { user_id: user.user_id, username: user.username, email: user.email }
     }, AUTH_PENDING_TTL);
 
     try {
       const sendResult = await otpService.sendOTP(user, otpCode, 'login');
-      
+
       res.json({
         message: 'OTP sent successfully',
         userId: user.user_id,
@@ -297,7 +289,7 @@ exports.login = async (req, res) => {
         ...(process.env.NODE_ENV !== 'production' && { devOTP: otpCode })
       });
     } catch (otpError) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to send verification code. Please try again.',
         ...(process.env.NODE_ENV !== 'production' && { devOTP: otpCode })
       });
@@ -367,9 +359,9 @@ exports.resendOTP = async (req, res) => {
 
     let user;
     if (username) {
-      user = await prisma.user.findUnique({ where: { username }, select: { user_id: true, email: true, phone: true, verified: true } });
+      user = await prisma.user.findUnique({ where: { username }, select: { user_id: true, email: true, verified: true } });
     } else {
-      user = await prisma.user.findUnique({ where: { user_id: parseInt(userId) }, select: { user_id: true, email: true, phone: true, verified: true } });
+      user = await prisma.user.findUnique({ where: { user_id: parseInt(userId) }, select: { user_id: true, email: true, verified: true } });
     }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -407,9 +399,9 @@ exports.resendRegistrationOTP = async (req, res) => {
 
     let user;
     if (username) {
-      user = await prisma.user.findUnique({ where: { username }, select: { user_id: true, username: true, email: true, phone: true, verified: true } });
+      user = await prisma.user.findUnique({ where: { username }, select: { user_id: true, username: true, email: true, verified: true } });
     } else {
-      user = await prisma.user.findUnique({ where: { user_id: parseInt(userId) }, select: { user_id: true, username: true, email: true, phone: true, verified: true } });
+      user = await prisma.user.findUnique({ where: { user_id: parseInt(userId) }, select: { user_id: true, username: true, email: true, verified: true } });
     }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -428,7 +420,7 @@ exports.resendRegistrationOTP = async (req, res) => {
         ...(process.env.NODE_ENV !== 'production' && { devOTP: otpCode })
       });
     } catch (otpError) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to send verification code. Please check your email configuration.',
         ...(process.env.NODE_ENV !== 'production' && { devOTP: otpCode, userId: user.user_id, expiresAt })
       });

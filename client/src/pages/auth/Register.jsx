@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios"
-import { User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/common/ToastContainer";
 import "./Register.css";
@@ -17,7 +17,6 @@ const Register = () => {
     fullName: "",
     username: "",
     email: "",
-    mobile: "",
     password: "",
     confirmPassword: "",
   });
@@ -40,9 +39,6 @@ const Register = () => {
     if (!formData.email) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email is invalid";
-    if (!formData.mobile) newErrors.mobile = "Mobile number is required";
-    else if (!/^\d{10}$/.test(formData.mobile))
-      newErrors.mobile = "Mobile number must be 10 digits";
     if (!formData.password) newErrors.password = "Password is required";
     else if (formData.password.length < 6)
       newErrors.password = "Password must be at least 6 characters";
@@ -67,8 +63,7 @@ const Register = () => {
           full_name: formData.fullName,
           username: formData.username,
           email: formData.email,
-          password: formData.password,
-          phone: formData.mobile,
+          password: formData.password
         });
 
         showSuccess("Registration successful! Please verify your OTP.");
@@ -171,25 +166,6 @@ const Register = () => {
                 />
               </div>
               {errors.email && <span className="error-text">{errors.email}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="mobile">Mobile Number</label>
-              <div className="input-wrapper">
-                <Phone className="input-icon" size={20} />
-                <input
-                  type="tel"
-                  id="mobile"
-                  name="mobile"
-                  className={`input-field ${errors.mobile ? "error" : ""}`}
-                  placeholder="Enter your mobile number"
-                  value={formData.mobile}
-                  onChange={handleChange}
-                />
-              </div>
-              {errors.mobile && (
-                <span className="error-text">{errors.mobile}</span>
-              )}
             </div>
 
             <div className="form-group">

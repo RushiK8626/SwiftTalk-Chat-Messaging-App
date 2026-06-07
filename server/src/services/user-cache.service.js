@@ -23,7 +23,6 @@ const cacheUserProfile = async (user) => {
       username: user.username || '',
       email: user.email || '',
       full_name: user.full_name || '',
-      phone: user.phone || '',
       profile_pic: user.profile_pic || '',
       status_message: user.status_message || '',
       bio: user.bio || '',
@@ -53,7 +52,6 @@ const getUserProfile = async (userId) => {
           username: true,
           email: true,
           full_name: true,
-          phone: true,
           profile_pic: true,
           status_message: true,
           created_at: true

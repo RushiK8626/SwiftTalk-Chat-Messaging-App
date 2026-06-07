@@ -33,7 +33,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     fullName: "",
     username: "",
     email: "",
-    mobile: "",
     bio: "",
     avatar: "👨",
     profilePic: null,
@@ -64,8 +63,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         const profile = {
           fullName: userData.full_name || "",
           username: userData.username || "",
-          email: userData.email || user.email || "", 
-          mobile: userData.phone || user.phone || "", 
+          email: userData.email || user.email || "",
           bio: userData.status_message || "",
           avatar: "👨",
           profilePic: profilePicUrl,
@@ -82,7 +80,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     };
 
     fetchUserProfile();
-  }, [userId, user.email, user.phone]);
+  }, [userId, user.emai]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -173,7 +171,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; 
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       showError("Image size should not exceed 5MB");
       return;
@@ -230,7 +228,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         title="Profile"
         onBack={() => {
           if (isEmbedded) {
-            navigate(-1); 
+            navigate(-1);
           } else {
             navigate("/settings");
           }
@@ -345,11 +343,6 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
             <div className="form-group">
               <label>Email</label>
               <p className="profile-value">{profileData.email}</p>
-            </div>
-
-            <div className="form-group">
-              <label>Mobile</label>
-              <p className="profile-value">{profileData.mobile}</p>
             </div>
 
             <div className="form-group">

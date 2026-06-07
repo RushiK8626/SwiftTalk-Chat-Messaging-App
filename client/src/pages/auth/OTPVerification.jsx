@@ -455,12 +455,7 @@ const OTPVerification = () => {
           </div>
           <h1>Verification Code</h1>
           <p>
-            We've sent a verification code to your{" "}
-            {type === "register"
-              ? "email and mobile"
-              : type === "reset"
-                ? "email"
-                : "registered contact"}
+            We've sent a verification code to your email
           </p>
         </div>
 

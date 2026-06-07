@@ -13,7 +13,7 @@ export const fetchPublicProfile = async (userId) => {
 /**
  * Fetch personal profile information by user ID
  * @param {number|string} userId - The user ID
- * @returns {Promise<Object>} personal profile data like username, fullname, email, mobile, etc
+ * @returns {Promise<Object>} personal profile data like username, fullname, email, etc
  */
 export const fetchPersonalProfile = async (userId) => {
     const response = await axiosInstance.get(`/api/auth/me`);
