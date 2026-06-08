@@ -8,12 +8,14 @@ A modern, full-stack messaging application with real-time communication, AI-powe
 ## Features
 
 - **Real-Time Messaging**: Instant message delivery with live read receipts and typing indicators
-- **AI-Powered Chat**: AI assistance for writing suggestions and smart replies
-- **Task Management**: Integrated task management for personal and shared tasks
+- **AI-Powered Chat**: AI assistance for writing suggestions, smart replies, message translation, and chat summarization
+- **Task Management**: Integrated task management with subtasks, priorities, tags, and due dates
 - **Smart Notifications**: Web push notifications with optional email alerts
 - **File & Media Sharing**: Send images, documents, and files with instant previews
 - **User Authentication**: Secure JWT-based authentication with OTP verification
+- **OAuth Integration**: Supports login with Google and GitHub
 - **Privacy Controls**: Blocked-user management and private/public chat options
+- **Group Chats**: Create and manage group conversations with admin roles
 
 ---
 
@@ -21,59 +23,139 @@ A modern, full-stack messaging application with real-time communication, AI-powe
 
 ```
 SwitftTalk/
-├── client/                      # React frontend
-│   ├── public/                  # Static assets
+├── client/                          # React frontend
+│   ├── public/                      # Static assets
 │   ├── src/
-│   │   ├── components/          # Reusable React components
-│   │   ├── pages/               # Page components
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── context/             # Context API for state
-│   │   ├── utils/               # Utility functions
-│   │   ├── styles/              # Global styles
-│   │   └── config/              # Configuration files
-│   ├── Dockerfile               # Docker image for React app
-│   ├── nginx.conf               # Nginx configuration for production
-│   └── package.json             # Frontend dependencies
+│   │   ├── components/              # Reusable React components
+│   │   │   ├── common/              # Shared UI (Toast, SearchBar, ContextMenu, etc.)
+│   │   │   ├── features/            # Feature components (Tasks, Notifications, SmartReplies, etc.)
+│   │   │   ├── messages/            # Message rendering (Bubble, Attachments, TypingIndicator, etc.)
+│   │   │   └── modals/              # Modal dialogs (CreateGroup, ChatInfo, TaskModal, Translator, etc.)
+│   │   ├── pages/                   # Page-level components
+│   │   │   ├── auth/                # Login, Register, OTP, ForgotPassword, ResetPassword, OAuthCallback
+│   │   │   ├── chat/                # ChatHome, ChatWindow, AIChatWindow
+│   │   │   ├── features/            # Tasks page
+│   │   │   ├── settings/            # Profile, Appearance, Privacy, Notifications, BlockedUsers, Language
+│   │   │   └── LandingPage.jsx      # Public landing page
+│   │   ├── hooks/                   # Custom React hooks
+│   │   │   ├── useContextMenu.js
+│   │   │   ├── useFetchNotifications.js
+│   │   │   ├── useFileUpload.js
+│   │   │   ├── useNotifications.js
+│   │   │   ├── useResponsive.js
+│   │   │   ├── useSplitPane.jsE
+│   │   │   └── useToast.js
+│   │   ├── context/                 # React Context (ThemeContext)
+│   │   ├── utils/                   # Utility helpers (api, auth, date, file, socket, storage)
+│   │   ├── styles/                  # Global styles
+│   │   ├── config/                  # Axios / app configuration
+│   │   ├── App.jsx                  # Root component & routing
+│   │   └── index.jsx                # Entry point
+│   ├── Dockerfile                   # Docker image for React app
+│   ├── nginx.conf                   # Nginx configuration for production
+│   └── package.json                 # Frontend dependencies
 │
-├── server/                      # Node.js backend
+├── server/                          # Node.js backend
 │   ├── src/
-│   │   ├── controller/          # Route handlers
-│   │   ├── middleware/          # Express middleware
-│   │   ├── routes/              # API endpoints
-│   │   ├── services/            # Business logic
-│   │   ├── socket/              # WebSocket handlers
-│   │   ├── config/              # Database, Redis config
-│   │   └── server.js            # Entry point
+│   │   ├── controller/              # Route handlers
+│   │   │   ├── ai.controller.js
+│   │   │   ├── auth.controller.js
+│   │   │   ├── chat.controller.js
+│   │   │   ├── message.controller.js
+│   │   │   ├── notification.controller.js
+│   │   │   ├── task.controller.js
+│   │   │   ├── upload.controller.js
+│   │   │   └── user.controller.js
+│   │   ├── middleware/              # Express middleware
+│   │   │   └── auth.middleware.js   # JWT verification
+│   │   ├── routes/                  # API route definitions
+│   │   │   ├── ai.routes.js
+│   │   │   ├── auth.routes.js       # Includes OAuth (Google, GitHub) routes
+│   │   │   ├── chat.routes.js
+│   │   │   ├── message.routes.js
+│   │   │   ├── notification.routes.js
+│   │   │   ├── task.router.js
+│   │   │   ├── upload.routes.js
+│   │   │   └── user.routes.js
+│   │   ├── services/                # Business logic
+│   │   │   ├── ai.service.js
+│   │   │   ├── aiChatStream.service.js
+│   │   │   ├── cache.service.js
+│   │   │   ├── jwt.service.js
+│   │   │   ├── message-cache.service.js
+│   │   │   ├── notification.service.js
+│   │   │   ├── otp.service.js
+│   │   │   ├── task.service.js
+│   │   │   └── user-cache.service.js
+│   │   ├── socket/                  # WebSocket handlers
+│   │   │   └── socketHandler.js
+│   │   ├── cron/                    # Scheduled background jobs
+│   │   │   └── sessionCleanup.js
+│   │   ├── config/                  # Database, Redis, Passport & upload config
+│   │   │   ├── database.js
+│   │   │   ├── passport.js          # OAuth strategies (Google, GitHub)
+│   │   │   ├── redis.js
+│   │   │   └── upload.js
+│   │   └── server.js                # Entry point
 │   ├── prisma/
-│   │   ├── schema.prisma        # Database schema
-│   │   ├── seed.js              # Database seeding
-│   │   └── migrations/          # Database migrations
-│   ├── uploads/                 # User file uploads
-│   ├── Dockerfile               # Docker image for Node.js
-│   └── package.json             # Backend dependencies
+│   │   ├── schema.prisma            # Database schema
+│   │   ├── seed.js                  # Database seeding
+│   │   └── migrations/              # Database migrations
+│   ├── uploads/                     # User file uploads
+│   ├── Dockerfile                   # Docker image for Node.js
+│   └── package.json                 # Backend dependencies
 │
-├── docker-compose.yml           # Docker Compose configuration
-├── .env                         # Environment variables
-└── README.md                    # This file
+├── .github/
+│   └── workflows/
+│       ├── deploy-server.yaml       # CI/CD for backend
+│       └── deploy-frontend.yml      # CI/CD for frontend
+├── docker-compose.yml               # Docker Compose configuration
+├── .env                             # Environment variables
+└── README.md                        # This file
 ```
 
 ---
 
 ## Environment Configuration
 
-Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the `server/` directory with the following variables:
 
 ```bash
+# Database
+DATABASE_URL="mysql://user:password@localhost:3306/swifttalk"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
 # JWT Configuration
 JWT_SECRET=your_jwt_secret_key
 JWT_REFRESH_SECRET=your_refresh_secret_key
 
+# OAuth — Google
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+
+# OAuth — GitHub
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_CALLBACK_URL=http://localhost:3001/api/auth/github/callback
+
+# Frontend URL (used for OAuth redirects)
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000
+
 # Web Push Notification (VAPID Keys)
 VAPID_PUBLIC_KEY=your_vapid_public_key
 VAPID_PRIVATE_KEY=your_vapid_private_key
+VAPID_EMAIL=mailto:your_email@example.com
 
 # AI Integration
 GEMINI_API_KEY=your_gemini_api_key
+
+# Email / OTP
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
 ```
 
 ---
@@ -239,9 +321,21 @@ npx prisma studio
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+- `POST /api/auth/verify-registration-otp` - Verify OTP to complete registration
+- `POST /api/auth/resend-registration-otp` - Resend registration OTP
+- `POST /api/auth/cancel-registration` - Cancel pending registration
+- `POST /api/auth/login` - Login user (initiates OTP flow)
+- `POST /api/auth/verify-otp` - Verify login OTP
+- `POST /api/auth/resend-otp` - Resend login OTP
 - `POST /api/auth/logout` - Logout user
-- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/refresh-token` - Refresh access token
+- `GET  /api/auth/me` - Get current authenticated user
+- `POST /api/auth/request-password-reset` - Request password reset email
+- `POST /api/auth/reset-password` - Reset password with token
+- `GET  /api/auth/google` - Initiate Google OAuth login
+- `GET  /api/auth/google/callback` - Google OAuth callback
+- `GET  /api/auth/github` - Initiate GitHub OAuth login
+- `GET  /api/auth/github/callback` - GitHub OAuth callback
 
 ### Users
 - `GET /api/users/profile` - Get current user profile
@@ -266,6 +360,9 @@ npx prisma studio
 - `PUT /api/tasks/:id` - Update task
 - `DELETE /api/tasks/:id` - Delete task
 
+### Uploads
+- `POST /api/upload` - Upload a file (image, document, etc.)
+
 ### Notifications
 - `GET /api/notifications` - Get notifications
 - `POST /api/notifications/subscribe` - Subscribe to push notifications
@@ -273,12 +370,12 @@ npx prisma studio
 
 ### AI
 - `POST /api/ai/smart-replies` - Get AI generated smart replies
-- `POST /api/ai/translate` - Get translation for message in target language
+- `POST /api/ai/translate` - Translate a message to a target language
 - `POST /api/ai/summarize` - Summarize the current chat
-- `POST /api/ai/sessions` - Create new user session
-- `GET /api/ai/sessions` - Get all sessions of current user
-- `GET /api/ai/sessions/:id` - Get session with specified session_id
-- `DELETE /api/ai/sessions/:id` - Delete session with specified session_id
+- `POST /api/ai/sessions` - Create new AI chat session
+- `GET /api/ai/sessions` - Get all AI sessions for current user
+- `GET /api/ai/sessions/:id` - Get AI session by ID
+- `DELETE /api/ai/sessions/:id` - Delete AI session by ID
 
 ---
 
@@ -319,10 +416,13 @@ socket.on('user:online', (data) => { /* handle online status */ })
 - **Express.js** - Web framework
 - **Prisma** - Database ORM
 - **Socket.IO** - WebSocket library
-- **JWT** - Authentication
-- **Redis** - Caching & sessions
+- **Passport.js** - OAuth authentication (Google, GitHub strategies)
+- **JWT** - Authentication tokens
+- **Redis** - Caching & session management
 - **Langchain** - AI pipeline
-- **Gemini API** - AI integration
+- **Gemini API** - AI integration (smart replies, translation, summarization)
+- **Nodemailer** - Email delivery for OTP & notifications
+- **node-cron** - Scheduled background jobs
 
 ### Infrastructure
 - **MySQL 8.0** - Primary database
@@ -330,15 +430,17 @@ socket.on('user:online', (data) => { /* handle online status */ })
 - **Nginx** - Reverse proxy & static file server
 - **Docker** - Containerization
 - **Docker Compose** - Service orchestration
+- **GitHub Actions** - CI/CD pipelines
 
 ---
 
 ## Security Features
 
 - ✅ JWT-based authentication with refresh tokens
-- ✅ OTP email verification
+- ✅ OTP email verification for login and registration
+- ✅ OAuth 2.0 via Google and GitHub (Passport.js)
 - ✅ Password hashing with bcrypt
-- ✅ CORS protection
+- ✅ CORS protection with allowlist
 - ✅ Rate limiting on API endpoints
 - ✅ User blocking/privacy controls
 - ✅ Secure WebSocket connections
@@ -356,4 +458,4 @@ Created by Rushikesh
 
 ---
 
-**Last Updated**: May 26, 2026
+**Last Updated**: June 8, 2026
