@@ -80,7 +80,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     };
 
     fetchUserProfile();
-  }, [userId, user.emai]);
+  }, [userId, user.email]);
 
   const handleEdit = () => {
     setIsEditing(true);
