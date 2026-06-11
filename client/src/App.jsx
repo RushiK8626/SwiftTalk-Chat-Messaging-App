@@ -25,6 +25,8 @@ import PrivacySettings from "./pages/settings/PrivacySettings";
 import NotificationSettings from "./pages/settings/NotificationSettings";
 import Language from "./pages/settings/Language";
 import LandingPage from "./pages/LandingPage";
+import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
+import TermsOfService from "./pages/Legal/TermsOfService";
 import "./App.css";
 import "./styles/theme.css";
 
@@ -120,6 +122,14 @@ function App() {
                 element={
                   hasToken ? <Navigate to="/chats" /> : <LandingPage />
                 }
+              />
+              <Route
+                path="/privacy"
+                element={<PrivacyPolicy />}
+              />
+              <Route
+                path="/terms"
+                element={<TermsOfService />}
               />
             </Routes>
           </div>
