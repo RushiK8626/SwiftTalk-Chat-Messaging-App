@@ -31,7 +31,6 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@langchain/community": "^1.1.28",
     "@langchain/core": "^1.1.47",
     "@langchain/google-genai": "^2.1.31",
     "@prisma/client": "^6.19.3",
@@ -50,17 +49,12 @@
     "prisma": "^6.19.3",
     "redis": "^5.10.0",
     "socket.io": "^4.8.1",
-    "twilio": "^5.10.2",
     "uuid": "^14.0.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@types/node-cron": "^3.0.11",
-    "axios": "^1.6.0",
     "jest": "^30.2.0",
-    "nodemon": "^3.1.14",
-    "socket.io-client": "^4.8.1",
-    "supertest": "^7.1.4"
+    "nodemon": "^3.1.14"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
