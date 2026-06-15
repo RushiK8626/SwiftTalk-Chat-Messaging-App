@@ -1,8 +1,8 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm install --legacy-peer-deps --ignore-optional",
+  "installCommand": "npm install --ignore-optional",
   "outputDirectory": "build",
-  "framework": "create-react-app",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
