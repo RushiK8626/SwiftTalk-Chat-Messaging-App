@@ -40,18 +40,20 @@ SwitftTalk/
 │   │   ├── hooks/                   # Custom React hooks
 │   │   │   ├── useContextMenu.js
 │   │   │   ├── useFetchNotifications.js
-│   │   │   ├── useFileUpload.js
+│   │   │   ├── useFileUpload.jsx
 │   │   │   ├── useNotifications.js
 │   │   │   ├── useResponsive.js
-│   │   │   ├── useSplitPane.jsE
+│   │   │   ├── useSplitPane.js
 │   │   │   └── useToast.js
 │   │   ├── context/                 # React Context (ThemeContext)
 │   │   ├── utils/                   # Utility helpers (api, auth, date, file, socket, storage)
 │   │   ├── styles/                  # Global styles
 │   │   ├── config/                  # Axios / app configuration
 │   │   ├── App.jsx                  # Root component & routing
-│   │   └── index.jsx                # Entry point
+│   │   |── index.jsx                # Entry point
+|   └── Index.html                   # Main HTML template
 │   ├── Dockerfile                   # Docker image for React app
+|   └── vite.config.js               # Vite configuration
 │   ├── nginx.conf                   # Nginx configuration for production
 │   └── package.json                 # Frontend dependencies
 │
@@ -180,10 +182,21 @@ Create the `.env` file in the root directory as described in [Environment Config
 
 The `.env` file is automatically loaded by Docker Compose.
 
-### 3. Start All Services
+### 3. Start Services
 
 ```bash
+# This starts all services
 docker-compose up -d
+```
+
+```bash
+# Start only the backend server
+docker-compose up -d mysql redis server
+``` 
+
+```bash
+# Start only the frontend client
+docker-compose up -d client
 ```
 
 This starts the following services:
@@ -195,11 +208,11 @@ This starts the following services:
 | Node.js Server  | 3001 | REST API & WebSocket server   |
 | React Client    | 3000 | Web application               |
 
+
 ### 4. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
 
 ### 5. Manage Services
 
@@ -227,8 +240,6 @@ docker exec switfttalk-server-1 npx prisma studio
 # Test frontend
 curl http://localhost:3000
 
-# Test API health
-curl http://localhost:3001/health
 ```
 ---
 
@@ -458,4 +469,4 @@ Created by Rushikesh
 
 ---
 
-**Last Updated**: June 8, 2026
+**Last Updated**: June 16, 2026
