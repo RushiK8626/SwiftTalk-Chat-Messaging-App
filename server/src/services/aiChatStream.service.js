@@ -1,5 +1,5 @@
 const dotenv = require('dotenv');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { SystemMessagePromptTemplate, ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts")
 const { RunnableWithMessageHistory } = require('@langchain/core/runnables');
@@ -130,7 +130,7 @@ async function createSession(userId) {
     throw new Error('User ID is required to create a session');
   }
 
-  const sessionId = uuidv4();
+  const sessionId = randomUUID();
   const history = new InMemoryChatMessageHistory();
   sessionStore.set(sessionId, createSessionEntry(sessionId, userId, history));
 
@@ -245,7 +245,7 @@ const withHistory = new RunnableWithMessageHistory({
 });
 
 function startSession() {
-  const sessionId = uuidv4();
+  const sessionId = randomUUID();
   sessionStore.set(sessionId, createSessionEntry(sessionId, null, new InMemoryChatMessageHistory()));
   return { session_id: sessionId };
 }
