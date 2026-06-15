@@ -28,9 +28,10 @@
     "socket.io-client": "^4.8.1"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
     "eject": "react-scripts eject",
     "deploy": "vercel --prod",
     "electron-dev": "electron .",
@@ -61,7 +62,9 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^10.0.3",
+    "vite": "^8.0.16",
     "wait-on": "^9.0.3"
   },
   "optionalDependencies": {

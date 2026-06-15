@@ -9,7 +9,7 @@ const AttachmentPreview = ({ attachment, isUploading = false, uploadProgress = 0
   const [mimeType, setMimeType] = useState(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
 
-  const base = (process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "");
+  const base = (import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "");
 
   // Helper function to extract filename from URL or path
   const getFilename = (fileUrl) => {
