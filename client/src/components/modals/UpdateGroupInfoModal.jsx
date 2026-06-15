@@ -66,7 +66,7 @@ const UpdateGroupInfoModal = ({
       setUpdating(true);
       setError("");
       const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
+        import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
       let token = localStorage.getItem("accessToken");
 

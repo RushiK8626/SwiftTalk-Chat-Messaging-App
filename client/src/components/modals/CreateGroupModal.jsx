@@ -25,7 +25,7 @@ const CreateGroupModal = ({
     const fetchChatUsers = async () => {
       try {
         const API_URL = (
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
         const token = localStorage.getItem("accessToken");
         const res = await fetch(
@@ -141,7 +141,7 @@ const CreateGroupModal = ({
     try {
       setCreating(true);
       const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
+        import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
       let token = localStorage.getItem("accessToken");
 

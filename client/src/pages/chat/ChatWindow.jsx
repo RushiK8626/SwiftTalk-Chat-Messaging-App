@@ -2250,110 +2250,214 @@ const ChatWindow = ({
                 );
               }
               return (
-                <>
+                <div
+                  key={message.message_id}
+                  className={`message message-received ${isCurrentResult(message.message_id)
+                    ? "search-result-current"
+                    : ""
+                    } ${selectedMessages[message.message_id] ? "selection" : ""
+                    }`}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    marginBottom: 8,
+                  }}
+                  ref={(el) => {
+                    if (el) messageRefs.current[message.message_id] = el;
+                  }}
+                  onClick={() => {
+                    if (messageSelection)
+                      handleMessageSelection(message.message_id, false);
+                  }}
+                  onContextMenu={(e) => {
+                    setSelectedMessage(message);
+                    handleReceivedMessageContextMenu(e);
+                  }}
+                  onTouchStart={() => {
+                    setSelectedMessage(message);
+                  }}
+                  onTouchEnd={(e) => {
+                    messageContextMenu.handleLongPress(e, 500);
+                  }}
+                >
+                  {isGroup && (
+                    <img
+                      src={
+                        message.sender_id &&
+                          userProfiles[message.sender_id]?.profile_pic
+                          ? userProfiles[message.sender_id].profile_pic
+                          : message.sender?.profile_picture_url ||
+                          "https://ui-avatars.com/api/?name=" +
+                          (message.sender?.full_name ||
+                            message.sender?.username ||
+                            "User")
+                      }
+                      alt="profile"
+                      className="message-avatar"
+                      onClick={() => handleShowUserProfile(message.sender_id)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        marginRight: 8,
+                        marginTop: 2,
+                        background: "#eee",
+                        flexShrink: 0,
+                        cursor: "pointer",
+                      }}
+                    />
+                  )}
                   <div
-                    key={message.message_id}
-                    className={`message message-received ${isCurrentResult(message.message_id)
-                      ? "search-result-current"
-                      : ""
-                      } ${selectedMessages[message.message_id] ? "selection" : ""
-                      }`}
                     style={{
                       display: "flex",
-                      alignItems: "flex-start",
-                      marginBottom: 8,
-                    }}
-                    ref={(el) => {
-                      if (el) messageRefs.current[message.message_id] = el;
-                    }}
-                    onClick={() => {
-                      if (messageSelection)
-                        handleMessageSelection(message.message_id, false);
-                    }}
-                    onContextMenu={(e) => {
-                      setSelectedMessage(message);
-                      handleReceivedMessageContextMenu(e);
-                    }}
-                    onTouchStart={() => {
-                      setSelectedMessage(message);
-                    }}
-                    onTouchEnd={(e) => {
-                      messageContextMenu.handleLongPress(e, 500);
+                      flexDirection: "column",
+                      gap: "8px",
+                      maxWidth: "70%",
                     }}
                   >
-                    {isGroup && (
-                      <img
-                        src={
-                          message.sender_id &&
-                            userProfiles[message.sender_id]?.profile_pic
-                            ? userProfiles[message.sender_id].profile_pic
-                            : message.sender?.profile_picture_url ||
-                            "https://ui-avatars.com/api/?name=" +
-                            (message.sender?.full_name ||
-                              message.sender?.username ||
-                              "User")
-                        }
-                        alt="profile"
-                        className="message-avatar"
-                        onClick={() => handleShowUserProfile(message.sender_id)}
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          marginRight: 8,
-                          marginTop: 2,
-                          background: "#eee",
-                          flexShrink: 0,
-                          cursor: "pointer",
-                        }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                        maxWidth: "70%",
-                      }}
-                    >
-                      {message.attachments &&
-                        message.attachments.length > 0 && (
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 0,
-                            }}
-                          >
-                            {message.attachments.map((att, idx) => (
-                              <AttachmentPreview
-                                key={
-                                  (att.file_url ||
-                                    att.fileUrl ||
-                                    att.url ||
-                                    idx) + idx
-                                }
-                                attachment={att}
-                              />
-                            ))}
+                    {message.attachments &&
+                      message.attachments.length > 0 && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0,
+                          }}
+                        >
+                          {message.attachments.map((att, idx) => (
+                            <AttachmentPreview
+                              key={
+                                (att.file_url ||
+                                  att.fileUrl ||
+                                  att.url ||
+                                  idx) + idx
+                              }
+                              attachment={att}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    {message.message_text && (
+                      <div className="message-bubble">
+                        {message.is_forward && (
+                          <div className="forwarded-indicator">
+                            <Forward size={12} />
+                            <span>Forwarded</span>
                           </div>
                         )}
-                      {message.message_text && (
-                        <div className="message-bubble">
-                          {message.is_forward && (
-                            <div className="forwarded-indicator">
-                              <Forward size={12} />
-                              <span>Forwarded</span>
+                        {isGroup && (
+                          <div
+                            className="message-sender clickable"
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: "var(--sender-name-color, #1976d2)",
+                              marginBottom: 2,
+                              cursor: "pointer",
+                            }}
+                            onClick={() => {
+                              /* Placeholder for future action */
+                            }}
+                          >
+                            {message.sender_id &&
+                              userProfiles[message.sender_id]?.full_name
+                              ? userProfiles[message.sender_id].full_name
+                              : message.sender?.full_name ||
+                              message.sender?.username ||
+                              "Unknown User"}
+                          </div>
+                        )}
+                        {message.is_reply &&
+                          message.referenced_message_id && (
+                            <div className="message-reply-reference">
+                              {(() => {
+                                const refMsg = getReferencedMessage(
+                                  message.referenced_message_id
+                                );
+                                if (!refMsg) {
+                                  return (
+                                    <div className="reply-ref-deleted">
+                                      <span className="reply-ref-sender">
+                                        Deleted message
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <>
+                                    <div className="reply-ref-sender">
+                                      {refMsg.sender?.full_name ||
+                                        refMsg.sender?.username ||
+                                        "Unknown"}
+                                    </div>
+                                    <div className="reply-ref-text">
+                                      {refMsg.message_text?.substring(
+                                        0,
+                                        80
+                                      ) || "[Attachment]"}
+                                      {refMsg.message_text?.length > 80
+                                        ? "..."
+                                        : ""}
+                                    </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
+                        <p className="message-text">
+                          {showSearch && searchQuery
+                            ? highlightText(message.message_text, searchQuery)
+                            : message.message_text}
+                        </p>
+                        {/* Inline Translation */}
+                        {messageTranslations[message.message_id] && (
+                          <div className="message-translation">
+                            {messageTranslations[message.message_id].loading ? (
+                              <div className="translation-loading">
+                                <Loader size={14} className="spinning" />
+                                <span>Translating...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="translation-header">
+                                  <Languages size={12} />
+                                  <span>Translated to {messageTranslations[message.message_id].lang.toUpperCase()}</span>
+                                  <button
+                                    className="show-original-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleShowOriginal(message.message_id);
+                                    }}
+                                  >
+                                    Hide
+                                  </button>
+                                </div>
+                                <p className="translation-text">
+                                  {messageTranslations[message.message_id].text}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <div className="message-meta">
+                          <span className="message-time">
+                            {message.updated ? `Edited at ${formatMessageTime(message.updated_at)}` : formatMessageTime(message.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {!message.message_text &&
+                      message.attachments &&
+                      message.attachments.length > 0 && (
+                        <div className="message-bubble">
                           {isGroup && (
                             <div
                               className="message-sender clickable"
                               style={{
                                 fontSize: 13,
                                 fontWeight: 500,
-                                color: "var(--sender-name-color, #1976d2)",
+                                color: "#555",
                                 marginBottom: 2,
                                 cursor: "pointer",
                               }}
@@ -2369,129 +2473,23 @@ const ChatWindow = ({
                                 "Unknown User"}
                             </div>
                           )}
-                          {message.is_reply &&
-                            message.referenced_message_id && (
-                              <div className="message-reply-reference">
-                                {(() => {
-                                  const refMsg = getReferencedMessage(
-                                    message.referenced_message_id
-                                  );
-                                  if (!refMsg) {
-                                    return (
-                                      <div className="reply-ref-deleted">
-                                        <span className="reply-ref-sender">
-                                          Deleted message
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                  return (
-                                    <>
-                                      <div className="reply-ref-sender">
-                                        {refMsg.sender?.full_name ||
-                                          refMsg.sender?.username ||
-                                          "Unknown"}
-                                      </div>
-                                      <div className="reply-ref-text">
-                                        {refMsg.message_text?.substring(
-                                          0,
-                                          80
-                                        ) || "[Attachment]"}
-                                        {refMsg.message_text?.length > 80
-                                          ? "..."
-                                          : ""}
-                                      </div>
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                            )}
-                          <p className="message-text">
-                            {showSearch && searchQuery
-                              ? highlightText(message.message_text, searchQuery)
-                              : message.message_text}
-                          </p>
-                          {/* Inline Translation */}
-                          {messageTranslations[message.message_id] && (
-                            <div className="message-translation">
-                              {messageTranslations[message.message_id].loading ? (
-                                <div className="translation-loading">
-                                  <Loader size={14} className="spinning" />
-                                  <span>Translating...</span>
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="translation-header">
-                                    <Languages size={12} />
-                                    <span>Translated to {messageTranslations[message.message_id].lang.toUpperCase()}</span>
-                                    <button
-                                      className="show-original-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleShowOriginal(message.message_id);
-                                      }}
-                                    >
-                                      Hide
-                                    </button>
-                                  </div>
-                                  <p className="translation-text">
-                                    {messageTranslations[message.message_id].text}
-                                  </p>
-                                </>
-                              )}
-                            </div>
-                          )}
                           <div className="message-meta">
                             <span className="message-time">
-                              {message.updated ? `Edited at ${formatMessageTime(message.updated_at)}` : formatMessageTime(message.created_at)}
+                              {formatMessageTime(message.created_at)}
                             </span>
                           </div>
                         </div>
                       )}
-                      {!message.message_text &&
-                        message.attachments &&
-                        message.attachments.length > 0 && (
-                          <div className="message-bubble">
-                            {isGroup && (
-                              <div
-                                className="message-sender clickable"
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  color: "#555",
-                                  marginBottom: 2,
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => {
-                                  /* Placeholder for future action */
-                                }}
-                              >
-                                {message.sender_id &&
-                                  userProfiles[message.sender_id]?.full_name
-                                  ? userProfiles[message.sender_id].full_name
-                                  : message.sender?.full_name ||
-                                  message.sender?.username ||
-                                  "Unknown User"}
-                              </div>
-                            )}
-                            <div className="message-meta">
-                              <span className="message-time">
-                                {formatMessageTime(message.created_at)}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                    <button
-                      className="message_received_reply_btn"
-                      onClick={() => {
-                        handleReplyMessage(message);
-                      }}
-                    >
-                      <Reply size={16} />
-                    </button>
                   </div>
-                </>
+                  <button
+                    className="message_received_reply_btn"
+                    onClick={() => {
+                      handleReplyMessage(message);
+                    }}
+                  >
+                    <Reply size={16} />
+                  </button>
+                </div>
               );
             })
           )}

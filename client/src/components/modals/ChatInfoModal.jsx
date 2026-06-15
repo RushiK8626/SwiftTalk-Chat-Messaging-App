@@ -36,7 +36,7 @@ const ChatInfoModal = ({
       const filename = imagePath.split("/uploads/").pop();
       const res = await fetch(
         `${
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         }/uploads/chat-images/${filename}`,
         {
           headers: {
@@ -62,7 +62,7 @@ const ChatInfoModal = ({
       const filename = profilePicPath.split("/uploads/").pop();
       const res = await fetch(
         `${
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         }/uploads/profiles/${filename}`,
         {
           headers: {
@@ -96,7 +96,7 @@ const ChatInfoModal = ({
       const filename = profilePic.split("/uploads/").pop();
       const res = await fetch(
         `${
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         }/uploads/profiles/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -122,7 +122,7 @@ const ChatInfoModal = ({
         // Fetch group chat info
         let res = await fetch(
           `${
-            process.env.REACT_APP_API_URL || "http://localhost:3001"
+            import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
           }/api/chats/${chatId}/info`,
           {
             headers: {
@@ -139,7 +139,7 @@ const ChatInfoModal = ({
             try {
               const refreshRes = await fetch(
                 `${(
-                  process.env.REACT_APP_API_URL || "http://localhost:3001"
+                  import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                 ).replace(/\/+$/, "")}/api/auth/refresh-token`,
                 {
                   method: "POST",
@@ -155,7 +155,7 @@ const ChatInfoModal = ({
                 // Retry the request with new token
                 res = await fetch(
                   `${
-                    process.env.REACT_APP_API_URL || "http://localhost:3001"
+                    import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                   }/api/chats/${chatId}/info`,
                   {
                     headers: {
@@ -200,7 +200,7 @@ const ChatInfoModal = ({
         // Fetch user details for private chat
         let res = await fetch(
           `${
-            process.env.REACT_APP_API_URL || "http://localhost:3001"
+            import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
           }/api/users/public/id/${otherUserId}`,
           {
             headers: {
@@ -217,7 +217,7 @@ const ChatInfoModal = ({
             try {
               const refreshRes = await fetch(
                 `${(
-                  process.env.REACT_APP_API_URL || "http://localhost:3001"
+                  import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                 ).replace(/\/+$/, "")}/api/auth/refresh-token`,
                 {
                   method: "POST",
@@ -233,7 +233,7 @@ const ChatInfoModal = ({
                 // Retry the request with new token
                 res = await fetch(
                   `${
-                    process.env.REACT_APP_API_URL || "http://localhost:3001"
+                    import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                   }/api/users/public/id/${otherUserId}`,
                   {
                     headers: {
@@ -285,7 +285,7 @@ const ChatInfoModal = ({
     try {
       setRemovingMemberId(selectedMemberForRemoval);
       const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
+        import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
       let token = localStorage.getItem("accessToken");
 

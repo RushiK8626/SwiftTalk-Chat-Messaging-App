@@ -33,7 +33,7 @@ const OTPVerification = () => {
     if (type !== "register" || !username) return;
 
     const SOCKET_URL =
-      process.env.REACT_APP_SOCKET_URL || "http://localhost:3001";
+      import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3001";
 
     const socket = io(`${SOCKET_URL}/registration`, {
       transports: ["websocket", "polling"],
@@ -78,7 +78,7 @@ const OTPVerification = () => {
     if (type !== "login" || !userId) return;
 
     const SOCKET_URL =
-      process.env.REACT_APP_SOCKET_URL || "http://localhost:3001";
+      import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3001";
 
     const socket = io(`${SOCKET_URL}/login`, {
       transports: ["websocket", "polling"],
@@ -219,7 +219,7 @@ const OTPVerification = () => {
       setLoading(true);
       try {
         const API_URL = (
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
 
         const { data } = await axios.post(`${API_URL}/api/auth/reset-password`, {
@@ -267,7 +267,7 @@ const OTPVerification = () => {
     setLoading(true);
     try {
       const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
+        import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
 
       const endpoint =
@@ -371,7 +371,7 @@ const OTPVerification = () => {
     setLoading(true);
     try {
       const API_URL = (
-        process.env.REACT_APP_API_URL || "http://localhost:3001"
+        import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
       ).replace(/\/+$/, "");
 
       const endpoint =

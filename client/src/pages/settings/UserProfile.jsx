@@ -95,7 +95,7 @@ const UserProfile = ({
             <div className="profile-avatar-large">
               {profile?.profile_pic ? (
                 <img
-                  src={`${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+                  src={`${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
                     }/uploads/profiles/${String(profile.profile_pic)
                       .split("/uploads/")
                       .pop()}`}

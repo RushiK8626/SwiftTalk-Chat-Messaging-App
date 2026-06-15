@@ -74,7 +74,7 @@ const BlockedUsers = ({ isEmbedded = false }) => {
             {blockedUsers.map((user) => {
               let blockedUser = user.blockedUser;
               const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
               ).replace(/\/+$/, "");
               const profilePicUrl = blockedUser.profile_pic
                 ? `${API_URL}/uploads/profiles/${blockedUser.profile_pic
