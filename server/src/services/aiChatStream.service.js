@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 const { randomUUID } = require('crypto');
-const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
-const { SystemMessagePromptTemplate, ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts")
+const { ChatGroq } = require('@langchain/groq');
+const { ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts")
 const { RunnableWithMessageHistory } = require('@langchain/core/runnables');
 const { InMemoryChatMessageHistory } = require('@langchain/core/chat_history');
 const { StringOutputParser } = require('@langchain/core/output_parsers');
@@ -12,20 +12,20 @@ const prisma = new PrismaClient();
 dotenv.config();
 
 // Validate API key at startup
-if (!process.env.GEMINI_API_KEY) {
-  console.warn('WARNING: GEMINI_API_KEY not configured. AI chat stream will not work.');
+if (!process.env.AI_API_KEY) {
+  console.warn('WARNING: AI_API_KEY not configured. AI chat stream will not work.');
 }
 
-const llm = new ChatGoogleGenerativeAI({
-  model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-  apiKey: process.env.GEMINI_API_KEY,
-  temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
+const llm = new ChatGroq({
+  model: "llama-3.3-70b-versatile",
+  apiKey: process.env.AI_API_KEY,
+  temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0.7,
   streaming: true,
 });
 
 const SYSTEM_PROMPT = `
-You are a helpful, precise assistant.
-
+You are SwifTalk Assistant, a helpful, precise assistant.
+Swifttalk is a Real time chat messaging app developed by Rushikesh supporting multiple AI features.
 ========================
 OUTPUT FORMAT RULES
 ========================
@@ -193,14 +193,14 @@ async function deleteSession(userId, sessionId) {
   const session = await prisma.aISession.findUnique({
     where: { session_id: sessionId },
   });
-  
+
   if (!session || session.user_id !== userId) {
     throw new Error('Unauthorized');
   }
-  
+
   // Remove from memory
   sessionStore.delete(sessionId);
-  
+
   // Remove from database
   await prisma.aISession.delete({
     where: { session_id: sessionId },
@@ -215,7 +215,7 @@ async function saveSessionHistory(sessionId, history) {
     session.history = history;
     sessionStore.set(sessionId, session);
   }
-  
+
   await prisma.aISession.update({
     where: { session_id: sessionId },
     data: {
@@ -274,8 +274,8 @@ async function* createChatStream(message, session_id) {
     if (!session_id) {
       throw new Error('Session ID is required');
     }
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
+    if (!process.env.AI_API_KEY) {
+      throw new Error('AI_API_KEY is not configured');
     }
 
     const config = {
@@ -336,7 +336,7 @@ async function* createChatStream(message, session_id) {
   }
 }
 
-const saveMessage = async (session_id, role, content) =>  {
+const saveMessage = async (session_id, role, content) => {
   const session = await prisma.aISession.findUnique({
     where: { session_id },
     select: { conversation: true },
