@@ -198,6 +198,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
           fileMessageRecipientIds
         );
       } catch (pushError) {
+        console.warn('[socket._processCompleteFileMessage] Push notification failed:', pushError.message);
       }
     }
 
@@ -211,6 +212,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     });
 
   } catch (error) {
+    console.error('[socket._processCompleteFileMessage]', error);
     socket.emit('file_upload_error', {
       error: 'Failed to process file',
       details: error.message,
@@ -640,7 +642,7 @@ const initializeSocket = (io) => {
               recipientIds
             );
           } catch (pushError) {
-            // push notification failure is non-fatal
+            console.warn('[socket.send_message] Push notification failed:', pushError.message);
           }
         }
 
@@ -660,6 +662,7 @@ const initializeSocket = (io) => {
         }
 
       } catch (error) {
+        console.error('[socket.send_message]', error);
         socket.emit('message_error', {
           error: 'Failed to send message',
           details: error.message,
@@ -735,6 +738,7 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
+        console.error('[socket.update_message_status]', error);
         socket.emit('status_error', {
           error: 'Failed to update message status',
           details: error.message
@@ -859,6 +863,7 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
+        console.error('[socket.update_message]', error);
         socket.emit('update_error', {
           error: 'Failed to update message',
           details: error.message
@@ -914,6 +919,7 @@ const initializeSocket = (io) => {
               try {
                 fs.unlinkSync(filePath);
               } catch (err) {
+                console.warn('[socket.delete_message_for_all] File cleanup failed:', err.message);
               }
             }
           });
@@ -952,6 +958,7 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
+        console.error('[socket.delete_message_for_all]', error);
         socket.emit('delete_error', {
           error: 'Failed to delete message',
           details: error.message
@@ -1062,6 +1069,7 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
+        console.error('[socket.delete_message_for_user]', error);
         socket.emit('delete_error', {
           error: 'Failed to delete message for user',
           details: error.message
@@ -1123,6 +1131,7 @@ const initializeSocket = (io) => {
         }
 
       } catch (error) {
+        console.error('[socket.join_chat]', error);
         socket.emit('error', { message: 'Failed to join chat' });
       }
     });
@@ -1162,6 +1171,7 @@ const initializeSocket = (io) => {
         });
 
       } catch (error) {
+        console.error('[socket.update_status]', error);
         socket.emit('error', { message: 'Failed to update status' });
       }
     });
@@ -1171,6 +1181,7 @@ const initializeSocket = (io) => {
         const onlineUsers = await getOnlineUsers();
         socket.emit('online_users', onlineUsers);
       } catch (err) {
+        console.error('[socket.get_online_users]', err);
         socket.emit('online_users', []);  // fail-safe
       }
     });
@@ -1294,6 +1305,7 @@ const initializeSocket = (io) => {
           await redis.del(`file:chunks:${tempId}`);
         }
       } catch (error) {
+        console.error('[socket.send_file_message_chunk]', error);
         if (typeof ack === 'function') {
           ack({ success: false, error: error.message });
         }
@@ -1343,7 +1355,7 @@ const initializeSocket = (io) => {
 
 
             } catch (dbError) {
-              // Ignore DB update errors during disconnect
+              console.warn('[socket.disconnect] DB update failed:', dbError.message);
             }
           }
 
@@ -1352,12 +1364,15 @@ const initializeSocket = (io) => {
         }
 
       } catch (error) {
+        console.error('[socket.disconnect]', error);
       }
 
 
     });
 
-    socket.on('error', (/* error */) => { });
+    socket.on('error', (error) => {
+      console.error('[socket.error] Socket error for user', userId, ':', error);
+    });
   });
 };
 

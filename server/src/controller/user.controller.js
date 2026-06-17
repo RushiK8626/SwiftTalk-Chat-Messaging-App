@@ -19,6 +19,7 @@ exports.searchUsersPublic = async (req, res) => {
 
     res.json({ users, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
   } catch (error) {
+    console.error('[user.searchUsersPublic]', error);
     res.status(500).json({ error: 'Failed to search users' });
   }
 };
@@ -32,6 +33,7 @@ exports.getUserById = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   } catch (error) {
+    console.error('[user.getUserById]', error);
     res.status(500).json({ error: 'Failed to get user' });
   }
 };
@@ -58,6 +60,7 @@ exports.updateUser = async (req, res) => {
     await userCacheService.invalidateUserProfile(parseInt(id));
     res.json({ message: 'User updated successfully', user: updatedUser });
   } catch (error) {
+    console.error('[user.updateUser]', error);
     res.status(500).json({ error: 'Failed to update user' });
   }
 };
@@ -73,6 +76,7 @@ exports.blockUser = async (req, res) => {
     const blockedUser = await prisma.blockedUser.create({ data: { user_id: userId, blocked_user_id: parseInt(blockedUserId) } });
     res.json({ message: 'User blocked successfully', blockedUser });
   } catch (err) {
+    console.error('[user.blockUser]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -85,6 +89,7 @@ exports.unblockUser = async (req, res) => {
     await prisma.blockedUser.delete({ where: { user_id_blocked_user_id: { user_id: userId, blocked_user_id: blockedUserId } } });
     res.json({ message: 'User unblocked successfully' });
   } catch (err) {
+    console.error('[user.unblockUser]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -98,6 +103,7 @@ exports.getBlockedUsers = async (req, res) => {
     });
     res.json(blockedUsers);
   } catch (err) {
+    console.error('[user.getBlockedUsers]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -113,6 +119,7 @@ exports.checkBlockStatus = async (req, res) => {
 
     res.json({ currentUserBlockedOther: !!currentUserBlocked, otherUserBlockedCurrent: !!otherUserBlocked, isBlocked: !!currentUserBlocked || !!otherUserBlocked });
   } catch (err) {
+    console.error('[user.checkBlockStatus]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -136,6 +143,7 @@ exports.getPublicUserProfile = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   } catch (error) {
+    console.error('[user.getPublicUserProfile]', error);
     res.status(500).json({ error: 'Failed to get public user profile' });
   }
 };

@@ -15,6 +15,7 @@ exports.uploadProfilePic = [
       await prisma.user.update({ where: { user_id: userId }, data: { profile_pic: fileUrl } });
       res.status(200).json({ message: 'Profile picture uploaded successfully', profile_pic: fileUrl });
     } catch (error) {
+      console.error('[upload.uploadProfilePic]', error);
       res.status(500).json({ error: 'Error uploading profile picture' });
     }
   }
@@ -43,6 +44,7 @@ exports.uploadGroupImage = [
       await prisma.chat.update({ where: { chat_id: parseInt(chatId) }, data: { chat_image: fileUrl } });
       res.status(200).json({ message: 'Group image uploaded successfully', chat_image: fileUrl });
     } catch (error) {
+      console.error('[upload.uploadGroupImage]', error);
       res.status(500).json({ error: 'Error uploading group image' });
     }
   }
@@ -62,6 +64,7 @@ exports.uploadAttachment = [
         filename: req.file.filename
       });
     } catch (error) {
+      console.error('[upload.uploadAttachment]', error);
       res.status(500).json({ error: 'Error uploading attachment' });
     }
   }
@@ -83,6 +86,7 @@ exports.getChatImage = async (req, res) => {
 
     res.sendFile(filePath);
   } catch (error) {
+    console.error('[upload.getChatImage]', error);
     res.status(500).json({ error: 'Error serving file' });
   }
 };
@@ -103,6 +107,7 @@ exports.getAttachment = async (req, res) => {
 
     res.sendFile(filePath);
   } catch (error) {
+    console.error('[upload.getAttachment]', error);
     res.status(500).json({ error: 'Error serving file' });
   }
 };
@@ -120,6 +125,7 @@ exports.getProfilePicture = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Profile picture not found' });
     res.sendFile(filePath);
   } catch (error) {
+    console.error('[upload.getProfilePicture]', error);
     res.status(500).json({ error: 'Error serving file' });
   }
 };
@@ -148,6 +154,7 @@ exports.getFile = async (req, res) => {
 
     return res.status(404).json({ error: 'File not found' });
   } catch (error) {
+    console.error('[upload.getFile]', error);
     res.status(500).json({ error: 'Error serving file' });
   }
 };

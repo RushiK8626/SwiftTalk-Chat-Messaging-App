@@ -151,6 +151,7 @@ exports.createChat = async (req, res) => {
       await userCacheService.invalidateChatMemberships(parseInt(memberId));
     }
   } catch (error) {
+    console.error('[chat.createChat]', error);
     res.status(500).json({ error: 'Failed to create chat' });
   }
 };
@@ -210,6 +211,7 @@ exports.getChatById = async (req, res) => {
 
     res.json({ chat });
   } catch (error) {
+    console.error('[chat.getChatById]', error);
     res.status(500).json({ error: 'Failed to get chat' });
   }
 };
@@ -369,6 +371,7 @@ exports.getActiveChats = async (req, res) => {
 
     res.json({ chats: chatPreviews, count: chatPreviews.length, total, page: parseInt(page), totalPages: Math.ceil(total / parseInt(limit)) });
   } catch (err) {
+    console.error('[chat.getActiveChats]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -554,6 +557,7 @@ exports.getUserChatsPreview = async (req, res) => {
       totalPages: Math.ceil(totalCount / parseInt(limit))
     });
   } catch (error) {
+    console.error('[chat.getUserChatsPreview]', error);
     res.status(500).json({ error: 'Failed to get chats preview' });
   }
 };
@@ -651,7 +655,7 @@ exports.addChatMember = async (req, res, io) => {
           chat_name: chat.chat_name,
           added_by_username: currentUser?.username || 'Admin'
         });
-      } catch (pushError) { }
+      } catch (pushError) { console.warn('[chat.addChatMember] Push notification failed:', pushError.message); }
     }
 
     res.status(201).json({
@@ -659,6 +663,7 @@ exports.addChatMember = async (req, res, io) => {
       member: { user_id: newUser.user_id, username: newUser.username, full_name: newUser.full_name, profile_pic: newUser.profile_pic, is_online: newUser.is_online }
     });
   } catch (error) {
+    console.error('[chat.addChatMember]', error);
     res.status(500).json({ error: 'Failed to add member' });
   }
 };
@@ -739,6 +744,7 @@ exports.removeChatMember = async (req, res, io) => {
 
     res.json({ message: 'Member removed successfully' });
   } catch (error) {
+    console.error('[chat.removeChatMember]', error);
     res.status(500).json({ error: 'Failed to remove member' });
   }
 };
@@ -792,10 +798,11 @@ exports.updateChat = async (req, res) => {
         change_type: changeType,
         changed_by_username: currentUser?.username || 'Admin'
       });
-    } catch (pushError) { }
+    } catch (pushError) { console.warn('[chat.updateChat] Push notification failed:', pushError.message); }
 
     res.json({ message: 'Chat updated successfully', chat });
   } catch (error) {
+    console.error('[chat.updateChat]', error);
     res.status(500).json({ error: 'Failed to update chat' });
   }
 };
@@ -858,6 +865,7 @@ exports.getChatInfo = async (req, res) => {
       admins: chat.admins.map(a => a.user)
     });
   } catch (error) {
+    console.error('[chat.getChatInfo]', error);
     res.status(500).json({ error: 'Failed to get chat info' });
   }
 };
@@ -922,6 +930,7 @@ exports.exitGroupChat = async (req, res, io) => {
 
     res.json(response);
   } catch (error) {
+    console.error('[chat.exitGroupChat]', error);
     res.status(500).json({ error: 'Failed to exit group chat' });
   }
 };

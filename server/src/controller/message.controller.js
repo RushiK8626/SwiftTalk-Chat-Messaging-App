@@ -90,6 +90,7 @@ exports.createMessage = async (req, res) => {
 
     res.status(201).json({ message: 'Message sent successfully', data: completeMessage });
   } catch (error) {
+    console.error('[message.createMessage]', error);
     res.status(500).json({ error: 'Failed to send message' });
   }
 };
@@ -201,6 +202,7 @@ exports.uploadFileAndCreateMessage = async (req, res) => {
     if (req.file && req.file.path) {
       try { fs.unlinkSync(req.file.path); } catch (unlinkErr) {}
     }
+    console.error('[message.uploadFileAndCreateMessage]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -360,6 +362,7 @@ exports.forwardMessage = async (req, res) => {
       errors: errors.length > 0 ? errors : undefined
     });
   } catch (error) {
+    console.error('[message.forwardMessage]', error);
     res.status(500).json({ error: 'Failed to forward message' });
   }
 };
@@ -438,6 +441,7 @@ exports.getMessagesByChat = async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('[message.getMessagesByChat]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -481,6 +485,7 @@ exports.deleteMessageForUser = async (req, res) => {
     res.json({ message: 'Message deleted for user', messageId, userId, removedFromDb: false });
 
   } catch (err) {
+    console.error('[message.deleteMessageForUser]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -503,6 +508,7 @@ exports.markAllMessagesAsRead = async (req, res) => {
       count: result.count
     });
   } catch (err) {
+    console.error('[message.markAllMessagesAsRead]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -554,6 +560,7 @@ exports.deleteBatchMessagesForUser = async (req, res) => {
 
     res.json({ message: `${updateResult.count} messages deleted for user`, deletedCount: updateResult.count, removedFromDb: messagesToDelete.length, userId });
   } catch (err) {
+    console.error('[message.deleteBatchMessagesForUser]', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -597,6 +604,7 @@ exports.deleteAllMessagesInChatForUser = async (req, res) => {
 
     res.json({ message: 'All messages in chat cleared for user', deletedCount: updateResult.count, removedFromDb: messagesToDelete.length, userId, chatId });
   } catch (err) {
+    console.error('[message.deleteAllMessagesInChatForUser]', err);
     res.status(500).json({ error: err.message });
   }
 };

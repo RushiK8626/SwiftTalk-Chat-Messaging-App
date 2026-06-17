@@ -82,6 +82,7 @@ exports.generateSmartReplies = async (req, res) => {
       context_messages: messages.length,
     });
   } catch (error) {
+    console.error('[ai.generateSmartReplies]', error);
     res.status(500).json({ error: 'Failed to generate smart replies', details: error.message });
   }
 };
@@ -138,6 +139,7 @@ exports.translateMessage = async (req, res) => {
       ...translation,
     });
   } catch (error) {
+    console.error('[ai.translateMessage]', error);
     res.status(500).json({ error: 'Failed to translate message', details: error.message });
   }
 };
@@ -212,6 +214,7 @@ exports.summarizeConversation = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('[ai.summarizeConversation]', error);
     res.status(500).json({ error: 'Failed to summarize conversation', details: error.message });
   }
 };
@@ -228,6 +231,7 @@ exports.detectLanguage = async (req, res) => {
 
     res.status(200).json({ success: true, ...result });
   } catch (error) {
+    console.error('[ai.detectLanguage]', error);
     res.status(500).json({ error: 'Failed to detect language', details: error.message });
   }
 };
@@ -277,6 +281,7 @@ exports.generateConversationStarters = async (req, res) => {
     const starters = await aiService.generateConversationStarters(context);
     res.status(200).json({ success: true, chat_id: parseInt(chat_id), starters });
   } catch (error) {
+    console.error('[ai.generateConversationStarters]', error);
     res.status(500).json({ error: 'Failed to generate conversation starters', details: error.message });
   }
 };
@@ -300,6 +305,7 @@ exports.checkStatus = async (req, res) => {
         : 'AI service is not configured. Please add GEMINI_API_KEY to environment variables.',
     });
   } catch (error) {
+    console.error('[ai.checkStatus]', error);
     res.status(500).json({ error: 'Failed to check AI service status', details: error.message });
   }
 };
@@ -424,6 +430,7 @@ exports.createSession = async (req, res) => {
       message: 'New chat session created',
     });
   } catch (error) {
+    console.error('[ai.createSession]', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -445,6 +452,7 @@ exports.listSessions = async (req, res) => {
 
     res.status(200).json({ success: true, sessions });
   } catch (error) {
+    console.error('[ai.listSessions]', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -458,6 +466,7 @@ exports.deleteSession = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Session deleted' });
   } catch (error) {
+    console.error('[ai.deleteSession]', error);
     res.status(error.message === 'Unauthorized' ? 403 : 500)
       .json({ error: error.message });
   }
@@ -487,6 +496,7 @@ exports.getUserSessions = async (req, res) => {
     }));
     res.status(200).json({ success: true, sessions: sessionsWithRelativeTime });
   } catch (err) {
+    console.error('[ai.getUserSessions]', err);
     res.status(err.message === 'Unauthorized' ? 403 : 500)
       .json({ error: err.message });
   }
@@ -525,6 +535,7 @@ exports.getSession = async (req, res) => {
       last_activity: session.last_activity
     });
   } catch (err) {
+    console.error('[ai.getSession]', err);
     res.status(err.message === 'Unauthorized' ? 403 : 500)
       .json({ error: err.message });
   }

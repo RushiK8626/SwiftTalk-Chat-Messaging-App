@@ -137,6 +137,23 @@ app.use('/api/tasks', taskRoutes);
 
 app.use(express.static('.'));
 
+// Global error-handling middleware (must be registered AFTER all routes)
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || 'Internal Server Error';
+
+  console.error(`[ERROR] ${req.method} ${req.originalUrl} — ${status} — ${message}`);
+  console.error(err.stack || err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(status).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
+  });
+});
+
 app.get('/health', async (req, res) => {
   const dbStatus = await testConnection();
   const redisStatus = isRedisAvailable();
@@ -151,13 +168,26 @@ app.get('/health', async (req, res) => {
 initializeSocket(io);
 
 process.on('SIGTERM', async () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
   await closeRedis();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
+  console.log('SIGINT received. Shutting down gracefully...');
   await closeRedis();
   process.exit(0);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:');
+  console.error(err.stack || err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Promise Rejection:');
+  console.error(reason);
 });
 
 const PORT = process.env.PORT || 3001;
@@ -171,10 +201,13 @@ async function startServer() {
 
   try {
     await initRedis();
+    console.log('Redis connected successfully.');
   } catch (error) {
+    console.warn('[WARN] Redis init failed, falling back to in-memory:', error.message);
   }
 
   server.listen(PORT, () => {
+    console.log(`SwiftTalk server running on port ${PORT}`);
   });
 
   initSessionCleanupCron();
