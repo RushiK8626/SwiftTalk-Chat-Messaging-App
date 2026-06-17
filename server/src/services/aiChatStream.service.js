@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 const { randomUUID } = require('crypto');
 const { ChatGroq } = require('@langchain/groq');
-const { SystemMessagePromptTemplate, ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts")
+const { ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts")
 const { RunnableWithMessageHistory } = require('@langchain/core/runnables');
 const { InMemoryChatMessageHistory } = require('@langchain/core/chat_history');
 const { StringOutputParser } = require('@langchain/core/output_parsers');

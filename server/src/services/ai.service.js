@@ -7,7 +7,6 @@ const {
 
 dotenv.config();
 
-
 const MODEL_NAME = process.env.AI_MODEL;
 const API_KEY = process.env.AI_API_KEY;
 
