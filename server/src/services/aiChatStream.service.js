@@ -12,16 +12,21 @@ const prisma = new PrismaClient();
 dotenv.config();
 
 // Validate API key at startup
+let llm = null;
 if (!process.env.AI_API_KEY) {
   console.warn('WARNING: AI_API_KEY not configured. AI chat stream will not work.');
+} else {
+  try {
+    llm = new ChatGroq({
+      model: process.env.AI_MODEL || "llama-3.3-70b-versatile",
+      apiKey: process.env.AI_API_KEY,
+      temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0.7,
+      streaming: true,
+    });
+  } catch (err) {
+    console.warn('WARNING: Failed to initialize ChatGroq:', err.message);
+  }
 }
-
-const llm = new ChatGroq({
-  model: "llama-3.3-70b-versatile",
-  apiKey: process.env.AI_API_KEY,
-  temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0.7,
-  streaming: true,
-});
 
 const SYSTEM_PROMPT = `
 You are SwifTalk Assistant, a helpful, precise assistant.
@@ -101,7 +106,7 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 const parser = new StringOutputParser();
 
-const chain = prompt.pipe(llm).pipe(parser);
+const chain = llm ? prompt.pipe(llm).pipe(parser) : null;
 
 const sessionStore = new Map();
 
@@ -237,12 +242,12 @@ function getSessionHistory(sessionId) {
   return history;
 }
 
-const withHistory = new RunnableWithMessageHistory({
+const withHistory = chain ? new RunnableWithMessageHistory({
   runnable: chain,
   getMessageHistory: getSessionHistory,
   inputMessagesKey: "input",
   historyMessagesKey: "history",
-});
+}) : null;
 
 function startSession() {
   const sessionId = randomUUID();
@@ -274,7 +279,7 @@ async function* createChatStream(message, session_id) {
     if (!session_id) {
       throw new Error('Session ID is required');
     }
-    if (!process.env.AI_API_KEY) {
+    if (!process.env.AI_API_KEY || !withHistory) {
       throw new Error('AI_API_KEY is not configured');
     }
 

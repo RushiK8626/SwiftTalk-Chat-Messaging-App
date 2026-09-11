@@ -10,42 +10,46 @@ dotenv.config();
 const MODEL_NAME = process.env.AI_MODEL;
 const API_KEY = process.env.AI_API_KEY;
 
+const createChatModel = (options = {}) => {
+  if (!API_KEY) return null;
+  try {
+    return new ChatGroq({
+      model: MODEL_NAME || 'llama-3.3-70b-versatile',
+      apiKey: API_KEY,
+      ...options,
+    });
+  } catch (err) {
+    console.warn('WARNING: Failed to initialize ChatGroq model:', err.message);
+    return null;
+  }
+};
+
 // Smart replies
-const smartReplyModel = new ChatGroq({
-  model: MODEL_NAME,
-  apiKey: API_KEY,
+const smartReplyModel = createChatModel({
   temperature: 0.7,
   maxTokens: 150,
 });
 
 // Translation
-const translationModel = new ChatGroq({
-  model: MODEL_NAME,
-  apiKey: API_KEY,
+const translationModel = createChatModel({
   temperature: 0.2,
   maxTokens: 200,
 });
 
 // Summaries
-const summaryModel = new ChatGroq({
-  model: MODEL_NAME,
-  apiKey: API_KEY,
+const summaryModel = createChatModel({
   temperature: 0.5,
   maxTokens: 300,
 });
 
 // Language detection
-const languageDetectionModel = new ChatGroq({
-  model: MODEL_NAME,
-  apiKey: API_KEY,
+const languageDetectionModel = createChatModel({
   temperature: 0.1,
   maxTokens: 10,
 });
 
 // Conversation starters
-const conversationStarterModel = new ChatGroq({
-  model: MODEL_NAME,
-  apiKey: API_KEY,
+const conversationStarterModel = createChatModel({
   temperature: 0.8,
   maxTokens: 100,
 });

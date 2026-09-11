@@ -301,8 +301,8 @@ exports.checkStatus = async (req, res) => {
         'ai_chat',
       ] : [],
       message: isConfigured
-        ? 'AI service is configured and ready (powered by Google Gemini)'
-        : 'AI service is not configured. Please add GEMINI_API_KEY to environment variables.',
+        ? 'AI service is configured and ready (powered by Groq)'
+        : 'AI service is not configured. Please add AI_API_KEY to environment variables.',
     });
   } catch (error) {
     console.error('[ai.checkStatus]', error);

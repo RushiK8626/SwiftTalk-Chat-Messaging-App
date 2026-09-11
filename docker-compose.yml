@@ -44,8 +44,8 @@ services:
     build: 
       context: ./client
       args:
-        VITE_APP_API_URL:  ${VITE_APP_API_URL}
-        VITE_APP_SOCKET_URL: ${VITE_APP_SOCKET_URL}
+        VITE_APP_API_URL: ${VITE_APP_API_URL:-http://localhost:3001}
+        VITE_APP_SOCKET_URL: ${VITE_APP_SOCKET_URL:-http://localhost:3001}
     ports:
       - "3000:80"
     depends_on:
