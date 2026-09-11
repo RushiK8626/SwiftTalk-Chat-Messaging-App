@@ -130,8 +130,35 @@ const initRedis = async () => {
   }
 };
 
+const duplicateClients = new Set();
+
+const createDuplicateClient = async () => {
+  const mainClient = await getRedisClient();
+  if (!mainClient || !isRedisAvailable) {
+    return null;
+  }
+  try {
+    const dup = mainClient.duplicate();
+    dup.on('error', (err) => {
+      console.error('Redis duplicate client error:', err.message);
+    });
+    await dup.connect();
+    duplicateClients.add(dup);
+    return dup;
+  } catch (err) {
+    console.error('Failed to create duplicate Redis client:', err.message);
+    return null;
+  }
+};
+
 const closeRedis = async () => {
   memoryStore.stopCleanup();
+  for (const dup of duplicateClients) {
+    try {
+      await dup.quit();
+    } catch (e) {}
+  }
+  duplicateClients.clear();
   if (redisClient) {
     try {
       await redisClient.quit();
@@ -300,6 +327,7 @@ const createRedisProxy = () => {
       if (prop === 'initRedis') return initRedis;
       if (prop === 'closeRedis') return closeRedis;
       if (prop === 'getRedisClient') return getRedisClient;
+      if (prop === 'createDuplicateClient') return createDuplicateClient;
       
       return async (...args) => {
         if (isRedisAvailable && redisClient) {
@@ -325,4 +353,5 @@ module.exports = createRedisProxy();
 module.exports.initRedis = initRedis;
 module.exports.closeRedis = closeRedis;
 module.exports.getRedisClient = getRedisClient;
+module.exports.createDuplicateClient = createDuplicateClient;
 module.exports.isAvailable = isAvailable;
