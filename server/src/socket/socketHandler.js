@@ -7,8 +7,31 @@ const prisma = new PrismaClient();
 const path = require('path');
 const fs = require('fs');
 const redis = require("../config/redis");
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { setLocalIo } = require('./socketEmitter');
 
 let ioInstance = null;
+
+const setupRedisAdapter = async (io) => {
+  if (!redis.isAvailable()) {
+    console.log('Redis is in fallback mode. Socket.IO using default in-memory adapter.');
+    return false;
+  }
+
+  try {
+    const pubClient = await redis.createDuplicateClient();
+    const subClient = await redis.createDuplicateClient();
+
+    if (pubClient && subClient) {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('Socket.IO Redis Adapter initialized successfully.');
+      return true;
+    }
+  } catch (error) {
+    console.warn('[socketHandler] Failed to attach Redis adapter, using in-memory:', error.message);
+  }
+  return false;
+};
 
 const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
   try {
@@ -39,9 +62,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     const serverFilename = nameWithoutExt + '-' + uniqueSuffix + ext;
     const filePath = path.join(uploadsDir, serverFilename);
 
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    await fs.promises.mkdir(uploadsDir, { recursive: true });
 
     let buffer = fileBuffer;
     if (typeof fileBuffer === 'string') {
@@ -49,7 +70,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
     }
 
     try {
-      fs.writeFileSync(filePath, buffer);
+      await fs.promises.writeFile(filePath, buffer);
     } catch (writeErr) {
       socket.emit('file_upload_error', {
         error: 'Failed to save file to disk',
@@ -223,6 +244,7 @@ const _processCompleteFileMessage = async (fileData, socket, io, userId) => {
 
 const initializeSocket = (io) => {
   ioInstance = io;
+  setLocalIo(io);
 
   const registrationNamespace = io.of('/registration');
 
@@ -913,16 +935,16 @@ const initializeSocket = (io) => {
         }
 
         if (message.attachments && message.attachments.length > 0) {
-          message.attachments.forEach(attachment => {
-            const filePath = path.join(__dirname, '../../', attachment.file_url);
-            if (fs.existsSync(filePath)) {
+          await Promise.all(
+            message.attachments.map(async (attachment) => {
               try {
-                fs.unlinkSync(filePath);
+                const filePath = path.join(__dirname, '../../', attachment.file_url);
+                await fs.promises.unlink(filePath).catch(() => {});
               } catch (err) {
                 console.warn('[socket.delete_message_for_all] File cleanup failed:', err.message);
               }
-            }
-          });
+            })
+          );
         }
 
         await prisma.messageVisibility.deleteMany({
@@ -1516,6 +1538,7 @@ const emitFileMessage = async (chatId, messageData) => {
 
 module.exports = {
   initializeSocket,
+  setupRedisAdapter,
   getOnlineUsers,
   isUserOnline,
   sendNotificationToUser,
