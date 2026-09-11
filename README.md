@@ -21,45 +21,25 @@ A modern, full-stack messaging application with real-time communication, AI-powe
 
 ## Environment Configuration
 
-Create a `.env` file in the `server/` directory with the following variables:
+Environment configuration templates are provided via `.env.example` files across the repository:
 
-```bash
-# Database
-DATABASE_URL="mysql://user:password@localhost:3306/swifttalk"
+1. **Backend Server** ([`server/.env.example`](file:///server/.env.example)):
+   ```bash
+   cp server/.env.example server/.env
+   ```
+   Fill in your database URL, Redis URL, JWT secrets, OAuth client credentials, and Groq API key.
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+2. **Frontend Client** ([`client/.env.example`](file:///client/.env.example)):
+   ```bash
+   cp client/.env.example client/.env
+   ```
+   Sets backend API and WebSocket endpoints (`VITE_APP_API_URL`, `VITE_APP_SOCKET_URL`).
 
-# JWT Configuration
-JWT_SECRET=your_jwt_secret_key
-JWT_REFRESH_SECRET=your_refresh_secret_key
-
-# OAuth — Google
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
-
-# OAuth — GitHub
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=http://localhost:3001/api/auth/github/callback
-
-# Frontend URL (used for OAuth redirects)
-FRONTEND_URL=http://localhost:3000
-ALLOWED_ORIGINS=http://localhost:3000
-
-# Web Push Notification (VAPID Keys)
-VAPID_PUBLIC_KEY=your_vapid_public_key
-VAPID_PRIVATE_KEY=your_vapid_private_key
-VAPID_EMAIL=mailto:your_email@example.com
-
-# AI Integration
-GEMINI_API_KEY=your_gemini_api_key
-
-# Email / OTP
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password
-```
+3. **Docker Compose Root** ([`.env.example`](file:///.env.example)):
+   ```bash
+   cp .env.example .env
+   ```
+   Sets build arguments for Docker Compose.
 
 ---
 
@@ -151,7 +131,7 @@ curl http://localhost:3000
 - **Node.js** (v18+)
 - **MySQL** (v8.0+) — running locally or remotely
 - **Redis** (v6.2+) — running locally or remotely
-- **npm** or **yarn**
+- **npm** (v9+)
 
 ### 1. Clone and Navigate
 
@@ -161,17 +141,17 @@ cd SwitftTalk
 
 ### 2. Configure Environment
 
-Create the `.env` file in the root directory as described in [Environment Configuration](#environment-configuration).
-
-Additionally, configure database and Redis connections in `server/.env`:
+Copy and configure the environment files from the provided templates:
 
 ```bash
-# Database
-DATABASE_URL="mysql://root:your_password@localhost:3306/swifttalk"
+# Server configuration
+cp server/.env.example server/.env
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+# Client configuration
+cp client/.env.example client/.env
 ```
+
+Ensure your `DATABASE_URL` and `REDIS_URL` in `server/.env` point to your running MySQL and Redis instances.
 
 ### 3. Install Dependencies
 
