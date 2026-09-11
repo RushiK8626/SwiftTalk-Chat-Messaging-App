@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 24px rgba(var(--accent-color-rgb, 0, 122, 255), 0.3);
 }
 
 .avatar-emoji-large {
@@ -38,9 +38,9 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  background: white;
-  border: 3px solid #667eea;
-  color: #667eea;
+  background: var(--card-background, #ffffff);
+  border: 3px solid var(--accent-color);
+  color: var(--accent-color);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -49,16 +49,21 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .change-avatar-btn:hover {
   transform: scale(1.1);
-  background: #667eea;
+  background: var(--accent-color);
   color: white;
 }
 
 .profile-form {
-  padding: 20px;
+  padding: 24px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .profile-form .form-group {
@@ -73,6 +78,25 @@
   font-weight: 600;
 }
 
+.profile-form .input-field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--text-color);
+  background: var(--input-background);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.profile-form .input-field:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb, 0, 122, 255), 0.15);
+}
+
 .profile-value {
   font-size: 16px;
   color: var(--text-color);
@@ -81,19 +105,94 @@
 }
 
 .textarea-field {
-  min-height: 80px;
+  min-height: 90px;
   resize: vertical;
+  line-height: 1.5;
   font-family: inherit;
 }
 
+/* Button Group & Profile Buttons */
+.profile-page .button-group,
 .button-group {
   display: flex;
-  gap: 12px;
-  margin-top: 32px;
+  gap: 14px;
+  margin-top: 36px;
+  align-items: center;
 }
 
-.button-group button {
+.profile-page .button-group button,
+.profile-btn-secondary,
+.profile-btn-primary,
+.profile-page .btn-secondary,
+.profile-page .btn-primary {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+}
+
+.profile-btn-secondary,
+.profile-page .btn-secondary {
+  background: var(--input-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.profile-btn-secondary:hover:not(:disabled),
+.profile-page .btn-secondary:hover:not(:disabled) {
+  background: var(--hover-background);
+  border-color: var(--border-color);
+  transform: translateY(-1px);
+}
+
+.profile-btn-secondary:active:not(:disabled),
+.profile-page .btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.profile-btn-primary,
+.profile-page .btn-primary {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(var(--accent-color-rgb, 0, 122, 255), 0.25);
+}
+
+.profile-btn-primary:hover:not(:disabled),
+.profile-page .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 14px rgba(var(--accent-color-rgb, 0, 122, 255), 0.35);
+  transform: translateY(-1px);
+}
+
+.profile-btn-primary:active:not(:disabled),
+.profile-page .btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(var(--accent-color-rgb, 0, 122, 255), 0.2);
+}
+
+.profile-page .button-group button:disabled,
+.profile-btn-secondary:disabled,
+.profile-btn-primary:disabled,
+.profile-page .btn-secondary:disabled,
+.profile-page .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 480px) {
@@ -104,6 +203,21 @@
 
   .avatar-emoji-large {
     font-size: 52px;
+  }
+
+  .profile-form {
+    padding: 16px;
+  }
+
+  .profile-page .button-group {
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .profile-page .button-group button {
+    height: 42px;
+    font-size: 14px;
+    padding: 0 16px;
   }
 }
 

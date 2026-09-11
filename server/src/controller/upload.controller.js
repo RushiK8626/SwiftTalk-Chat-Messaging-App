@@ -3,6 +3,7 @@ const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { upload } = require('../config/upload');
+const userCacheService = require('../services/user-cache.service');
 
 exports.uploadProfilePic = [
   upload.single('profilePic'),
@@ -12,8 +13,28 @@ exports.uploadProfilePic = [
       const userId = req.user.user_id;
       const fileUrl = `/uploads/${req.file.filename}`;
 
-      await prisma.user.update({ where: { user_id: userId }, data: { profile_pic: fileUrl } });
-      res.status(200).json({ message: 'Profile picture uploaded successfully', profile_pic: fileUrl });
+      const updatedUser = await prisma.user.update({
+        where: { user_id: userId },
+        data: { profile_pic: fileUrl },
+        select: {
+          user_id: true,
+          username: true,
+          full_name: true,
+          email: true,
+          profile_pic: true,
+          status_message: true,
+          created_at: true
+        }
+      });
+
+      // Invalidate Redis profile cache so fresh picture is immediately visible
+      await userCacheService.invalidateUserProfile(userId);
+
+      res.status(200).json({
+        message: 'Profile picture uploaded successfully',
+        profile_pic: fileUrl,
+        user: updatedUser
+      });
     } catch (error) {
       console.error('[upload.uploadProfilePic]', error);
       res.status(500).json({ error: 'Error uploading profile picture' });
@@ -118,11 +139,6 @@ exports.getProfilePicture = async (req, res) => {
     const filePath = path.join(__dirname, '../../uploads', filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Profile picture not found' });
 
-    const user = await prisma.user.findFirst({
-      where: { OR: [{ profile_pic: `/uploads/${filename}` }, { profile_pic: `uploads/${filename}` }, { profile_pic: filename }] }
-    });
-
-    if (!user) return res.status(404).json({ error: 'Profile picture not found' });
     res.sendFile(filePath);
   } catch (error) {
     console.error('[upload.getProfilePicture]', error);
@@ -146,11 +162,13 @@ exports.getFile = async (req, res) => {
     });
     if (chatWithImage) return res.sendFile(filePath);
 
-    const attachment = await prisma.attachment.findFirst({
-      where: { OR: [{ file_url: `/uploads/${filename}` }, { file_url: `uploads/${filename}` }, { file_url: filename }] },
-      include: { message: { include: { chat: { include: { members: { where: { user_id: req.user.user_id } } } } } } }
-    });
-    if (attachment && attachment.message.chat.members.length > 0) return res.sendFile(filePath);
+    if (req.user) {
+      const attachment = await prisma.attachment.findFirst({
+        where: { OR: [{ file_url: `/uploads/${filename}` }, { file_url: `uploads/${filename}` }, { file_url: filename }] },
+        include: { message: { include: { chat: { include: { members: { where: { user_id: req.user.user_id } } } } } } }
+      });
+      if (attachment && attachment.message.chat.members.length > 0) return res.sendFile(filePath);
+    }
 
     return res.status(404).json({ error: 'File not found' });
   } catch (error) {

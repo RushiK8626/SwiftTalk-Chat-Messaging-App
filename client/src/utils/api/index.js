@@ -31,4 +31,6 @@ export {
 export {
   fetchPublicProfile,
   fetchPersonalProfile,
+  uploadProfilePicture,
+  updateUserProfile,
 } from "./profileService";

@@ -6,7 +6,11 @@ import PageHeader from "../../components/common/PageHeader";
 import ToastContainer from "../../components/common/ToastContainer";
 import { useToast } from "../../hooks/useToast";
 import useResponsive from "../../hooks/useResponsive";
-import { fetchPersonalProfile } from "../../utils/api";
+import {
+  fetchPersonalProfile,
+  uploadProfilePicture,
+  updateUserProfile,
+} from "../../utils/api";
 import "./Profile.css";
 
 const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
@@ -15,6 +19,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
   const isWideScreen = useResponsive();
   const isEmbedded = isEmbeddedProp || location.state?.isEmbedded || false;
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const fileInputRef = React.useRef(null);
@@ -106,34 +111,34 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       return;
     }
 
+    setSaving(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-        }/api/users/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedFields),
-        }
-      );
+      await updateUserProfile(userId, updatedFields);
+      showSuccess("Profile updated successfully!");
 
-      if (response.ok) {
-        await response.json();
-        showSuccess("Profile updated successfully!");
+      setProfileData({ ...editData });
+      setIsEditing(false);
 
-        setProfileData({ ...editData });
-        setIsEditing(false);
-      } else {
-        const errorData = await response.json();
-        showError(errorData.message || "Failed to update profile");
+      // Update user in localStorage
+      try {
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        if (editData.fullName !== undefined) currentUser.full_name = editData.fullName;
+        if (editData.username !== undefined) currentUser.username = editData.username;
+        localStorage.setItem("user", JSON.stringify(currentUser));
+        window.dispatchEvent(new Event("userUpdated"));
+      } catch (storageErr) {
+        console.error("Failed to sync user in localStorage:", storageErr);
       }
     } catch (err) {
       console.error("Error updating profile:", err);
-      showError("Failed to update profile. Please try again.");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update profile. Please try again.";
+      showError(message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -166,58 +171,64 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
       "image/gif",
       "image/webp",
     ];
-    if (!validImageTypes.includes(file.type)) {
+    const validExtensions = /\.(jpe?g|png|gif|webp)$/i;
+    const isValidType =
+      validImageTypes.includes(file.type) || validExtensions.test(file.name);
+
+    if (!isValidType) {
       showError("Please select a valid image file (JPEG, PNG, GIF, or WebP)");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       showError("Image size should not exceed 5MB");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
     try {
-      const formData = new FormData();
-      formData.append("profilePic", file);
+      const data = await uploadProfilePicture(file);
+      showSuccess("Profile picture updated successfully!");
 
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-        }/uploads/profile-pic`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
+      if (data.profile_pic) {
+        const filename = data.profile_pic.split("/uploads/").pop();
+        const newProfilePicUrl = `${(
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
+        ).replace(/\/+$/, "")}/uploads/profiles/${filename}?t=${Date.now()}`;
+
+        setProfileData((prev) => ({
+          ...prev,
+          profilePic: newProfilePicUrl,
+        }));
+        setEditData((prev) => ({
+          ...prev,
+          profilePic: newProfilePicUrl,
+        }));
+
+        // Update local storage user and notify other components
+        try {
+          const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+          currentUser.profile_pic = data.profile_pic;
+          localStorage.setItem("user", JSON.stringify(currentUser));
+          window.dispatchEvent(new Event("userUpdated"));
+        } catch (storageErr) {
+          console.error("Failed to sync user profile picture in localStorage:", storageErr);
         }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        showSuccess("Profile picture updated successfully!");
-
-        if (data.profile_pic) {
-          const filename = data.profile_pic.split("/uploads/").pop();
-          const newProfilePicUrl = `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
-            }/uploads/profiles/${filename}`;
-
-          setProfileData((prev) => ({
-            ...prev,
-            profilePic: newProfilePicUrl,
-          }));
-          setEditData((prev) => ({
-            ...prev,
-            profilePic: newProfilePicUrl,
-          }));
-        }
-      } else {
-        const errorData = await response.json();
-        showError(errorData.message || "Failed to upload profile picture");
       }
     } catch (err) {
       console.error("Error uploading profile picture:", err);
-      showError("Failed to upload profile picture. Please try again.");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to upload profile picture. Please try again.";
+      showError(message);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -235,11 +246,11 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         }}
         rightAction={
           !isEditing ? (
-            <button className="edit-btn" onClick={handleEdit}>
+            <button className="edit-btn" onClick={handleEdit} title="Edit Profile" aria-label="Edit Profile">
               <Edit2 size={20} />
             </button>
           ) : (
-            <button className="save-btn" onClick={handleSave}>
+            <button className="save-btn" onClick={handleSave} disabled={saving} title="Save Changes" aria-label="Save Changes">
               <Save size={20} />
             </button>
           )
@@ -269,6 +280,9 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
                 <img
                   src={profileData.profilePic}
                   alt="profile"
+                  onError={() => {
+                    setProfileData((prev) => ({ ...prev, profilePic: null }));
+                  }}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -362,11 +376,21 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
 
             {isEditing && (
               <div className="button-group">
-                <button className="btn-secondary" onClick={handleCancel}>
+                <button
+                  type="button"
+                  className="btn-secondary profile-btn-secondary"
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
                   Cancel
                 </button>
-                <button className="btn-primary" onClick={handleSave}>
-                  Save Changes
+                <button
+                  type="button"
+                  className="btn-primary profile-btn-primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             )}
