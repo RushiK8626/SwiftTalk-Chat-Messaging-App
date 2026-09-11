@@ -27,6 +27,7 @@ import Language from "./pages/settings/Language";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
 import TermsOfService from "./pages/Legal/TermsOfService";
+import NotFound from "./pages/NotFound/NotFound";
 import "./App.css";
 import "./styles/theme.css";
 
@@ -131,6 +132,7 @@ function App() {
                 path="/terms"
                 element={<TermsOfService />}
               />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
         </Router>

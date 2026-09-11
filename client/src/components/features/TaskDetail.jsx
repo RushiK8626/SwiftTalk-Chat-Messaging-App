@@ -24,7 +24,7 @@ const TaskDetail = ({ task: taskdata, onToggleSubtask, onEdit, onBack, showBackB
         if (!editData) return;
         try {
             const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
 
@@ -61,7 +61,7 @@ const TaskDetail = ({ task: taskdata, onToggleSubtask, onEdit, onBack, showBackB
         try {
             console.log(JSON.stringify(subtask));
             const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
 

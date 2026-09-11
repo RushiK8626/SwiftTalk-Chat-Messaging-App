@@ -125,10 +125,12 @@ const notifyNewMessage = async (messageData, recipientUserIds) => {
 
       await Promise.all(notificationPromises);
     } catch (dbError) {
+      console.warn('[notification.notifyNewMessage] DB notification save failed:', dbError.message);
     }
 
     return result;
   } catch (error) {
+    console.error('[notification.notifyNewMessage]', error);
     return { sent: 0, failed: recipientUserIds.length };
   }
 };
@@ -165,10 +167,12 @@ const notifyUserAddedToGroup = async (userId, groupData) => {
         }
       });
     } catch (dbError) {
+      console.warn('[notification.notifyUserAddedToGroup] DB notification save failed:', dbError.message);
     }
 
     return result;
   } catch (error) {
+    console.error('[notification.notifyUserAddedToGroup]', error);
     return false;
   }
 };
@@ -220,10 +224,12 @@ const notifyGroupInfoChange = async (userIds, changeData) => {
 
       await Promise.all(notificationPromises);
     } catch (dbError) {
+      console.warn('[notification.notifyGroupInfoChange] DB notification save failed:', dbError.message);
     }
 
     return result;
   } catch (error) {
+    console.error('[notification.notifyGroupInfoChange]', error);
     return { sent: 0, failed: userIds.length };
   }
 };

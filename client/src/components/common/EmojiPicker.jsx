@@ -1,4 +1,4 @@
-import Picker from "@emoji-mart/react";
+import { Picker } from 'emoji-mart-awesome';
 import data from "@emoji-mart/data";
 import { useTheme } from "../../context/ThemeContext";
 import "./EmojiPicker.css";

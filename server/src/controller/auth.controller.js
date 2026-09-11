@@ -36,6 +36,7 @@ exports.requestPasswordReset = async (req, res) => {
       message: 'OTP sent to email if user exists'
     });
   } catch (error) {
+    console.error('[auth.requestPasswordReset]', error);
     res.status(500).json({ error: 'Password reset request failed' });
   }
 };
@@ -65,6 +66,7 @@ exports.resetPassword = async (req, res) => {
     await deleteCache(`auth:pending-reset:${userId}`);
     res.json({ message: 'Password reset successful' });
   } catch (error) {
+    console.error('[auth.resetPassword]', error);
     res.status(500).json({ error: 'Password reset failed' });
   }
 };
@@ -106,6 +108,7 @@ exports.register = async (req, res) => {
 
     res.status(200).json({ message: 'OTP sent. Please verify to complete registration.', expiresIn: AUTH_PENDING_TTL });
   } catch (error) {
+    console.error('[auth.register]', error);
     res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 };
@@ -158,9 +161,11 @@ exports.verifyRegistrationOTP = async (req, res) => {
         }
       });
     } catch (dbError) {
+      console.error('[auth.verifyRegistrationOTP] DB error:', dbError);
       return res.status(500).json({ error: 'Failed to create user. Please try again.' });
     }
   } catch (error) {
+    console.error('[auth.verifyRegistrationOTP]', error);
     res.status(500).json({ error: 'OTP verification failed. Please try again.' });
   }
 };
@@ -182,6 +187,7 @@ exports.cancelRegistration = async (req, res) => {
       res.status(404).json({ error: 'No pending registration found' });
     }
   } catch (error) {
+    console.error('[auth.cancelRegistration]', error);
     res.status(500).json({ error: 'Failed to cancel registration' });
   }
 };
@@ -231,6 +237,7 @@ exports.resendRegistrationOTP = async (req, res) => {
       });
     }
   } catch (error) {
+    console.error('[auth.resendRegistrationOTP]', error);
     res.status(500).json({ error: 'Failed to resend OTP' });
   }
 };
@@ -295,6 +302,7 @@ exports.login = async (req, res) => {
       });
     }
   } catch (error) {
+    console.error('[auth.login]', error);
     res.status(500).json({ error: "Login failed" });
   }
 };
@@ -346,6 +354,7 @@ exports.verifyLoginOTP = async (req, res) => {
 
     res.json({ message: 'Login successful', user: userDetails, accessToken, refreshToken });
   } catch (error) {
+    console.error('[auth.verifyLoginOTP]', error);
     res.status(500).json({ error: 'OTP verification failed' });
   }
 };
@@ -386,6 +395,7 @@ exports.resendOTP = async (req, res) => {
       return res.status(500).json({ error: 'Failed to resend verification code. Please try again.' });
     }
   } catch (error) {
+    console.error('[auth.resendOTP]', error);
     res.status(500).json({ error: 'Failed to resend OTP' });
   }
 };
@@ -447,6 +457,7 @@ exports.logout = async (req, res) => {
     await jwtService.revokeRefreshToken(req.user.user_id);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
+    console.error('[auth.logout]', error);
     res.status(500).json({ error: 'Logout failed' });
   }
 };
@@ -457,6 +468,7 @@ exports.getCurrentUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   } catch (error) {
+    console.error('[auth.getCurrentUser]', error);
     res.status(500).json({ error: 'Failed to get user' });
   }
 };

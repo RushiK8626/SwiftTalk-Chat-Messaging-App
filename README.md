@@ -16,104 +16,7 @@ A modern, full-stack messaging application with real-time communication, AI-powe
 - **OAuth Integration**: Supports login with Google and GitHub
 - **Privacy Controls**: Blocked-user management and private/public chat options
 - **Group Chats**: Create and manage group conversations with admin roles
-
----
-
-## Project Structure
-
-```
-SwitftTalk/
-├── client/                          # React frontend
-│   ├── public/                      # Static assets
-│   ├── src/
-│   │   ├── components/              # Reusable React components
-│   │   │   ├── common/              # Shared UI (Toast, SearchBar, ContextMenu, etc.)
-│   │   │   ├── features/            # Feature components (Tasks, Notifications, SmartReplies, etc.)
-│   │   │   ├── messages/            # Message rendering (Bubble, Attachments, TypingIndicator, etc.)
-│   │   │   └── modals/              # Modal dialogs (CreateGroup, ChatInfo, TaskModal, Translator, etc.)
-│   │   ├── pages/                   # Page-level components
-│   │   │   ├── auth/                # Login, Register, OTP, ForgotPassword, ResetPassword, OAuthCallback
-│   │   │   ├── chat/                # ChatHome, ChatWindow, AIChatWindow
-│   │   │   ├── features/            # Tasks page
-│   │   │   ├── settings/            # Profile, Appearance, Privacy, Notifications, BlockedUsers, Language
-│   │   │   └── LandingPage.jsx      # Public landing page
-│   │   ├── hooks/                   # Custom React hooks
-│   │   │   ├── useContextMenu.js
-│   │   │   ├── useFetchNotifications.js
-│   │   │   ├── useFileUpload.js
-│   │   │   ├── useNotifications.js
-│   │   │   ├── useResponsive.js
-│   │   │   ├── useSplitPane.jsE
-│   │   │   └── useToast.js
-│   │   ├── context/                 # React Context (ThemeContext)
-│   │   ├── utils/                   # Utility helpers (api, auth, date, file, socket, storage)
-│   │   ├── styles/                  # Global styles
-│   │   ├── config/                  # Axios / app configuration
-│   │   ├── App.jsx                  # Root component & routing
-│   │   └── index.jsx                # Entry point
-│   ├── Dockerfile                   # Docker image for React app
-│   ├── nginx.conf                   # Nginx configuration for production
-│   └── package.json                 # Frontend dependencies
-│
-├── server/                          # Node.js backend
-│   ├── src/
-│   │   ├── controller/              # Route handlers
-│   │   │   ├── ai.controller.js
-│   │   │   ├── auth.controller.js
-│   │   │   ├── chat.controller.js
-│   │   │   ├── message.controller.js
-│   │   │   ├── notification.controller.js
-│   │   │   ├── task.controller.js
-│   │   │   ├── upload.controller.js
-│   │   │   └── user.controller.js
-│   │   ├── middleware/              # Express middleware
-│   │   │   └── auth.middleware.js   # JWT verification
-│   │   ├── routes/                  # API route definitions
-│   │   │   ├── ai.routes.js
-│   │   │   ├── auth.routes.js       # Includes OAuth (Google, GitHub) routes
-│   │   │   ├── chat.routes.js
-│   │   │   ├── message.routes.js
-│   │   │   ├── notification.routes.js
-│   │   │   ├── task.router.js
-│   │   │   ├── upload.routes.js
-│   │   │   └── user.routes.js
-│   │   ├── services/                # Business logic
-│   │   │   ├── ai.service.js
-│   │   │   ├── aiChatStream.service.js
-│   │   │   ├── cache.service.js
-│   │   │   ├── jwt.service.js
-│   │   │   ├── message-cache.service.js
-│   │   │   ├── notification.service.js
-│   │   │   ├── otp.service.js
-│   │   │   ├── task.service.js
-│   │   │   └── user-cache.service.js
-│   │   ├── socket/                  # WebSocket handlers
-│   │   │   └── socketHandler.js
-│   │   ├── cron/                    # Scheduled background jobs
-│   │   │   └── sessionCleanup.js
-│   │   ├── config/                  # Database, Redis, Passport & upload config
-│   │   │   ├── database.js
-│   │   │   ├── passport.js          # OAuth strategies (Google, GitHub)
-│   │   │   ├── redis.js
-│   │   │   └── upload.js
-│   │   └── server.js                # Entry point
-│   ├── prisma/
-│   │   ├── schema.prisma            # Database schema
-│   │   ├── seed.js                  # Database seeding
-│   │   └── migrations/              # Database migrations
-│   ├── uploads/                     # User file uploads
-│   ├── Dockerfile                   # Docker image for Node.js
-│   └── package.json                 # Backend dependencies
-│
-├── .github/
-│   └── workflows/
-│       ├── deploy-server.yaml       # CI/CD for backend
-│       └── deploy-frontend.yml      # CI/CD for frontend
-├── docker-compose.yml               # Docker Compose configuration
-├── .env                             # Environment variables
-└── README.md                        # This file
-```
-
+  
 ---
 
 ## Environment Configuration
@@ -180,10 +83,21 @@ Create the `.env` file in the root directory as described in [Environment Config
 
 The `.env` file is automatically loaded by Docker Compose.
 
-### 3. Start All Services
+### 3. Start Services
 
 ```bash
+# This starts all services
 docker-compose up -d
+```
+
+```bash
+# Start only the backend server
+docker-compose up -d mysql redis server
+``` 
+
+```bash
+# Start only the frontend client
+docker-compose up -d client
 ```
 
 This starts the following services:
@@ -195,11 +109,11 @@ This starts the following services:
 | Node.js Server  | 3001 | REST API & WebSocket server   |
 | React Client    | 3000 | Web application               |
 
+
 ### 4. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
 
 ### 5. Manage Services
 
@@ -227,8 +141,6 @@ docker exec switfttalk-server-1 npx prisma studio
 # Test frontend
 curl http://localhost:3000
 
-# Test API health
-curl http://localhost:3001/health
 ```
 ---
 
@@ -458,4 +370,4 @@ Created by Rushikesh
 
 ---
 
-**Last Updated**: June 8, 2026
+**Last Updated**: June 16, 2026

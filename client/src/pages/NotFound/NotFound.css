@@ -1,0 +1,52 @@
+.not-found-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  text-align: center;
+  padding: 20px;
+}
+
+.not-found-content {
+  max-width: 400px;
+  background-color: var(--card-background);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.not-found-title {
+  font-size: 6rem;
+  margin: 0;
+  font-weight: 800;
+  color: var(--primary-dark);
+  line-height: 1;
+  text-shadow: 2px 4px 10px var(--primary-shadow);
+}
+
+.not-found-text {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 20px 0 30px;
+}
+
+.not-found-link {
+  display: inline-block;
+  background-color: var(--primary-dark);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px var(--primary-shadow);
+}
+
+.not-found-link:hover {
+  background-color: rgba(var(--accent-color-rgb), 0.85);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px var(--primary-shadow);
+}

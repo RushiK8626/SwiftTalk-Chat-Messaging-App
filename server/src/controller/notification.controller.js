@@ -15,6 +15,7 @@ exports.subscribeToPushNotifications = async (req, res) => {
 
     res.status(201).json({ message: 'Successfully subscribed to push notifications', data: { user_id, subscribed_at: savedSubscription.created_at } });
   } catch (error) {
+    console.error('[notification.subscribeToPushNotifications]', error);
     res.status(500).json({ error: 'Failed to subscribe to notifications' });
   }
 };
@@ -29,6 +30,7 @@ exports.unsubscribeFromPushNotifications = async (req, res) => {
 
     res.status(200).json({ message: 'Successfully unsubscribed from push notifications' });
   } catch (error) {
+    console.error('[notification.unsubscribeFromPushNotifications]', error);
     res.status(500).json({ error: 'Failed to unsubscribe from notifications' });
   }
 };
@@ -41,6 +43,7 @@ exports.getVapidPublicKey = async (req, res) => {
     res.set({ 'Cache-Control': 'public, max-age=86400', 'Content-Type': 'application/json' });
     res.status(200).json({ vapidPublicKey: publicKey });
   } catch (error) {
+    console.error('[notification.getVapidPublicKey]', error);
     res.status(500).json({ error: 'Failed to retrieve VAPID key' });
   }
 };
@@ -66,6 +69,7 @@ exports.getNotifications = async (req, res) => {
       pagination: { total, limit: parseInt(limit), offset: parseInt(offset), hasMore: (parseInt(offset) + parseInt(limit)) < total }
     });
   } catch (error) {
+    console.error('[notification.getNotifications]', error);
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 };
@@ -87,6 +91,7 @@ exports.markNotificationAsRead = async (req, res) => {
 
     res.status(200).json({ message: 'Notification marked as read', data: updated });
   } catch (error) {
+    console.error('[notification.markNotificationAsRead]', error);
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
 };
@@ -103,6 +108,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 
     res.status(200).json({ message: 'All notifications marked as read', updated_count: result.count });
   } catch (error) {
+    console.error('[notification.markAllNotificationsAsRead]', error);
     res.status(500).json({ error: 'Failed to mark all notifications as read' });
   }
 };
@@ -120,6 +126,7 @@ exports.deleteNotification = async (req, res) => {
     await prisma.notification.delete({ where: { notification_id: parseInt(notification_id) } });
     res.status(200).json({ message: 'Notification deleted successfully' });
   } catch (error) {
+    console.error('[notification.deleteNotification]', error);
     res.status(500).json({ error: 'Failed to delete notification' });
   }
 };
@@ -132,6 +139,7 @@ exports.getUnreadCount = async (req, res) => {
     const count = await prisma.notification.count({ where: { user_id, is_read: false } });
     res.status(200).json({ unread_count: count });
   } catch (error) {
+    console.error('[notification.getUnreadCount]', error);
     res.status(500).json({ error: 'Failed to fetch unread count' });
   }
 };

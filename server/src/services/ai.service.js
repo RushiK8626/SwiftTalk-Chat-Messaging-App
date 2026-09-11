@@ -1,102 +1,163 @@
 const dotenv = require('dotenv');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const { ChatGroq } = require('@langchain/groq');
+const {
+  HumanMessage,
+  SystemMessage,
+} = require('@langchain/core/messages');
 
-const AI_CONFIG = {
-  model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
-  maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS) || 150,
-  temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
-};
+dotenv.config();
 
-const generateSmartReplies = async (messageHistory, count = 3) => {
+const MODEL_NAME = process.env.AI_MODEL;
+const API_KEY = process.env.AI_API_KEY;
+
+// Smart replies
+const smartReplyModel = new ChatGroq({
+  model: MODEL_NAME,
+  apiKey: API_KEY,
+  temperature: 0.7,
+  maxTokens: 150,
+});
+
+// Translation
+const translationModel = new ChatGroq({
+  model: MODEL_NAME,
+  apiKey: API_KEY,
+  temperature: 0.2,
+  maxTokens: 200,
+});
+
+// Summaries
+const summaryModel = new ChatGroq({
+  model: MODEL_NAME,
+  apiKey: API_KEY,
+  temperature: 0.5,
+  maxTokens: 300,
+});
+
+// Language detection
+const languageDetectionModel = new ChatGroq({
+  model: MODEL_NAME,
+  apiKey: API_KEY,
+  temperature: 0.1,
+  maxTokens: 10,
+});
+
+// Conversation starters
+const conversationStarterModel = new ChatGroq({
+  model: MODEL_NAME,
+  apiKey: API_KEY,
+  temperature: 0.8,
+  maxTokens: 100,
+});
+
+
+const generateSmartReplies = async (
+  messageHistory,
+  count = 3
+) => {
   try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-    if (!messageHistory || messageHistory.length === 0) throw new Error('Message history is required');
+    if (!API_KEY) {
+      throw new Error('Model API key not configured');
+    }
 
-    // Format message history for context
+    if (!messageHistory?.length) {
+      throw new Error('Message history is required');
+    }
+
     const conversationContext = messageHistory
-      .slice(-10) // Only use last 10 messages for context
+      .slice(-10)
       .map(msg => `${msg.sender}: ${msg.text}`)
       .join('\n');
 
-    const lastMessage = messageHistory[messageHistory.length - 1];
+    const lastMessage =
+      messageHistory[messageHistory.length - 1];
 
-    const prompt = `You are helping generate quick reply suggestions for a chat application. 
+    const prompt = `
 Based on the following conversation, suggest ${count} brief, natural, and contextually appropriate responses.
-Each reply should be concise (1-2 sentences max) and sound conversational.
 
 Conversation:
 ${conversationContext}
 
 Generate ${count} different reply suggestions that would make sense as responses to the last message from ${lastMessage.sender}.
-Return ONLY the suggestions, one per line, without numbering or formatting. You can use suitable emoji in message`;
 
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: AI_CONFIG.maxTokens,
-        temperature: AI_CONFIG.temperature,
-      },
-    });
+Return ONLY the suggestions, one per line, without numbering or formatting. You may use suitable emojis.
+`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const result = await smartReplyModel.invoke([
+      new SystemMessage(
+        'You generate concise smart reply suggestions for chat applications.'
+      ),
+      new HumanMessage(prompt),
+    ]);
 
-    const suggestions = text
+    return result.content
       .trim()
       .split('\n')
-      .filter(line => line.trim())
+      .filter(Boolean)
       .slice(0, count);
-
-    return suggestions;
   } catch (error) {
     throw error;
   }
 };
 
-const translateMessage = async (text, targetLanguage, sourceLanguage = 'auto') => {
+const translateMessage = async (
+  text,
+  targetLanguage,
+  sourceLanguage = 'auto'
+) => {
   try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-    if (!text || !text.trim()) throw new Error('Text to translate is required');
-    if (!targetLanguage) throw new Error('Target language is required');
+    if (!API_KEY) {
+      throw new Error('AI API key not configured');
+    }
+
+    if (!text?.trim()) {
+      throw new Error('Text to translate is required');
+    }
+
+    if (!targetLanguage) {
+      throw new Error('Target language is required');
+    }
 
     const languageNames = {
-      'en': 'English',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-      'hi': 'Hindi',
-      'zh': 'Chinese',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'ar': 'Arabic',
-      'pt': 'Portuguese',
-      'ru': 'Russian',
-      'it': 'Italian',
-      'mr': 'Marathi',
+      en: 'English',
+      es: 'Spanish',
+      fr: 'French',
+      de: 'German',
+      hi: 'Hindi',
+      mr: 'Marathi',
+      zh: 'Chinese',
+      ja: 'Japanese',
+      ko: 'Korean',
+      ar: 'Arabic',
+      pt: 'Portuguese',
+      ru: 'Russian',
+      it: 'Italian',
     };
 
-    const targetLangName = languageNames[targetLanguage.toLowerCase()] || targetLanguage;
+    const targetLangName =
+      languageNames[targetLanguage.toLowerCase()] ||
+      targetLanguage;
 
-    const prompt = sourceLanguage === 'auto' 
-      ? `Translate the following text to ${targetLangName}. Only return the translation, nothing else:\n\n${text}`
-      : `Translate the following text from ${languageNames[sourceLanguage] || sourceLanguage} to ${targetLangName}. Only return the translation, nothing else:\n\n${text}`;
+    const prompt =
+      sourceLanguage === 'auto'
+        ? `Translate the following text to ${targetLangName}. Return ONLY the translated text.
 
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: AI_CONFIG.maxTokens,
-        temperature: 0.3, // Lower temperature for more consistent translations
-      },
-    });
+${text}`
+        : `Translate the following text from ${languageNames[sourceLanguage] ||
+        sourceLanguage
+        } to ${targetLangName}. Return ONLY the translated text.
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const translatedText = response.text().trim();
+${text}`;
+
+    const result = await translationModel.invoke([
+      new SystemMessage(
+        'You are a professional translator. Return only the translation without explanations.'
+      ),
+      new HumanMessage(prompt),
+    ]);
 
     return {
-      translatedText,
+      translatedText: result.content.trim(),
       sourceLanguage,
       targetLanguage,
     };
@@ -105,72 +166,82 @@ const translateMessage = async (text, targetLanguage, sourceLanguage = 'auto') =
   }
 };
 
-const summarizeConversation = async (messages, summaryType = 'brief') => {
+const summarizeConversation = async (
+  messages,
+  summaryType = 'brief'
+) => {
   try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-    if (!messages || messages.length === 0) throw new Error('Messages to summarize are required');
+    if (!API_KEY) {
+      throw new Error('AI API key not configured');
+    }
+
+    if (!messages?.length) {
+      throw new Error('Messages to summarize are required');
+    }
 
     const conversationText = messages
       .map(msg => {
-        const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '';
+        const timestamp = msg.timestamp
+          ? new Date(msg.timestamp).toLocaleString()
+          : '';
+
         return `[${timestamp}] ${msg.sender}: ${msg.text}`;
       })
       .join('\n');
 
     const summaryInstructions = {
-      brief: 'Provide a brief 1-2 sentence summary of the main points discussed.',
-      detailed: 'Provide a detailed paragraph summarizing the conversation, including key points, decisions, and important details.',
-      bullet: 'Provide a bullet-point summary of the main topics and key points discussed.',
+      brief:
+        'Provide a brief 1-2 sentence summary.',
+      detailed:
+        'Provide a detailed summary including key decisions and discussion points.',
+      bullet:
+        'Provide a bullet-point summary.',
     };
 
-    const instruction = summaryInstructions[summaryType] || summaryInstructions.brief;
-
-    const prompt = `Summarize the following conversation. ${instruction}
+    const prompt = `
+${summaryInstructions[summaryType] || summaryInstructions.brief}
 
 Conversation:
 ${conversationText}
+`;
 
-Summary:`;
+    const result = await summaryModel.invoke([
+      new SystemMessage(
+        'You are an expert conversation summarizer.'
+      ),
+      new HumanMessage(prompt),
+    ]);
 
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: summaryType === 'detailed' ? 300 : AI_CONFIG.maxTokens,
-        temperature: 0.5,
-      },
-    });
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const summary = response.text().trim();
-
-    return summary;
+    return result.content.trim();
   } catch (error) {
     throw error;
   }
 };
 
-const detectLanguage = async (text) => {
+const detectLanguage = async text => {
   try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-    if (!text || !text.trim()) throw new Error('Text is required for language detection');
+    if (!API_KEY) {
+      throw new Error('AI API key not configured');
+    }
 
-    const prompt = `Detect the language of the following text and respond with ONLY the ISO 639-1 language code (e.g., en, es, fr, de, hi, zh):\n\n${text}`;
+    if (!text?.trim()) {
+      throw new Error(
+        'Text is required for language detection'
+      );
+    }
 
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: 10,
-        temperature: 0.1,
-      },
-    });
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const languageCode = response.text().trim().toLowerCase();
+    const result =
+      await languageDetectionModel.invoke([
+        new SystemMessage(
+          'Detect the language and return ONLY the ISO 639-1 language code.'
+        ),
+        new HumanMessage(text),
+      ]);
 
     return {
-      languageCode,
+      languageCode: result.content
+        .trim()
+        .toLowerCase(),
       text: text.substring(0, 100),
     };
   } catch (error) {
@@ -178,48 +249,61 @@ const detectLanguage = async (text) => {
   }
 };
 
-const generateConversationStarters = async (context) => {
+const generateConversationStarters = async context => {
   try {
-    if (!process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured');
-
-    const { chatType, chatName, recipientName } = context;
-    
-    let prompt;
-
-    const strictOutputRules = "IMPORTANT: Output ONLY the 3 specific message options. Do not include numbering (1., 2., 3.), bullet points, greetings to me, or phrases like 'Here are the starters'. Just return the 3 lines of text. You can use emoji in the messages.";
-
-    if (chatType === 'group') {
-      prompt = `Generate 3 short friendly icebreakers to start a conversation in a new $ chat named "${chatName}". The tone should be welcoming and encourage members to start talking for the first time. ${strictOutputRules}`;
-    } else {
-      prompt = `Generate 3 short friendly conversation starters for a direct message with a new connection named ${recipientName || 'a new friend'}. The context is saying hello for the very first time, so make them engaging but polite. ${strictOutputRules}`;
+    if (!API_KEY) {
+      throw new Error('AI API key not configured');
     }
 
-    const model = genAI.getGenerativeModel({ 
-      model: AI_CONFIG.model,
-      generationConfig: {
-        maxOutputTokens: 100,
-        temperature: 0.8,
-      },
-    });
+    const {
+      chatType,
+      chatName,
+      recipientName,
+    } = context;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const strictOutputRules =
+      'Output ONLY 3 messages. No numbering, bullets, titles, or explanations. One message per line.';
 
-    const starters = text
+    let prompt;
+
+    if (chatType === 'group') {
+      prompt = `
+Generate 3 short friendly icebreakers for a new group chat named "${chatName}".
+
+${strictOutputRules}
+`;
+    } else {
+      prompt = `
+Generate 3 friendly conversation starters for a direct message with ${recipientName || 'a new friend'
+        }.
+
+${strictOutputRules}
+`;
+    }
+
+    const result =
+      await conversationStarterModel.invoke([
+        new SystemMessage(
+          'You create engaging conversation starters for chat applications.'
+        ),
+        new HumanMessage(prompt),
+      ]);
+
+    return result.content
       .trim()
       .split('\n')
-      .filter(line => line.trim())
-      .map(line => line.replace(/^\d+\.\s*/, '').trim()) 
+      .filter(Boolean)
+      .map(line =>
+        line.replace(/^\d+\.\s*/, '').trim()
+      )
       .slice(0, 3);
-
-    return starters;
   } catch (error) {
     throw error;
   }
 };
 
-const isConfigured = () => !!process.env.GEMINI_API_KEY;
+
+const isConfigured = () => Boolean(API_KEY);
 
 module.exports = {
   generateSmartReplies,

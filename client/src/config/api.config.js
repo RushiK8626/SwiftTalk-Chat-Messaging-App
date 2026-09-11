@@ -5,12 +5,12 @@ const LOCAL_API_URL = "http://localhost:3001";
 const config = {
   // API Base URL - prioritize environment variables (remove trailing slashes)
   API_BASE_URL: (
-    process.env.REACT_APP_API_URL || LOCAL_API_URL
+    import.meta.env.VITE_APP_API_URL || LOCAL_API_URL
   ).replace(/\/+$/, ""),
 
   // Socket URL - prioritize environment variables (remove trailing slashes)
   SOCKET_URL: (
-    process.env.REACT_APP_SOCKET_URL || LOCAL_API_URL
+    import.meta.env.VITE_APP_SOCKET_URL || LOCAL_API_URL
   ).replace(/\/+$/, ""),
 
   // Upload URLs

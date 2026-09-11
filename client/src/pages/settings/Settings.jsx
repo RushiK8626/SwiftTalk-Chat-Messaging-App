@@ -167,7 +167,7 @@ const Settings = ({ isEmbedded = false }) => {
           userId
             ? fetch(
                 `${(
-                  process.env.REACT_APP_API_URL || "http://localhost:3001"
+                  import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                 ).replace(/\/+$/, "")}/api/auth/logout`,
                 {
                   method: "POST",

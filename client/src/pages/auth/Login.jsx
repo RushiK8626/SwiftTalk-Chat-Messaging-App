@@ -44,7 +44,7 @@ const Login = () => {
       setLoading(true);
       try {
         const API_URL = (
-          process.env.REACT_APP_API_URL || "http://localhost:3001"
+          import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
         ).replace(/\/+$/, "");
 
         const { data } = await axios.post(`${API_URL}/api/auth/login`, {
@@ -95,7 +95,7 @@ const Login = () => {
 
   // OAuth login handler
   const handleOAuthLogin = (provider) => {
-    const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+    const API_URL = (import.meta.env.VITE_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
     const returnUrl = encodeURIComponent(window.location.origin);
     window.location.href = `${API_URL}/api/auth/${provider}?returnUrl=${returnUrl}`;
   };

@@ -1,8 +1,14 @@
 FROM node:18-alpine
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --no-audit --no-fund
+
 COPY . .
+
 RUN npx prisma generate
+
 EXPOSE 3001
-CMD ["npm", "start"]
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]

@@ -35,7 +35,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
         if (chatImages[chatId] || !imagePath) return;
         try {
             const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
             const filename = imagePath.split("/uploads/").pop();
@@ -62,7 +62,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
         if (userProfiles[otherUserId]) return;
         try {
             const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
             const res = await fetch(`${API_URL}/api/users/${otherUserId}`, {
@@ -103,7 +103,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
             }
             try {
                 const API_URL = (
-                    process.env.REACT_APP_API_URL || "http://localhost:3001"
+                    import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
                 ).replace(/\/+$/, "");
                 const token = localStorage.getItem("accessToken");
                 const res = await fetch(
@@ -237,7 +237,7 @@ const MessageForward = ({ onClose, userId, messageId, onForward, currentChatId }
         setError(null);
         try {
             const API_URL = (
-                process.env.REACT_APP_API_URL || "http://localhost:3001"
+                import.meta.env.VITE_APP_API_URL || "http://localhost:3001"
             ).replace(/\/+$/, "");
             const token = localStorage.getItem("accessToken");
 

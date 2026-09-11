@@ -56,7 +56,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
         let profilePicUrl = null;
         if (userData.profile_pic) {
           const filename = userData.profile_pic.split("/uploads/").pop();
-          profilePicUrl = `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+          profilePicUrl = `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
             }/uploads/profiles/${filename}`;
         }
 
@@ -109,7 +109,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+        `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
         }/api/users/${userId}`,
         {
           method: "PUT",
@@ -183,7 +183,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
 
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+        `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
         }/uploads/profile-pic`,
         {
           method: "POST",
@@ -199,7 +199,7 @@ const Profile = ({ isEmbedded: isEmbeddedProp = false }) => {
 
         if (data.profile_pic) {
           const filename = data.profile_pic.split("/uploads/").pop();
-          const newProfilePicUrl = `${(process.env.REACT_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
+          const newProfilePicUrl = `${(import.meta.env.VITE_APP_API_URL || "http://localhost:3001").replace(/\/+$/, "")
             }/uploads/profiles/${filename}`;
 
           setProfileData((prev) => ({
