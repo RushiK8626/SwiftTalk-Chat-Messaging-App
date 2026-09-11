@@ -3,7 +3,8 @@ const session = require('express-session');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
-const { initializeSocket } = require('./socket/socketHandler');
+const { initializeSocket, setupRedisAdapter } = require('./socket/socketHandler');
+const { initSocketEmitter } = require('./socket/socketEmitter');
 const { testConnection } = require('./config/database');
 const { initRedis, closeRedis, isAvailable: isRedisAvailable } = require('./config/redis');
 const { initSessionCleanupCron } = require("./cron/sessionCleanup")
@@ -107,10 +108,7 @@ app.use(passport.session());
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
-app.use('/api/chats', (req, res, next) => {
-  req.io = io;
-  next();
-}, chatRoutes);
+app.use('/api/chats', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/uploads', uploadRoutes);
 app.use('/api/ai', aiRoutes);
@@ -183,6 +181,8 @@ async function startServer() {
   try {
     await initRedis();
     console.log('Redis connected successfully.');
+    await setupRedisAdapter(io);
+    await initSocketEmitter(io);
   } catch (error) {
     console.warn('[WARN] Redis init failed, falling back to in-memory:', error.message);
   }

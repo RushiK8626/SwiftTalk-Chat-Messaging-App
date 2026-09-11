@@ -1,6 +1,7 @@
 const userCacheService = require('../services/user-cache.service');
 const messageCacheService = require('../services/message-cache.service');
 const notificationService = require('../services/notification.service');
+const socketEmitter = require('../socket/socketEmitter');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -562,7 +563,7 @@ exports.getUserChatsPreview = async (req, res) => {
   }
 };
 
-exports.addChatMember = async (req, res, io) => {
+exports.addChatMember = async (req, res) => {
   try {
     const { chatId } = req.params;
     const { user_id } = req.body;
@@ -628,35 +629,33 @@ exports.addChatMember = async (req, res, io) => {
       data: { chat_id: parseInt(chatId), user_id: parseInt(user_id), is_visible: true, is_archived: false }
     });
 
-    if (io) {
-      io.to(`chat_${chatId}`).emit('member_added', {
+    socketEmitter.emitToChat(chatId, 'member_added', {
+      chat_id: parseInt(chatId),
+      member: { user_id: newUser.user_id, username: newUser.username, full_name: newUser.full_name, profile_pic: newUser.profile_pic },
+      timestamp: new Date(),
+      message: `${newUser.full_name || newUser.username} joined the group`
+    });
+
+    const currentUser = await prisma.user.findUnique({
+      where: { user_id: req.user?.user_id },
+      select: { user_id: true, username: true, full_name: true }
+    });
+
+    socketEmitter.emitToUser(user_id, 'you_were_added_to_group', {
+      chat_id: parseInt(chatId),
+      group_name: chat.chat_name,
+      added_by: currentUser?.full_name || 'Admin',
+      chat_image: chat.chat_image,
+      message: `You were added to "${chat.chat_name}" by ${currentUser?.full_name || 'an admin'}`
+    });
+
+    try {
+      await notificationService.notifyUserAddedToGroup(user_id, {
         chat_id: parseInt(chatId),
-        member: { user_id: newUser.user_id, username: newUser.username, full_name: newUser.full_name, profile_pic: newUser.profile_pic },
-        timestamp: new Date(),
-        message: `${newUser.full_name || newUser.username} joined the group`
+        chat_name: chat.chat_name,
+        added_by_username: currentUser?.username || 'Admin'
       });
-
-      const currentUser = await prisma.user.findUnique({
-        where: { user_id: req.user?.user_id },
-        select: { user_id: true, username: true, full_name: true }
-      });
-
-      io.to(`user_${user_id}`).emit('you_were_added_to_group', {
-        chat_id: parseInt(chatId),
-        group_name: chat.chat_name,
-        added_by: currentUser?.full_name || 'Admin',
-        chat_image: chat.chat_image,
-        message: `You were added to "${chat.chat_name}" by ${currentUser?.full_name || 'an admin'}`
-      });
-
-      try {
-        await notificationService.notifyUserAddedToGroup(user_id, {
-          chat_id: parseInt(chatId),
-          chat_name: chat.chat_name,
-          added_by_username: currentUser?.username || 'Admin'
-        });
-      } catch (pushError) { console.warn('[chat.addChatMember] Push notification failed:', pushError.message); }
-    }
+    } catch (pushError) { console.warn('[chat.addChatMember] Push notification failed:', pushError.message); }
 
     res.status(201).json({
       message: 'Member added successfully',
@@ -668,7 +667,7 @@ exports.addChatMember = async (req, res, io) => {
   }
 };
 
-exports.removeChatMember = async (req, res, io) => {
+exports.removeChatMember = async (req, res) => {
   try {
     const { chatId, userId } = req.params;
 
@@ -716,26 +715,24 @@ exports.removeChatMember = async (req, res, io) => {
 
     await prisma.groupAdmin.deleteMany({ where: { chat_id: parseInt(chatId), user_id: parseInt(userId) } });
 
-    if (io) {
-      io.to(`chat_${chatId}`).emit('member_removed', {
-        chat_id: parseInt(chatId),
-        removed_member: removedUserDetails,
-        timestamp: new Date(),
-        message: `${removedUserDetails.full_name || removedUserDetails.username} was removed from the group`
-      });
+    socketEmitter.emitToChat(chatId, 'member_removed', {
+      chat_id: parseInt(chatId),
+      removed_member: removedUserDetails,
+      timestamp: new Date(),
+      message: `${removedUserDetails.full_name || removedUserDetails.username} was removed from the group`
+    });
 
-      const currentUser = await prisma.user.findUnique({
-        where: { user_id: req.user?.user_id },
-        select: { user_id: true, username: true, full_name: true }
-      });
+    const currentUser = await prisma.user.findUnique({
+      where: { user_id: req.user?.user_id },
+      select: { user_id: true, username: true, full_name: true }
+    });
 
-      io.to(`user_${userId}`).emit('you_were_removed_from_group', {
-        chat_id: parseInt(chatId),
-        group_name: chat.chat_name,
-        removed_by: currentUser?.full_name || 'Admin',
-        message: `You were removed from "${chat.chat_name}" by ${currentUser?.full_name || 'an admin'}`
-      });
-    }
+    socketEmitter.emitToUser(userId, 'you_were_removed_from_group', {
+      chat_id: parseInt(chatId),
+      group_name: chat.chat_name,
+      removed_by: currentUser?.full_name || 'Admin',
+      message: `You were removed from "${chat.chat_name}" by ${currentUser?.full_name || 'an admin'}`
+    });
 
     const memberCount = await prisma.chatMember.count({ where: { chat_id: parseInt(chatId) } });
     if (memberCount === 0) {
@@ -870,7 +867,7 @@ exports.getChatInfo = async (req, res) => {
   }
 };
 
-exports.exitGroupChat = async (req, res, io) => {
+exports.exitGroupChat = async (req, res) => {
   try {
     const { chatId } = req.params;
     const userId = req.user?.user_id || parseInt(req.body.user_id);
@@ -908,8 +905,8 @@ exports.exitGroupChat = async (req, res, io) => {
 
     let response = { message: 'Successfully exited group chat', chat_id: chatIdInt, remaining_members: remainingMembers };
 
-    if (io && exitingUser) {
-      io.to(`chat_${chatIdInt}`).emit('member_exited', {
+    if (exitingUser) {
+      socketEmitter.emitToChat(chatIdInt, 'member_exited', {
         chat_id: chatIdInt,
         exiting_member: exitingUser,
         remaining_members: remainingMembers,
