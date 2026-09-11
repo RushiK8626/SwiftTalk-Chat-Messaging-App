@@ -5,27 +5,33 @@ const { verifyToken } = require('../middleware/auth.middleware');
 const passport = require('../config/passport');
 const jwtService = require('../services/jwt.service');
 
+const isAllowedOrigin = (url) => {
+    if (!url) return false;
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+    if (allowedOrigins.includes(url)) return true;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(url)) return true;
+    if (url.includes('.trycloudflare.com') || url.includes('.github.io') || url.includes('swifttalk-api.me') || url.includes('vercel.app')) return true;
+    return false;
+};
+
 async function oauthCallback(req, res) {
-    if (!req.user) return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
-
-    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-
     // The returnUrl is passed as base64-encoded state param through the OAuth flow
     const requestedUrl = req.query.returnUrl
         ? decodeURIComponent(req.query.returnUrl)
         : (req.query.state ? Buffer.from(req.query.state, 'base64').toString() : null);
 
-    // fallback to default if origin not whitelisted
-    const frontendUrl = requestedUrl && allowedOrigins.includes(requestedUrl)
+    const frontendUrl = requestedUrl && isAllowedOrigin(requestedUrl)
         ? requestedUrl
-        : process.env.FRONTEND_URL;
+        : (process.env.FRONTEND_URL || 'http://localhost:3000');
+
+    if (!req.user) return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
 
     try {
         const { accessToken, refreshToken } = await jwtService.generateTokens(req.user);
         res.redirect(`${frontendUrl}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
     } catch (error) {
         console.error('OAuth token generation error:', error);
-        res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+        res.redirect(`${frontendUrl}/login?error=oauth_failed`);
     }
 }
 
