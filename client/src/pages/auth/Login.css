@@ -248,11 +248,11 @@ input[type="password"]::-webkit-textfield-decoration-container {
   border-bottom: 1px solid var(--border-color);
 }
 
-.divider::not(:empty)::before {
+.divider:not(:empty)::before {
   margin-right: 12px;
 }
 
-.divider::not(:empty)::after {
+.divider:not(:empty)::after {
   margin-left: 12px;
 }
 

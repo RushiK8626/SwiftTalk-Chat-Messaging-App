@@ -17,65 +17,47 @@ const result = dotenv.config({ path: envPath });
 const app = express();
 const server = http.createServer(app);
 
+const cors = require('cors');
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://localhost:3000",
+  "https://127.0.0.1:3000",
+  "http://localhost:3002",
+  "http://127.0.0.1:3002",
+  "https://localhost:3002",
+  "https://127.0.0.1:3002",
+  "https://rushik8626.github.io",
+  "https://swiftalk.vercel.app",
+  "https://switftalk.vercel.app",
+  "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
+  "https://swifttalk-api.me"
+];
+
+const checkCorsOrigin = function (origin, callback) {
+  if (!origin || allowedOrigins.includes(origin) ||
+    (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
+    callback(null, true);
+  } else {
+    callback(new Error('Not allowed by CORS'));
+  }
+};
+
 const io = new Server(server, {
   path: '/socket.io/',
   transports: ['websocket', 'polling'],
   maxHttpBufferSize: 100 * 1024 * 1024,
   cors: {
-    origin: function (origin, callback) {
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://localhost:3000",
-        "https://127.0.0.1:3000",
-        "http://localhost:3002",
-        "http://127.0.0.1:3002",
-        "https://localhost:3002",
-        "https://127.0.0.1:3002",
-        "https://swiftalk.vercel.app",
-        "https://switftalk.vercel.app",
-        "https://swifttalk-api.me"
-      ];
-
-      if (!origin || allowedOrigins.includes(origin) ||
-        (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: checkCorsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
   }
 });
 
-const cors = require('cors');
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "https://localhost:3000",
-      "https://127.0.0.1:3000",
-      "http://localhost:3002",
-      "http://127.0.0.1:3002",
-      "https://localhost:3002",
-      "https://127.0.0.1:3002",
-      "https://rushik8626.github.io",
-      "https://swiftalk.vercel.app",
-      "https://switftalk.vercel.app",
-      "https://swifttalk-kv2qalfll-rushikeshs-projects-0260b878.vercel.app",
-      "https://swifttalk-api.me"
-    ];
-
-    if (!origin || allowedOrigins.includes(origin) ||
-      (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: checkCorsOrigin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cache-Control", "Pragma", "Expires"],
