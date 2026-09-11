@@ -1,6 +1,5 @@
 {
   "description": "Messaging App",
-  "main": "public/main.js",
   "name": "swifttalk-client",
   "version": "0.3.0",
   "private": true,
@@ -33,14 +32,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "eject": "react-scripts eject",
-    "deploy": "vercel --prod",
-    "electron-dev": "electron .",
-    "electron:serve": "concurrently -k \"cross-env BROWSER=none npm start\" \"npm run electron:start\"",
-    "electron:start": "wait-on http://localhost:3000 && electron .",
-    "electron:build": "npm run build && electron-builder -c.extraMetadata.main=build/main.js",
-    "electron:build-win": "npm run build && electron-builder -c.extraMetadata.main=build/main.js --win",
-    "electron:build-mac": "npm run build && electron-builder -c.extraMetadata.main=build/main.js --mac",
-    "electron:build-linux": "npm run build && electron-builder -c.extraMetadata.main=build/main.js --linux"
+    "deploy": "vercel --prod"
   },
   "eslintConfig": {
     "extends": [
@@ -63,43 +55,6 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@vitejs/plugin-react": "^6.0.2",
-    "concurrently": "^10.0.3",
-    "vite": "^8.0.16",
-    "wait-on": "^9.0.3"
-  },
-  "optionalDependencies": {
-    "electron": "^39.2.1",
-    "electron-builder": "^26.8.1"
-  },
-  "build": {
-    "extends": null,
-    "appId": "com.swifttalk.app",
-    "productName": "SwiftTalk",
-    "files": [
-      "dist/**/*",
-      "build/**/*",
-      "node_modules/**/*",
-      "package.json",
-      "public/**/*"
-    ],
-    "directories": {
-      "buildResources": "assets"
-    },
-    "win": {
-      "icon": "build/icon.png",
-      "target": "NSIS"
-    },
-    "mac": {
-      "icon": "build/icon.png",
-      "target": "dmg"
-    },
-    "linux": {
-      "icon": "build/icon.png",
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Network"
-    }
+    "vite": "^8.0.16"
   }
 }
