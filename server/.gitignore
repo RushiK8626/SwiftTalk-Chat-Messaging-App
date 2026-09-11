@@ -1,7 +1,37 @@
+# Dependencies
 node_modules/
-.DS_Store
+
+# Environment files
 .env
 .env.production
 .env.local
-.env*.local
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing & Coverage
+coverage/
+
+# Uploads
 uploads/
+
+# Editor & IDE
+.vscode/
+.idea/
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db
+[Dd]esktop.ini
+
+# Temporary files & Caches
+.cache/
+.tmp/
