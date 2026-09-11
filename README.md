@@ -1,353 +1,126 @@
 <div align="center">
-  <img src="client/public/logo192.png" alt="SwiftTalk Logo" width="60" height="60">
-  <h1>SwiftTalk - Real-Time Chat Messaging Application</h1>
+  <img src="client/public/logo192.png" alt="SwiftTalk Logo" width="64" height="64">
+  <h1>SwiftTalk</h1>
+  <p><strong>Scalable Full-Stack Real-Time Messaging Application</strong></p>
+
+  <p>
+    <img src="https://img.shields.io/badge/React-19-61dafb?logo=react" alt="React 19">
+    <img src="https://img.shields.io/badge/Vite-6-646cff?logo=vite" alt="Vite">
+    <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs" alt="Node.js">
+    <img src="https://img.shields.io/badge/Express-4-000000?logo=express" alt="Express">
+    <img src="https://img.shields.io/badge/Socket.IO-4-010101?logo=socketdotio" alt="Socket.IO">
+    <img src="https://img.shields.io/badge/Redis-Adapter-dc382d?logo=redis" alt="Redis">
+    <img src="https://img.shields.io/badge/Prisma-ORM-2d3748?logo=prisma" alt="Prisma">
+    <img src="https://img.shields.io/badge/MySQL-8.0-4479a1?logo=mysql" alt="MySQL">
+    <img src="https://img.shields.io/badge/Groq-LLaMA_3.3-f55036" alt="Groq AI">
+  </p>
 </div>
 
-A modern, full-stack messaging application with real-time communication, AI-powered chat assistance, task management, and smart notifications built with React, Node.js, and WebSockets.
-
-## Features
-
-- **Real-Time Messaging**: Instant message delivery with live read receipts and typing indicators
-- **AI-Powered Chat**: AI assistance for writing suggestions, smart replies, message translation, and chat summarization
-- **Task Management**: Integrated task management with subtasks, priorities, tags, and due dates
-- **Smart Notifications**: Web push notifications with optional email alerts
-- **File & Media Sharing**: Send images, documents, and files with instant previews
-- **User Authentication**: Secure JWT-based authentication with OTP verification
-- **OAuth Integration**: Supports login with Google and GitHub
-- **Privacy Controls**: Blocked-user management and private/public chat options
-- **Group Chats**: Create and manage group conversations with admin roles
-  
 ---
 
-## Environment Configuration
+SwiftTalk is a modern, high-performance messaging platform built for scale. It separates the REST API server from dedicated WebSocket instances using Redis pub/sub for horizontal scalability, and integrates AI assistance, web push notifications, and OAuth.
 
-Environment configuration templates are provided via `.env.example` files across the repository:
+## ✨ Features
 
-1. **Backend Server** ([`server/.env.example`](file:///server/.env.example)):
-   ```bash
-   cp server/.env.example server/.env
-   ```
-   Fill in your database URL, Redis URL, JWT secrets, OAuth client credentials, and Groq API key.
-
-2. **Frontend Client** ([`client/.env.example`](file:///client/.env.example)):
-   ```bash
-   cp client/.env.example client/.env
-   ```
-   Sets backend API and WebSocket endpoints (`VITE_APP_API_URL`, `VITE_APP_SOCKET_URL`).
-
-3. **Docker Compose Root** ([`.env.example`](file:///.env.example)):
-   ```bash
-   cp .env.example .env
-   ```
-   Sets build arguments for Docker Compose.
+- **Real-Time Communication**: Instant delivery, live typing indicators, read receipts, and online/offline status via Socket.IO.
+- **Scalable Architecture**: Dedicated WebSocket server (`:3002`) decoupled from REST API (`:3001`), horizontally scaled via `@socket.io/redis-adapter` and `@socket.io/redis-emitter`.
+- **AI-Powered Assistance**: Smart replies, chat summarization, and message translation powered by Groq (LLaMA 3.3).
+- **Rich Media & File Sharing**: Instant image previews, documents, and file uploads.
+- **Direct & Group Chats**: 1-on-1 private messaging and group chats with admin management.
+- **Robust Authentication**: JWT access & refresh token rotation, email OTP verification (Resend API), and OAuth 2.0 (Google & GitHub).
+- **Privacy & Security**: User blocking, bcrypt password hashing, and granular CORS protection.
 
 ---
 
-## Setup: Docker (Recommended)
+## 🏗️ Architecture & Services
 
-### Prerequisites
+<p align="center">
+  <img src="assets/architecture.png" alt="SwiftTalk System Architecture" width="100%">
+</p>
 
-- **Docker** (v20.10+)
-- **Docker Compose** (v2.0+)
-- Modern web browser with JavaScript enabled
+| Service              | Port   | Technology               | Purpose                                   |
+| :------------------- | :----- | :----------------------- | :---------------------------------------- |
+| **Frontend Client**  | `3000` | React 19, Vite           | Web application UI                        |
+| **REST API Server**  | `3001` | Express, Prisma          | Authentication, users, chats, AI, uploads |
+| **WebSocket Server** | `3002` | Socket.IO, Redis Adapter | Real-time events, messaging, presence     |
+| **Redis**            | `6379` | Redis 6.2                | Pub/Sub message broker & session store    |
+| **MySQL Database**   | `3306` | MySQL 8.0                | Primary relational database               |
 
-### 1. Clone and Navigate
-
-```bash
-cd SwitftTalk
-```
-
-### 2. Configure Environment
-
-Create the `.env` file in the root directory as described in [Environment Configuration](#environment-configuration).
-
-The `.env` file is automatically loaded by Docker Compose.
-
-### 3. Start Services
-
-```bash
-# This starts all services
-docker-compose up -d
-```
-
-```bash
-# Start only the backend server
-docker-compose up -d mysql redis server
-``` 
-
-```bash
-# Start only the frontend client
-docker-compose up -d client
-```
-
-This starts the following services:
-
-| Service         | Port | Description                   |
-|-----------------|------|-------------------------------|
-| MySQL Database  | 3306 | Primary database              |
-| Redis Cache     | 6379 | Session and cache store       |
-| Node.js Server  | 3001 | REST API & WebSocket server   |
-| React Client    | 3000 | Web application               |
-
-
-### 4. Access the Application
-
-- **Frontend**: http://localhost:3000
-- **API Server**: http://localhost:3001
-
-### 5. Manage Services
-
-```bash
-# Stop all services (keeps data volumes)
-docker-compose down
-
-# Stop and remove all data (hard reset)
-docker-compose down -v
-```
-
-### Database Migrations (Docker)
-
-```bash
-# Create a new migration
-docker exec switfttalk-server-1 npx prisma migrate dev --name your_migration_name
-
-# Open Prisma Studio (GUI for database)
-docker exec switfttalk-server-1 npx prisma studio
-```
-
-### Testing the Docker Setup
-
-```bash
-# Test frontend
-curl http://localhost:3000
-
-```
 ---
 
-## Setup: Local Development (Without Docker)
+## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Docker (Recommended)
 
-- **Node.js** (v18+)
-- **MySQL** (v8.0+) — running locally or remotely
-- **Redis** (v6.2+) — running locally or remotely
-- **npm** (v9+)
-
-### 1. Clone and Navigate
+Make sure **Docker** and **Docker Compose** are installed:
 
 ```bash
-cd SwitftTalk
-```
+# 1. Clone the repository
+git clone https://github.com/RushiK8626/SwiftTalk-Chat-Messaging-App.git
+cd SwiftTalk-Chat-Messaging-App
 
-### 2. Configure Environment
-
-Copy and configure the environment files from the provided templates:
-
-```bash
-# Server configuration
+# 2. Setup environment variables
 cp server/.env.example server/.env
-
-# Client configuration
 cp client/.env.example client/.env
+
+# 3. Spin up all services
+docker compose up -d
 ```
 
-Ensure your `DATABASE_URL` and `REDIS_URL` in `server/.env` point to your running MySQL and Redis instances.
+Access the client at **http://localhost:3000**.
 
-### 3. Install Dependencies
+---
 
-```bash
-# Install backend dependencies
-cd server
-npm install
+### Option 2: Local Development
 
-# Install frontend dependencies
-cd ../client
-npm install
-```
-
-### 4. Set Up the Database
+**Prerequisites**: Node.js 18+, MySQL 8.0, and Redis 6.2+.
 
 ```bash
-cd server
+# 1. Install dependencies
+cd server && npm install
+cd ../client && npm install
+cd ..
 
-# Run migrations to create schema
+# 2. Configure environment
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+
+# 3. Apply database migrations
+cd server
 npx prisma migrate dev
 
-# (Optional) Seed initial data
-npx prisma db seed
-```
-
-### 5. Start the Application
-
-Open two terminal windows:
-
-```bash
-# Terminal 1 — Start backend server (from /server)
-cd server
+# 4. Start backend (runs both REST API on :3001 and WS on :3002 concurrently)
 npm run dev
 
-# Terminal 2 — Start frontend (from /client)
-cd client
+# 5. Start frontend (in a separate terminal)
+cd ../client
 npm start
 ```
 
-### 6. Access the Application
-
-- **Frontend**: http://localhost:3000
-- **API Server**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
-
-### Database Migrations (Local)
-
-```bash
-# Create a new migration
-cd server
-npx prisma migrate dev --name your_migration_name
-
-# Open Prisma Studio (GUI for database)
-npx prisma studio
-```
 ---
 
-## API Endpoints
+## ⚙️ Key Scripts
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/verify-registration-otp` - Verify OTP to complete registration
-- `POST /api/auth/resend-registration-otp` - Resend registration OTP
-- `POST /api/auth/cancel-registration` - Cancel pending registration
-- `POST /api/auth/login` - Login user (initiates OTP flow)
-- `POST /api/auth/verify-otp` - Verify login OTP
-- `POST /api/auth/resend-otp` - Resend login OTP
-- `POST /api/auth/logout` - Logout user
-- `POST /api/auth/refresh-token` - Refresh access token
-- `GET  /api/auth/me` - Get current authenticated user
-- `POST /api/auth/request-password-reset` - Request password reset email
-- `POST /api/auth/reset-password` - Reset password with token
-- `GET  /api/auth/google` - Initiate Google OAuth login
-- `GET  /api/auth/google/callback` - Google OAuth callback
-- `GET  /api/auth/github` - Initiate GitHub OAuth login
-- `GET  /api/auth/github/callback` - GitHub OAuth callback
-
-### Users
-- `GET /api/users/profile` - Get current user profile
-- `PUT /api/users/profile` - Update user profile
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users/block/:id` - Block a user
-
-### Chats
-- `GET /api/chats` - List all chats
-- `POST /api/chats` - Create new chat
-- `GET /api/chats/:id` - Get chat details
-- `DELETE /api/chats/:id` - Delete chat
-
-### Messages
-- `GET /api/messages/:chatId` - Get chat messages
-- `POST /api/messages` - Send message
-- `DELETE /api/messages/:id` - Delete message
-
-### Tasks
-- `GET /api/tasks` - List tasks
-- `POST /api/tasks` - Create task
-- `PUT /api/tasks/:id` - Update task
-- `DELETE /api/tasks/:id` - Delete task
-
-### Uploads
-- `POST /api/upload` - Upload a file (image, document, etc.)
-
-### Notifications
-- `GET /api/notifications` - Get notifications
-- `POST /api/notifications/subscribe` - Subscribe to push notifications
-- `POST /api/notifications/send` - Send notification
-
-### AI
-- `POST /api/ai/smart-replies` - Get AI generated smart replies
-- `POST /api/ai/translate` - Translate a message to a target language
-- `POST /api/ai/summarize` - Summarize the current chat
-- `POST /api/ai/sessions` - Create new AI chat session
-- `GET /api/ai/sessions` - Get all AI sessions for current user
-- `GET /api/ai/sessions/:id` - Get AI session by ID
-- `DELETE /api/ai/sessions/:id` - Delete AI session by ID
+| Directory     | Command             | Description                                                        |
+| :------------ | :------------------ | :----------------------------------------------------------------- |
+| **`/server`** | `npm run dev`       | Runs both API (`:3001`) and WS (`:3002`) concurrently with nodemon |
+| **`/server`** | `npm run dev:api`   | Runs REST API server only                                          |
+| **`/server`** | `npm run dev:ws`    | Runs WebSocket server only                                         |
+| **`/server`** | `npm run db:studio` | Launches Prisma Studio GUI                                         |
+| **`/client`** | `npm start`         | Starts Vite development server (`:3000`)                           |
+| **`/client`** | `npm run build`     | Builds production bundle                                           |
 
 ---
 
-## 🔌 WebSocket Events
+## 🛡️ Tech Stack
 
-Real-time communication uses Socket.IO:
-
-```javascript
-// Client connects
-io.on('connect', () => { /* handle connection */ })
-
-// Listen for new messages
-socket.on('message:new', (data) => { /* handle new message */ })
-
-// Listen for typing indicators
-socket.on('user:typing', (data) => { /* handle typing */ })
-
-// Listen for read receipts
-socket.on('message:read', (data) => { /* handle read */ })
-
-// Listen for online status
-socket.on('user:online', (data) => { /* handle online status */ })
-```
+- **Frontend**: React 19, Vite, React Router 7, Lucide Icons, SimpleBar
+- **Backend**: Node.js, Express, Prisma ORM, Socket.IO, Redis Adapter/Emitter, Passport.js
+- **Database & Cache**: MySQL 8.0, Redis 6.2
+- **AI & Integrations**: Groq API (LLaMA 3.3), Resend API, Web Push (VAPID)
 
 ---
 
-## Technology Stack
+## 📄 License
 
-### Frontend
-- **React 19** - UI framework
-- **React Router 7** - Client-side routing
-- **Socket.IO Client** - Real-time communication
-- **Axios** - HTTP client
-- **React Helmet** - Document head management
-
-### Backend
-- **Node.js 18** - Runtime
-- **Express.js** - Web framework
-- **Prisma** - Database ORM
-- **Socket.IO** - WebSocket library
-- **Passport.js** - OAuth authentication (Google, GitHub strategies)
-- **JWT** - Authentication tokens
-- **Redis** - Caching & session management
-- **Langchain** - AI pipeline
-- **Gemini API** - AI integration (smart replies, translation, summarization)
-- **Nodemailer** - Email delivery for OTP & notifications
-- **node-cron** - Scheduled background jobs
-
-### Infrastructure
-- **MySQL 8.0** - Primary database
-- **Redis 6.2** - Cache & session store
-- **Nginx** - Reverse proxy & static file server
-- **Docker** - Containerization
-- **Docker Compose** - Service orchestration
-- **GitHub Actions** - CI/CD pipelines
-
----
-
-## Security Features
-
-- ✅ JWT-based authentication with refresh tokens
-- ✅ OTP email verification for login and registration
-- ✅ OAuth 2.0 via Google and GitHub (Passport.js)
-- ✅ Password hashing with bcrypt
-- ✅ CORS protection with allowlist
-- ✅ Rate limiting on API endpoints
-- ✅ User blocking/privacy controls
-- ✅ Secure WebSocket connections
-- ✅ Environment variable isolation
-
----
-
-## License
-
-See [LICENSE](LICENSE) file for details.
-
-## Author
-
-Created by Rushikesh
-
----
-
-**Last Updated**: June 16, 2026
+This project is licensed under the [ISC License](LICENSE).
