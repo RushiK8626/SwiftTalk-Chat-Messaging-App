@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "npx prisma migrate deploy && node src/server.js",
+    "start:api": "node src/server.js",
+    "start:ws": "node src/wsServer.js",
     "start:prod": "NODE_ENV=production node src/server.js",
-    "dev": "nodemon src/server.js",
+    "dev": "concurrently -n \"API,WS\" -c \"blue,green\" \"nodemon src/server.js\" \"nodemon src/wsServer.js\"",
+    "dev:api": "nodemon src/server.js",
+    "dev:ws": "nodemon src/wsServer.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:push:prod": "dotenv -e .env.production -- prisma db push",
@@ -45,6 +49,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "jest": "^30.2.0",
     "nodemon": "^3.1.14"
   },

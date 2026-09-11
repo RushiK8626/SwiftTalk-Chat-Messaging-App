@@ -12,6 +12,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
   redis:
     image: redis:6.2
     healthcheck:
@@ -19,8 +20,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  server:
+
+  api-server:
     build: ./server
+    command: sh -c "npx prisma migrate deploy && node src/server.js"
     ports:
       - "3001:3001"
     depends_on:
@@ -31,8 +34,9 @@ services:
     env_file:
       - ./server/.env
     environment:
-      DATABASE_URL: mysql://root:secret@mysql:3306/swifttalk  # override only these
+      DATABASE_URL: mysql://root:secret@mysql:3306/swifttalk
       REDIS_URL: redis://redis:6379
+      PORT: 3001
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 10s
@@ -40,16 +44,41 @@ services:
       retries: 5
       start_period: 30s
 
+  ws-server:
+    build: ./server
+    command: node src/wsServer.js
+    ports:
+      - "3002:3002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./server/.env
+    environment:
+      DATABASE_URL: mysql://root:secret@mysql:3306/swifttalk
+      REDIS_URL: redis://redis:6379
+      WS_PORT: 3002
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   client:
     build: 
       context: ./client
       args:
         VITE_APP_API_URL: ${VITE_APP_API_URL:-http://localhost:3001}
-        VITE_APP_SOCKET_URL: ${VITE_APP_SOCKET_URL:-http://localhost:3001}
+        VITE_APP_SOCKET_URL: ${VITE_APP_SOCKET_URL:-http://localhost:3002}
     ports:
       - "3000:80"
     depends_on:
-      server:
+      api-server:
+        condition: service_healthy
+      ws-server:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "test", "-f", "/usr/share/nginx/html/index.html"]

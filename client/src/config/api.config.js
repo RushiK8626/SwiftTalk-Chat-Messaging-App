@@ -1,5 +1,6 @@
 // API Configuration for different environments
 const LOCAL_API_URL = "http://localhost:3001";
+const LOCAL_SOCKET_URL = "http://localhost:3002";
 
 // You can set these via environment variables
 const config = {
@@ -10,7 +11,7 @@ const config = {
 
   // Socket URL - prioritize environment variables (remove trailing slashes)
   SOCKET_URL: (
-    import.meta.env.VITE_APP_SOCKET_URL || LOCAL_API_URL
+    import.meta.env.VITE_APP_SOCKET_URL || LOCAL_SOCKET_URL
   ).replace(/\/+$/, ""),
 
   // Upload URLs

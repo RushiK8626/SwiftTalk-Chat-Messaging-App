@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 
 // Ensure the configured socket URL does not end with a slash to avoid `//` when joining paths
 const SOCKET_URL = (
-  import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3001"
+  import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3002"
 ).replace(/\/+$/, "");
 
 class SocketService {

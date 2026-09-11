@@ -2,8 +2,6 @@ const express = require('express');
 const session = require('express-session');
 const http = require('http');
 const path = require('path');
-const { Server } = require('socket.io');
-const { initializeSocket, setupRedisAdapter } = require('./socket/socketHandler');
 const { initSocketEmitter } = require('./socket/socketEmitter');
 const { testConnection } = require('./config/database');
 const { initRedis, closeRedis, isAvailable: isRedisAvailable } = require('./config/redis');
@@ -38,6 +36,7 @@ const allowedOrigins = [
 
 const checkCorsOrigin = function (origin, callback) {
   if (!origin || allowedOrigins.includes(origin) ||
+    (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) ||
     (origin && (origin.includes('.trycloudflare.com') || origin.includes('.github.io') || origin.includes('swifttalk-api.me') || origin.includes('vercel.app')))) {
     callback(null, true);
   } else {
@@ -45,17 +44,7 @@ const checkCorsOrigin = function (origin, callback) {
   }
 };
 
-const io = new Server(server, {
-  path: '/socket.io/',
-  transports: ['websocket', 'polling'],
-  maxHttpBufferSize: 100 * 1024 * 1024,
-  cors: {
-    origin: checkCorsOrigin,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  }
-});
+
 
 app.use(cors({
   origin: checkCorsOrigin,
@@ -87,8 +76,7 @@ app.get('/', (req, res) => {
       messages: '/api/messages',
       chats: '/api/chats',
       ai: '/api/ai',
-      health: '/health',
-      socket: '/socket.io/ (WebSocket only - use browser or Socket.IO client)'
+      health: '/health'
     }
   });
 });
@@ -137,14 +125,13 @@ app.get('/health', async (req, res) => {
   const dbStatus = await testConnection();
   const redisStatus = isRedisAvailable();
   res.json({
-    server: 'running',
+    service: 'api',
+    status: 'running',
     database: dbStatus ? 'connected' : 'disconnected',
     redis: redisStatus ? 'connected' : 'fallback (in-memory)',
     mode: redisStatus ? 'full' : 'degraded'
   });
 });
-
-initializeSocket(io);
 
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
@@ -181,8 +168,7 @@ async function startServer() {
   try {
     await initRedis();
     console.log('Redis connected successfully.');
-    await setupRedisAdapter(io);
-    await initSocketEmitter(io);
+    await initSocketEmitter();
   } catch (error) {
     console.warn('[WARN] Redis init failed, falling back to in-memory:', error.message);
   }

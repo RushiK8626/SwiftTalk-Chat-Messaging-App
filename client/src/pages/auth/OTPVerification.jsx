@@ -33,7 +33,7 @@ const OTPVerification = () => {
     if (type !== "register" || !username) return;
 
     const SOCKET_URL =
-      import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3001";
+      import.meta.env.VITE_APP_SOCKET_URL || "http://localhost:3002";
 
     const socket = io(`${SOCKET_URL}/registration`, {
       transports: ["websocket", "polling"],
