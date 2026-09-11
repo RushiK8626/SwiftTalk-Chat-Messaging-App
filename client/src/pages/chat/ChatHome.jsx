@@ -27,7 +27,6 @@ import ContextMenu from "../../components/common/ContextMenu";
 import ConfirmationBox from "../../components/common/ConfirmationBox";
 import ToastContainer from "../../components/common/ToastContainer";
 import NewBtn from "../../components/common/NewBtn";
-import { NotificationCenter } from "../../components/features/NotificationCenter";
 import useContextMenu from "../../hooks/useContextMenu";
 import { useToast } from "../../hooks/useToast";
 import useResponsive from "../../hooks/useResponsive";
@@ -1266,14 +1265,7 @@ const ChatHome = () => {
                         <X size={24} />
                       </button>
                     </>
-                  ) : (
-                    <>
-                      <NotificationCenter
-                        token={localStorage.getItem("accessToken")}
-                        userId={userId}
-                      />
-                    </>
-                  )}
+                  ) : null}
                 </div>
               </div>
               <SearchBar

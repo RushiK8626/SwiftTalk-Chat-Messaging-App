@@ -68,7 +68,6 @@ const notifyNewMessage = async (messageData, recipientUserIds) => {
       : (message_text || `[${message_type.toUpperCase()}]`);
 
     let payload;
-    let notificationMessage;
 
     if (chat_type === 'private') {
       payload = {
@@ -87,7 +86,6 @@ const notifyNewMessage = async (messageData, recipientUserIds) => {
         vibrate: [200, 100, 200],
         silent: false
       };
-      notificationMessage = `${sender_username}: ${truncatedText}`;
     } else {
       payload = {
         title: chat_name || 'Group Chat',
@@ -105,29 +103,9 @@ const notifyNewMessage = async (messageData, recipientUserIds) => {
         vibrate: [200, 100, 200],
         silent: false
       };
-      notificationMessage = `${chat_name}: ${sender_username} - ${truncatedText}`;
     }
 
     const result = await sendPushNotificationToMultipleUsers(recipientUserIds, payload);
-
-    try {
-      const notificationPromises = recipientUserIds.map(userId =>
-        prisma.notification.create({
-          data: {
-            user_id: userId,
-            message: notificationMessage,
-            notification_type: 'message',
-            action_url: `/chat/${chat_id}`,
-            is_read: false
-          }
-        }).catch(() => null)
-      );
-
-      await Promise.all(notificationPromises);
-    } catch (dbError) {
-      console.warn('[notification.notifyNewMessage] DB notification save failed:', dbError.message);
-    }
-
     return result;
   } catch (error) {
     console.error('[notification.notifyNewMessage]', error);
@@ -155,21 +133,6 @@ const notifyUserAddedToGroup = async (userId, groupData) => {
     };
 
     const result = await sendPushNotificationToUser(userId, payload);
-
-    try {
-      await prisma.notification.create({
-        data: {
-          user_id: userId,
-          message: `You've been added to "${chat_name}" by ${added_by_username}`,
-          notification_type: 'group_added',
-          action_url: `/chat/${chat_id}`,
-          is_read: false
-        }
-      });
-    } catch (dbError) {
-      console.warn('[notification.notifyUserAddedToGroup] DB notification save failed:', dbError.message);
-    }
-
     return result;
   } catch (error) {
     console.error('[notification.notifyUserAddedToGroup]', error);
@@ -208,25 +171,6 @@ const notifyGroupInfoChange = async (userIds, changeData) => {
     };
 
     const result = await sendPushNotificationToMultipleUsers(userIds, payload);
-
-    try {
-      const notificationPromises = userIds.map(userId =>
-        prisma.notification.create({
-          data: {
-            user_id: userId,
-            message: `${changed_by_username}: ${message}`,
-            notification_type: 'group_info_changed',
-            action_url: `/chat/${chat_id}`,
-            is_read: false
-          }
-        }).catch(() => null)
-      );
-
-      await Promise.all(notificationPromises);
-    } catch (dbError) {
-      console.warn('[notification.notifyGroupInfoChange] DB notification save failed:', dbError.message);
-    }
-
     return result;
   } catch (error) {
     console.error('[notification.notifyGroupInfoChange]', error);
@@ -278,29 +222,6 @@ const getVapidPublicKey = () => {
   return process.env.VAPID_PUBLIC_KEY;
 };
 
-const saveNotification = async (userId, notificationData) => {
-  try {
-    const {
-      message,
-      notification_type = 'message',
-      action_url = null
-    } = notificationData;
-
-    const notification = await prisma.notification.create({
-      data: {
-        user_id: userId,
-        message,
-        notification_type,
-        action_url
-      }
-    });
-
-    return notification;
-  } catch (error) {
-    throw error;
-  }
-};
-
 module.exports = {
   sendPushNotificationToUser,
   sendPushNotificationToMultipleUsers,
@@ -309,6 +230,5 @@ module.exports = {
   notifyGroupInfoChange,
   savePushSubscription,
   removePushSubscription,
-  getVapidPublicKey,
-  saveNotification
+  getVapidPublicKey
 };

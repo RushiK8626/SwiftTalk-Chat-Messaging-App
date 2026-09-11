@@ -23,7 +23,6 @@
   min-width: 200px;
   max-width: 280px;
   animation: contextMenuAppear 0.15s ease-out;
-  backdrop-filter: blur(0px);
 }
 
 /* Dark mode adjustments */

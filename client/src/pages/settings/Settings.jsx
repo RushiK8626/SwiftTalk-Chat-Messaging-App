@@ -6,7 +6,6 @@ import {
   UserRound,
   LockKeyhole,
   ShieldCheck,
-  BellRing,
   Palette,
   Languages,
   LogOut,
@@ -17,7 +16,6 @@ import PageHeader from "../../components/common/PageHeader";
 import Profile from "./Profile";
 import Appearance from "./Appearance";
 import BlockedUsers from "./BlockedUsers";
-import NotificationSettings from "./NotificationSettings";
 import PrivacySettings from "./PrivacySettings";
 import Language from "./Language";
 import useResponsive from "../../hooks/useResponsive";
@@ -99,14 +97,6 @@ const Settings = ({ isEmbedded = false }) => {
       {
         title: "Preferences",
         items: [
-          {
-            id: "notifications",
-            icon: BellRing,
-            label: "Notifications",
-            path: "/settings/notifications",
-            description: "Manage notification preferences",
-            component: NotificationSettings,
-          },
           {
             id: "appearance",
             icon: Palette,

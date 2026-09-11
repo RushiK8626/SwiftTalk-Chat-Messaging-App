@@ -85,7 +85,6 @@ app.get('/', (req, res) => {
       users: '/api/users',
       messages: '/api/messages',
       chats: '/api/chats',
-      notifications: '/api/notifications',
       ai: '/api/ai',
       health: '/health',
       socket: '/socket.io/ (WebSocket only - use browser or Socket.IO client)'

@@ -22,7 +22,6 @@ import Settings from "./pages/settings/Settings";
 import Appearance from "./pages/settings/Appearance";
 import BlockedUsers from "./pages/settings/BlockedUsers";
 import PrivacySettings from "./pages/settings/PrivacySettings";
-import NotificationSettings from "./pages/settings/NotificationSettings";
 import Language from "./pages/settings/Language";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
@@ -99,12 +98,6 @@ function App() {
               <Route
                 path="/settings/blocked-users"
                 element={hasToken ? <BlockedUsers /> : <Navigate to="/login" />}
-              />
-              <Route
-                path="/settings/notifications"
-                element={
-                  hasToken ? <NotificationSettings /> : <Navigate to="/login" />
-                }
               />
               <Route
                 path="/settings/privacy"

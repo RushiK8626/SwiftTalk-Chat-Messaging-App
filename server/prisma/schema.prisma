@@ -27,7 +27,6 @@ model User {
   chatMemberships    ChatMember[]
   messageStatus      MessageStatus[]
   groupAdmin         GroupAdmin[]
-  notifications      Notification[]
   messageVisibility  MessageVisibility[]
   chatVisibility     ChatVisibility[]
   blockedUsers       BlockedUser[]   @relation("blockedUsers")
@@ -234,19 +233,6 @@ model GroupAdmin {
   user User @relation(fields: [user_id], references: [user_id])
 
   @@id([chat_id, user_id])
-}
-
-model Notification {
-  notification_id Int      @id @default(autoincrement())
-  user_id         Int
-  message         String
-  notification_type String? // 'message', 'group', 'mention', etc.
-  action_url      String?
-  is_read         Boolean  @default(false)
-  read_at         DateTime?
-  created_at      DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [user_id])
 }
 
 model PushSubscription {
